@@ -1,0 +1,326 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using JobSeekingAPI.Data;
+using JobSeekingAPI.Models;
+using JobSeekingAPI.DTOs;
+
+namespace JobSeekingAPI.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class UsersController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public UsersController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        // GET: api/users
+        [HttpGet]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            var users = await _context.Users
+                .Include(u => u.Candidate)
+                .Include(u => u.Recruiter).ThenInclude(r => r!.Company)
+                .Where(u => u.DeletedAt == null)
+                .Select(u => new UserListDTO
+                {
+                    UserId = u.UserId,
+                    Email = u.Email,
+                    // ✅ FIX: Lấy FullName từ Candidate hoặc Recruiter.User
+                    FullName = u.Candidate != null ? u.Candidate.FullName : 
+                              (u.Recruiter != null && u.Recruiter.User != null ? u.Recruiter.FullName : ""),
+                    Role = u.Role,
+                    Avatar = u.Avatar,
+                    CompanyName = u.Recruiter != null && u.Recruiter.Company != null 
+                                ? u.Recruiter.Company.CompanyName : null,
+                    LastLogin = u.LastLogin
+                })
+                .ToListAsync();
+            
+            return Ok(users);
+        }
+
+        // GET: api/users/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUserById(int id)
+        {
+            var user = await _context.Users
+                .Include(u => u.Candidate)
+                    .ThenInclude(c => c!.CandidateTags)
+                    .ThenInclude(ct => ct.Tag)
+                .Include(u => u.Candidate)
+                    .ThenInclude(c => c!.Experiences)
+                .Include(u => u.Recruiter)
+                    .ThenInclude(r => r!.Company)
+                .Where(u => u.DeletedAt == null && u.UserId == id)
+                .Select(u => new UserDetailDTO
+                {
+                    UserId = u.UserId,
+                    Email = u.Email,
+                    // ✅ FIX: Lấy FullName từ Candidate hoặc Recruiter.User
+                    FullName = u.Candidate != null ? u.Candidate.FullName : 
+                              (u.Recruiter != null && u.Recruiter.User != null ? u.Recruiter.FullName : ""),
+                    Phone = u.Candidate != null ? u.Candidate.Phone : null,
+                    Address = u.Candidate != null ? u.Candidate.Address : null,
+                    Role = u.Role,
+                    Avatar = u.Avatar,
+                    LastLogin = u.LastLogin,
+                    DeletedAt = u.DeletedAt,
+                    
+                    Candidate = u.Candidate == null ? null : new CandidateDetailDTO
+                    {
+                        UserId = u.Candidate.UserId,
+                        FullName = u.Candidate.FullName,
+                        Gender = u.Candidate.Gender,
+                        Birthday = u.Candidate.Birthday,
+                        Phone = u.Candidate.Phone,
+                        Address = u.Candidate.Address,
+                        CVUrl = u.Candidate.CVUrl,
+                        Skills = u.Candidate.CandidateTags
+                            .Where(ct => ct.Tag != null)
+                            .Select(ct => ct.Tag!.TagName)
+                            .ToList(),
+                        Experiences = u.Candidate.Experiences
+                            .OrderByDescending(e => e.StartDate)
+                            .Select(e => new ExperienceDTO
+                            {
+                                ExpId = e.ExpId,
+                                JobTitle = e.JobTitle,
+                                CompanyName = e.CompanyName,
+                                StartDate = (DateTime)e.StartDate,
+                                EndDate = e.EndDate,
+                                Description = e.Description
+                            }).ToList()
+                    },
+                    
+                    Recruiter = u.Recruiter == null ? null : new RecruiterDetailDTO
+                    {
+                        UserId = u.Recruiter.UserId,
+                        Position = u.Recruiter.Position,
+                        Company = u.Recruiter.Company == null ? null : new CompanySummaryDTO
+                        {
+                            CompanyId = u.Recruiter.Company.CompanyId,
+                            CompanyName = u.Recruiter.Company.CompanyName,
+                            LogoImg = u.Recruiter.Company.LogoImg,
+                            Website = u.Recruiter.Company.Website
+                            // ✅ FIX: XÓA Size - CompanySummaryDTO không có Size
+                        }
+                    }
+                })
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+                return NotFound("User not found");
+
+            return Ok(user);
+        }
+
+        // POST: api/users
+        [HttpPost]
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserDTO createUserDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var existingUser = await _context.Users
+                .AnyAsync(u => u.Email == createUserDto.Email && u.DeletedAt == null);
+            
+            if (existingUser)
+                return Conflict(new { message = "Email already exists" });
+
+            // ✅ FIX: User KHÔNG có FullName - bỏ property này
+            var user = new User
+            {
+                Email = createUserDto.Email,
+                Password = BCrypt.Net.BCrypt.HashPassword(createUserDto.Password),
+                Role = createUserDto.Role,
+                LastLogin = null
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            if (user.Role == "Candidate")
+            {
+                var candidate = new Candidate
+                {
+                    UserId = user.UserId,
+                    FullName = createUserDto.FullName,  // ✅ FullName lưu ở Candidate
+                    Phone = createUserDto.Phone,
+                    Address = createUserDto.Address
+                };
+                _context.Candidates.Add(candidate);
+                await _context.SaveChangesAsync();
+            }
+            else if (user.Role == "Recruiter")
+            {
+                // Nếu là Recruiter, cần tạo Recruiter profile
+                // Code này sẽ được thêm sau
+            }
+
+            var userDto = new UserDetailDTO
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                FullName = createUserDto.FullName,  // ✅ Lấy từ DTO
+                Role = user.Role,
+                Avatar = user.Avatar,
+                LastLogin = user.LastLogin
+            };
+
+            return CreatedAtAction(nameof(GetUserById), new { id = user.UserId }, userDto);
+        }
+
+        // PUT: api/users/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDTO updateUserDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var existingUser = await _context.Users
+                .Include(u => u.Candidate)
+                .FirstOrDefaultAsync(u => u.UserId == id && u.DeletedAt == null);
+            
+            if (existingUser == null)
+                return NotFound("User not found");
+
+            // ✅ FIX: User KHÔNG có FullName - không cập nhật ở User
+            
+            if (!string.IsNullOrWhiteSpace(updateUserDto.NewPassword))
+            {
+                existingUser.Password = BCrypt.Net.BCrypt.HashPassword(updateUserDto.NewPassword);
+            }
+
+            // Update Candidate if exists
+            if (existingUser.Candidate != null)
+            {
+                existingUser.Candidate.FullName = updateUserDto.FullName ?? existingUser.Candidate.FullName;
+                existingUser.Candidate.Phone = updateUserDto.Phone ?? existingUser.Candidate.Phone;
+                existingUser.Candidate.Address = updateUserDto.Address ?? existingUser.Candidate.Address;
+            }
+            else if (existingUser.Role == "Recruiter")
+            {
+                // Update Recruiter nếu cần
+                // Code sẽ thêm sau
+            }
+
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // DELETE: api/users/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.UserId == id && u.DeletedAt == null);
+            
+            if (user == null)
+                return NotFound("User not found");
+
+            user.DeletedAt = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // GET: api/users/search
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchUsers([FromQuery] string? keyword, 
+                                                     [FromQuery] string? role,
+                                                     [FromQuery] int page = 1, 
+                                                     [FromQuery] int pageSize = 20)
+        {
+            var query = _context.Users
+                .Include(u => u.Candidate)
+                .Include(u => u.Recruiter).ThenInclude(r => r!.Company)
+                .Where(u => u.DeletedAt == null)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                query = query.Where(u => 
+                    u.Email.Contains(keyword) || 
+                    (u.Candidate != null && u.Candidate.FullName.Contains(keyword)) ||  // ✅ FIX
+                    (u.Recruiter != null && u.Recruiter.User != null && u.Recruiter.FullName.Contains(keyword)) ||
+                    (u.Candidate != null && u.Candidate.Phone != null && u.Candidate.Phone.Contains(keyword)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                query = query.Where(u => u.Role == role);
+            }
+
+            var totalCount = await query.CountAsync();
+            var users = await query
+                .OrderBy(u => u.Candidate != null ? u.Candidate.FullName : 
+                            (u.Recruiter != null && u.Recruiter.User != null ? u.Recruiter.FullName : ""))  // ✅ FIX
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new UserListDTO
+                {
+                    UserId = u.UserId,
+                    Email = u.Email,
+                    FullName = u.Candidate != null ? u.Candidate.FullName : 
+                              (u.Recruiter != null && u.Recruiter.User != null ? u.Recruiter.FullName : ""),  // ✅ FIX
+                    Role = u.Role,
+                    Avatar = u.Avatar,
+                    CompanyName = u.Recruiter != null && u.Recruiter.Company != null 
+                                ? u.Recruiter.Company.CompanyName : null,
+                    LastLogin = u.LastLogin
+                })
+                .ToListAsync();
+
+            var result = new
+            {
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                Data = users
+            };
+
+            return Ok(result);
+        }
+
+        // GET: api/users/profile
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetCurrentUserProfile()
+        {
+            // TODO: Lấy UserId từ JWT token
+            var userId = 1;
+            return await GetUserById(userId);
+        }
+
+        // PUT: api/users/{id}/change-password
+        [HttpPut("{id}/change-password")]
+        public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordDTO changePasswordDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.UserId == id && u.DeletedAt == null);
+
+            if (user == null)
+                return NotFound("User not found");
+
+            if (!BCrypt.Net.BCrypt.Verify(changePasswordDto.CurrentPassword, user.Password))
+                return BadRequest(new { message = "Current password is incorrect" });
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(changePasswordDto.NewPassword);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Password changed successfully" });
+        }
+
+        private bool UserExists(int id)
+        {
+            return _context.Users.Any(e => e.UserId == id && e.DeletedAt == null);
+        }
+    }
+}

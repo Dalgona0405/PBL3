@@ -1,0 +1,535 @@
+﻿using JobSeekingAPI.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace JobSeekingAPI.Data
+{
+    public static class DbInitializer
+    {
+        public static void Initialize(ApplicationDbContext context)
+        {
+            // Chạy migration nếu chưa có database
+            //context.Database.Migrate();
+
+            // ===== 1. LOCATIONS - THEO ER =====
+            if (!context.Locations.Any())
+            {
+                var locations = new Location[]
+                {
+                    new Location { LocationName = "Hà Nội" },
+                    new Location { LocationName = "TP. Hồ Chí Minh" },
+                    new Location { LocationName = "Đà Nẵng" },
+                    new Location { LocationName = "Hải Phòng" },
+                    new Location { LocationName = "Cần Thơ" },
+                    new Location { LocationName = "Biên Hòa - Đồng Nai" },
+                    new Location { LocationName = "Bình Dương" },
+                    new Location { LocationName = "Remote - Toàn quốc" }
+                };
+                context.Locations.AddRange(locations);
+                context.SaveChanges();
+                Console.WriteLine("✅ Đã tạo Locations");
+            }
+
+            // ===== 2. TAGS - THEO ER =====
+            if (!context.Tags.Any())
+            {
+                var tags = new Tag[]
+                {
+                    // Programming Languages
+                    new Tag { TagName = "C#", Type = "Language" },
+                    new Tag { TagName = "Java", Type = "Language" },
+                    new Tag { TagName = "Python", Type = "Language" },
+                    new Tag { TagName = "JavaScript", Type = "Language" },
+                    new Tag { TagName = "TypeScript", Type = "Language" },
+                    new Tag { TagName = "PHP", Type = "Language" },
+                    new Tag { TagName = "Go", Type = "Language" },
+                    new Tag { TagName = "Rust", Type = "Language" },
+                    
+                    // Frameworks
+                    new Tag { TagName = ".NET Core", Type = "Framework" },
+                    new Tag { TagName = "ReactJS", Type = "Framework" },
+                    new Tag { TagName = "Angular", Type = "Framework" },
+                    new Tag { TagName = "Vue.js", Type = "Framework" },
+                    new Tag { TagName = "Spring Boot", Type = "Framework" },
+                    new Tag { TagName = "Django", Type = "Framework" },
+                    new Tag { TagName = "Laravel", Type = "Framework" },
+                    
+                    // Database
+                    new Tag { TagName = "SQL Server", Type = "Database" },
+                    new Tag { TagName = "MySQL", Type = "Database" },
+                    new Tag { TagName = "PostgreSQL", Type = "Database" },
+                    new Tag { TagName = "MongoDB", Type = "Database" },
+                    new Tag { TagName = "Redis", Type = "Database" },
+                    
+                    // Cloud & DevOps
+                    new Tag { TagName = "AWS", Type = "Cloud" },
+                    new Tag { TagName = "Azure", Type = "Cloud" },
+                    new Tag { TagName = "Docker", Type = "DevOps" },
+                    new Tag { TagName = "Kubernetes", Type = "DevOps" },
+                    new Tag { TagName = "CI/CD", Type = "DevOps" },
+                    
+                    // Soft Skills
+                    new Tag { TagName = "Team Leadership", Type = "SoftSkill" },
+                    new Tag { TagName = "Communication", Type = "SoftSkill" },
+                    new Tag { TagName = "Project Management", Type = "SoftSkill" },
+                    new Tag { TagName = "Agile/Scrum", Type = "SoftSkill" },
+                };
+                context.Tags.AddRange(tags);
+                context.SaveChanges();
+                Console.WriteLine("✅ Đã tạo Tags");
+            }
+
+            // ===== 3. COMPANIES - THEO ER =====
+            if (!context.Companies.Any())
+            {
+                var companies = new Company[]
+                {
+                    new Company 
+                    { 
+                        CompanyName = "FPT Software", 
+                        LogoImg = "/logos/fpt.png",
+                        Website = "https://fptsoftware.com",
+                        Size = "10000+"
+                    },
+                    new Company 
+                    { 
+                        CompanyName = "Viettel", 
+                        LogoImg = "/logos/viettel.png",
+                        Website = "https://viettel.com.vn",
+                        Size = "50000+"
+                    },
+                    new Company 
+                    { 
+                        CompanyName = "VNG Corporation", 
+                        LogoImg = "/logos/vng.png",
+                        Website = "https://vng.com.vn",
+                        Size = "5000-10000"
+                    },
+                    new Company 
+                    { 
+                        CompanyName = "Shopee", 
+                        LogoImg = "/logos/shopee.png",
+                        Website = "https://shopee.vn",
+                        Size = "5000-10000"
+                    },
+                    new Company 
+                    { 
+                        CompanyName = "Tiki", 
+                        LogoImg = "/logos/tiki.png",
+                        Website = "https://tiki.vn",
+                        Size = "1000-5000"
+                    }
+                };
+                context.Companies.AddRange(companies);
+                context.SaveChanges();
+                Console.WriteLine("✅ Đã tạo Companies");
+            }
+
+            // ===== 4. USERS - THEO ER =====
+            if (!context.Users.Any())
+            {
+                var users = new User[]
+                {
+                    // Admin
+                    new User 
+                    { 
+                        Email = "admin@jobseeking.com", 
+                        Password = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
+                        Role = "Admin",
+                        LastLogin = null
+                    },
+                    
+                    // Recruiters
+                    new User 
+                    { 
+                        Email = "hr@fpt.com", 
+                        Password = BCrypt.Net.BCrypt.HashPassword("Recruiter@123"),
+                        Role = "Recruiter",
+                        LastLogin = null
+                    },
+                    new User 
+                    { 
+                        Email = "hr@viettel.com", 
+                        Password = BCrypt.Net.BCrypt.HashPassword("Recruiter@123"),
+                        Role = "Recruiter",
+                        LastLogin = null
+                    },
+                    
+                    // Candidates
+                    new User 
+                    { 
+                        Email = "candidate1@gmail.com", 
+                        Password = BCrypt.Net.BCrypt.HashPassword("Candidate@123"),
+                        Role = "Candidate",
+                        LastLogin = null
+                    },
+                    new User 
+                    { 
+                        Email = "candidate2@gmail.com", 
+                        Password = BCrypt.Net.BCrypt.HashPassword("Candidate@123"),
+                        Role = "Candidate",
+                        LastLogin = null
+                    }
+                };
+                context.Users.AddRange(users);
+                context.SaveChanges();
+                Console.WriteLine("✅ Đã tạo Users");
+
+                // ===== 5. RECRUITERS - THEO ER =====
+                var companies = context.Companies.ToList();
+                
+                var recruiters = new Recruiter[]
+                {
+                    new Recruiter
+                    {
+                        UserId = users[1].UserId, // hr@fpt.com
+                        CompanyId = companies[0].CompanyId, // FPT
+                        Position = "HR Manager"
+                    },
+                    new Recruiter
+                    {
+                        UserId = users[2].UserId, // hr@viettel.com
+                        CompanyId = companies[1].CompanyId, // Viettel
+                        Position = "Senior Recruiter"
+                    }
+                };
+                
+                context.Recruiters.AddRange(recruiters);
+                
+                // ===== 6. CANDIDATES - THEO ER =====
+                var candidates = new Candidate[]
+                {
+                    new Candidate
+                    {
+                        UserId = users[3].UserId,
+                        FullName = "Lê Văn C",
+                        Gender = "Nam",
+                        Birthday = new DateTime(1995, 5, 15),
+                        Phone = "0965123456",
+                        Address = "Hà Nội",
+                        CVUrl = "/cvs/candidate1.pdf"
+                    },
+                    new Candidate
+                    {
+                        UserId = users[4].UserId,
+                        FullName = "Phạm Thị D",
+                        Gender = "Nữ",
+                        Birthday = new DateTime(1997, 8, 20),
+                        Phone = "0955123456",
+                        Address = "TP.HCM",
+                        CVUrl = "/cvs/candidate2.pdf"
+                    }
+                };
+                
+                context.Candidates.AddRange(candidates);
+                context.SaveChanges();
+                Console.WriteLine("✅ Đã tạo Recruiters và Candidates");
+            }
+
+            // ===== 7. JOBS - THEO ER =====
+            if (!context.Jobs.Any())
+            {
+                var companies = context.Companies.ToList();
+                var locations = context.Locations.ToList();
+                
+                var jobs = new Job[]
+                {
+                    new Job 
+                    { 
+                        Title = "Senior .NET Developer", 
+                        Description = "Phát triển ứng dụng web với .NET Core 8",
+                        Requirement = "5+ năm kinh nghiệm với C#, .NET Core, SQL Server",
+                        Benefits = "Lương tháng 13, Bảo hiểm sức khỏe, Du lịch hàng năm",
+                        SalaryMin = 2000,
+                        SalaryMax = 3000,
+                        Level = "Senior",
+                        ExpYear = 3,
+                        CompanyId = companies[0].CompanyId,
+                        LocationId = locations[0].LocationId,
+                        Address = "FPT Cầu Giấy, Hà Nội",
+                        PostedDate = DateTime.Now.AddDays(-5),
+                        Deadline = DateTime.Now.AddDays(25),
+                        ViewCount = 150,
+                        Status = 1
+                    },
+                    new Job 
+                    { 
+                        Title = "ReactJS Developer", 
+                        Description = "Xây dựng giao diện người dùng với React và TypeScript",
+                        Requirement = "3+ năm kinh nghiệm với React, Redux, TypeScript",
+                        Benefits = "Lương tháng 13, Bảo hiểm sức khỏe, Đào tạo chuyên sâu",
+                        SalaryMin = 1500,
+                        SalaryMax = 2500,
+                        Level = "Middle",
+                        ExpYear = 2,
+                        CompanyId = companies[0].CompanyId,
+                        LocationId = locations[1].LocationId,
+                        Address = "FPT Quận 9, TP.HCM",
+                        PostedDate = DateTime.Now.AddDays(-3),
+                        Deadline = DateTime.Now.AddDays(27),
+                        ViewCount = 120,
+                        Status = 1
+                    },
+                    new Job 
+                    { 
+                        Title = "DevOps Engineer", 
+                        Description = "Quản lý hạ tầng AWS và CI/CD pipeline",
+                        Requirement = "Kinh nghiệm với Docker, Kubernetes, AWS",
+                        Benefits = "Lương tháng 13, Bảo hiểm sức khỏe cao cấp, Máy tính xách tay",
+                        SalaryMin = 2500,
+                        SalaryMax = 3500,
+                        Level = "Senior",
+                        ExpYear = 3,
+                        CompanyId = companies[1].CompanyId,
+                        LocationId = locations[0].LocationId,
+                        Address = "Viettel Hòa Lạc, Hà Nội",
+                        PostedDate = DateTime.Now.AddDays(-7),
+                        Deadline = DateTime.Now.AddDays(23),
+                        ViewCount = 200,
+                        Status = 1
+                    },
+                    new Job 
+                    { 
+                        Title = "Java Spring Boot Developer", 
+                        Description = "Phát triển microservices với Spring Boot",
+                        Requirement = "4+ năm kinh nghiệm với Java, Spring Boot, Hibernate",
+                        Benefits = "Lương tháng 13, Bảo hiểm sức khỏe, Cổ phiếu",
+                        SalaryMin = 1800,
+                        SalaryMax = 2800,
+                        Level = "Middle",
+                        ExpYear = 2,
+                        CompanyId = companies[2].CompanyId,
+                        LocationId = locations[1].LocationId,
+                        Address = "VNG Quận 7, TP.HCM",
+                        PostedDate = DateTime.Now.AddDays(-2),
+                        Deadline = DateTime.Now.AddDays(28),
+                        ViewCount = 90,
+                        Status = 1
+                    },
+                    new Job 
+                    { 
+                        Title = "Frontend Developer (Vue.js)", 
+                        Description = "Phát triển SPA với Vue.js",
+                        Requirement = "2+ năm kinh nghiệm với Vue.js, Vuex, Nuxt.js",
+                        Benefits = "Lương tháng 13, Bảo hiểm sức khỏe, Linh hoạt thời gian",
+                        SalaryMin = 1200,
+                        SalaryMax = 2000,
+                        Level = "Junior",
+                        ExpYear = 1,
+                        CompanyId = companies[3].CompanyId,
+                        LocationId = locations[1].LocationId,
+                        Address = "Shopee Quận Tân Bình, TP.HCM",
+                        PostedDate = DateTime.Now.AddDays(-1),
+                        Deadline = DateTime.Now.AddDays(29),
+                        ViewCount = 75,
+                        Status = 1
+                    }
+                };
+                
+                context.Jobs.AddRange(jobs);
+                context.SaveChanges();
+                Console.WriteLine("✅ Đã tạo Jobs");
+
+                // ===== 8. JOB TAGS - THEO ER =====
+                var tags = context.Tags.ToList();
+                var jobTags = new List<JobTag>();
+                
+                // Job 1: .NET Developer
+                jobTags.Add(new JobTag { JobId = jobs[0].JobId, TagId = tags.First(t => t.TagName == "C#").TagId });
+                jobTags.Add(new JobTag { JobId = jobs[0].JobId, TagId = tags.First(t => t.TagName == ".NET Core").TagId });
+                jobTags.Add(new JobTag { JobId = jobs[0].JobId, TagId = tags.First(t => t.TagName == "SQL Server").TagId });
+                
+                // Job 2: ReactJS
+                jobTags.Add(new JobTag { JobId = jobs[1].JobId, TagId = tags.First(t => t.TagName == "JavaScript").TagId });
+                jobTags.Add(new JobTag { JobId = jobs[1].JobId, TagId = tags.First(t => t.TagName == "TypeScript").TagId });
+                jobTags.Add(new JobTag { JobId = jobs[1].JobId, TagId = tags.First(t => t.TagName == "ReactJS").TagId });
+                
+                // Job 3: DevOps
+                jobTags.Add(new JobTag { JobId = jobs[2].JobId, TagId = tags.First(t => t.TagName == "AWS").TagId });
+                jobTags.Add(new JobTag { JobId = jobs[2].JobId, TagId = tags.First(t => t.TagName == "Docker").TagId });
+                jobTags.Add(new JobTag { JobId = jobs[2].JobId, TagId = tags.First(t => t.TagName == "Kubernetes").TagId });
+                
+                // Job 4: Java
+                jobTags.Add(new JobTag { JobId = jobs[3].JobId, TagId = tags.First(t => t.TagName == "Java").TagId });
+                jobTags.Add(new JobTag { JobId = jobs[3].JobId, TagId = tags.First(t => t.TagName == "Spring Boot").TagId });
+                
+                // Job 5: Vue.js
+                jobTags.Add(new JobTag { JobId = jobs[4].JobId, TagId = tags.First(t => t.TagName == "JavaScript").TagId });
+                jobTags.Add(new JobTag { JobId = jobs[4].JobId, TagId = tags.First(t => t.TagName == "Vue.js").TagId });
+                
+                context.JobTags.AddRange(jobTags);
+                context.SaveChanges();
+                Console.WriteLine("✅ Đã tạo JobTags");
+            }
+
+            // ===== 9. CANDIDATE TAGS - THEO ER =====
+            if (!context.CandidateTags.Any())
+            {
+                var candidates = context.Candidates.ToList();
+                var tags = context.Tags.ToList();
+                var candidateTags = new List<CandidateTag>();
+                
+                // Candidate 1: .NET Developer
+                candidateTags.Add(new CandidateTag 
+                { 
+                    UserId = candidates[0].UserId, 
+                    TagId = tags.First(t => t.TagName == "C#").TagId,
+                    Proficiency = "Expert"
+                });
+                candidateTags.Add(new CandidateTag 
+                { 
+                    UserId = candidates[0].UserId, 
+                    TagId = tags.First(t => t.TagName == ".NET Core").TagId,
+                    Proficiency = "Expert"
+                });
+                candidateTags.Add(new CandidateTag 
+                { 
+                    UserId = candidates[0].UserId, 
+                    TagId = tags.First(t => t.TagName == "SQL Server").TagId,
+                    Proficiency = "Intermediate"
+                });
+                candidateTags.Add(new CandidateTag 
+                { 
+                    UserId = candidates[0].UserId, 
+                    TagId = tags.First(t => t.TagName == "ReactJS").TagId,
+                    Proficiency = "Beginner"
+                });
+                
+                // Candidate 2: DevOps
+                candidateTags.Add(new CandidateTag 
+                { 
+                    UserId = candidates[1].UserId, 
+                    TagId = tags.First(t => t.TagName == "AWS").TagId,
+                    Proficiency = "Expert"
+                });
+                candidateTags.Add(new CandidateTag 
+                { 
+                    UserId = candidates[1].UserId, 
+                    TagId = tags.First(t => t.TagName == "Docker").TagId,
+                    Proficiency = "Expert"
+                });
+                candidateTags.Add(new CandidateTag 
+                { 
+                    UserId = candidates[1].UserId, 
+                    TagId = tags.First(t => t.TagName == "Kubernetes").TagId,
+                    Proficiency = "Intermediate"
+                });
+                candidateTags.Add(new CandidateTag 
+                { 
+                    UserId = candidates[1].UserId, 
+                    TagId = tags.First(t => t.TagName == "Python").TagId,
+                    Proficiency = "Intermediate"
+                });
+                
+                context.CandidateTags.AddRange(candidateTags);
+                context.SaveChanges();
+                Console.WriteLine("✅ Đã tạo CandidateTags");
+            }
+
+            // ===== 10. EXPERIENCES - THEO ER =====
+            if (!context.Experiences.Any())
+            {
+                var candidates = context.Candidates.ToList();
+                var experiences = new Experience[]
+                {
+                    new Experience
+                    {
+                        UserId = candidates[0].UserId,
+                        JobTitle = "Senior .NET Developer",
+                        CompanyName = "FPT Software",
+                        StartDate = new DateTime(2022, 1, 1),
+                        EndDate = null,
+                        Description = "Phát triển ứng dụng web với .NET Core, SQL Server"
+                    },
+                    new Experience
+                    {
+                        UserId = candidates[0].UserId,
+                        JobTitle = ".NET Developer",
+                        CompanyName = "CMC Global",
+                        StartDate = new DateTime(2019, 6, 1),
+                        EndDate = new DateTime(2021, 12, 31),
+                        Description = "Phát triển và bảo trì ứng dụng .NET Framework"
+                    },
+                    new Experience
+                    {
+                        UserId = candidates[1].UserId,
+                        JobTitle = "DevOps Engineer",
+                        CompanyName = "Viettel",
+                        StartDate = new DateTime(2021, 3, 1),
+                        EndDate = null,
+                        Description = "Quản lý hạ tầng AWS, CI/CD pipeline"
+                    },
+                    new Experience
+                    {
+                        UserId = candidates[1].UserId,
+                        JobTitle = "System Administrator",
+                        CompanyName = "VNG",
+                        StartDate = new DateTime(2018, 8, 1),
+                        EndDate = new DateTime(2021, 2, 28),
+                        Description = "Quản trị hệ thống Linux, MySQL"
+                    }
+                };
+                
+                context.Experiences.AddRange(experiences);
+                context.SaveChanges();
+                Console.WriteLine("✅ Đã tạo Experiences");
+            }
+
+            // ===== 11. APPLICATIONS - THEO ER =====
+            if (!context.Applications.Any())
+            {
+                var candidates = context.Candidates.ToList();
+                var jobs = context.Jobs.ToList();
+                
+                var applications = new Application[]
+                {
+                    new Application
+                    {
+                        UserId = candidates[0].UserId,
+                        JobId = jobs[0].JobId,
+                        AppliedDate = DateTime.Now.AddDays(-4),
+                        Status = 2, // Đã xem
+                    },
+                    new Application
+                    {
+                        UserId = candidates[0].UserId,
+                        JobId = jobs[2].JobId,
+                        AppliedDate = DateTime.Now.AddDays(-2),
+                        Status = 1, // Đã nộp
+                    },
+                    new Application
+                    {
+                        UserId = candidates[1].UserId,
+                        JobId = jobs[1].JobId,
+                        AppliedDate = DateTime.Now.AddDays(-1),
+                        Status = 1, // Đã nộp
+                    },
+                    new Application
+                    {
+                        UserId = candidates[1].UserId,
+                        JobId = jobs[3].JobId,
+                        AppliedDate = DateTime.Now.AddDays(-3),
+                        Status = 3, // Phỏng vấn
+                    }
+                };
+                
+                context.Applications.AddRange(applications);
+                context.SaveChanges();
+                Console.WriteLine("✅ Đã tạo Applications");
+            }
+
+            Console.WriteLine("🎉 HOÀN TẤT SEED DATA!");
+            Console.WriteLine("📊 Tổng kết:");
+            Console.WriteLine($"   - Locations: {context.Locations.Count()}");
+            Console.WriteLine($"   - Tags: {context.Tags.Count()}");
+            Console.WriteLine($"   - Companies: {context.Companies.Count()}");
+            Console.WriteLine($"   - Users: {context.Users.Count()}");
+            Console.WriteLine($"   - Recruiters: {context.Recruiters.Count()}");
+            Console.WriteLine($"   - Candidates: {context.Candidates.Count()}");
+            Console.WriteLine($"   - Jobs: {context.Jobs.Count()}");
+            Console.WriteLine($"   - JobTags: {context.JobTags.Count()}");
+            Console.WriteLine($"   - CandidateTags: {context.CandidateTags.Count()}");
+            Console.WriteLine($"   - Experiences: {context.Experiences.Count()}");
+            Console.WriteLine($"   - Applications: {context.Applications.Count()}");
+        }
+    }
+}
