@@ -1,42 +1,60 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #FAF9F6; /* Màu trắng kem */
+  color: #4A4A4A; /* Màu xám đậm */
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between; /* Đẩy Logo sang trái, Nút sang phải */
+  align-items: center;
+  padding: 1rem 5%;
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
 .logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  color: #8E9775; /* Màu xanh Olive */
+  margin: 0;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.job-list-container {
+  padding: 2rem 5%;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Tự chia cột */
+  gap: 20px; /* Khoảng cách giữa các thẻ */
 }
 
-.card {
-  padding: 2em;
+.job-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px; /* Bo góc mềm mại */
+  border-left: 5px solid #D4A373; /* Nhấn nhá một chút màu nâu đất */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  transition: transform 0.3s; /* Hiệu ứng lướt chuột */
 }
 
-.read-the-docs {
-  color: #888;
+.job-card:hover {
+  transform: translateY(-5px); /* Bay nhẹ lên khi di chuột vào */
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  background-color: #8E9775;
+  color: white;
+  font-weight: 600;
+  margin: 0 5px;
+}
+
+.search-bar-container {
+  display: flex;
+  justify-content: right;
+  margin: 20px 30px;
 }
