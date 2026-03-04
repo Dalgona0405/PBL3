@@ -1,18 +1,23 @@
-import React from 'react';
-import Header from './components/Header';
-import SearchBar from './components/SearchBar';
-import JobList from './components/JobList';
+import { useState } from "react";
+import HomePage from "./pages/HomePage";
+// import LoginPage from "./pages/LoginPage";
+// import RegisterPage from "./pages/RegisterPage";
 import './App.css';
 
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
 function App() {
+  const [user, setUser] = useState(null);
+
   return (
-    <div className="app-wrapper">
-      <Header />
-      <main className="content">
-        <SearchBar />
-        <JobList />
-      </main>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        {/* <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="*" element={<Navigate to="/" />} /> */}
+      </Routes>
+    </BrowserRouter>
   );
 }
 
