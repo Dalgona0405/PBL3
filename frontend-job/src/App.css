@@ -58,3 +58,76 @@ button {
   justify-content: right;
   margin: 20px 30px;
 }
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.login-box {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  width: 100%;
+  max-width: 400px;
+  border-top: 5px solid #8E9775; /* Nhấn màu xanh olive */
+}
+
+.login-box h2 {
+  margin-top: 0;
+  color: #4A4A4A;
+}
+
+.login-subtitle {
+  color: #888;
+  margin-bottom: 25px;
+  font-size: 0.9rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.input-group input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+.input-group input:focus {
+  border-color: #D4A373; /* Viền nâu đất khi click vào ô nhập */
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  font-size: 1rem;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9rem;
+}
+
+.link-register {
+  color: #D4A373;
+  font-weight: bold;
+  cursor: pointer;
+}
