@@ -1,17 +1,18 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import JobCard from './JobCard';
+import { API_URLS } from '../api/api';
 
 function JobList() {
     const [jobs, setJobs] = useState([]);
+
     useEffect(() => {
-        fetch('http://localhost:5000/api/Jobs')
+        fetch(API_URLS.JOBS) 
             .then(response => response.json())
             .then(data => {
-                console.log(data);
+                console.log("Dữ liệu từ API:", data);
                 setJobs(data);
             })
-            .catch(error => console.error('Error fetching jobs:', error));
+            .catch(error => console.error('Lỗi lấy dữ liệu:', error));
     }, []);
 
     return (
