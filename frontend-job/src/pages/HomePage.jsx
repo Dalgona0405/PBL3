@@ -1,16 +1,16 @@
-import React from 'react';
-import Header from '../components/Header';
+import React, { useState } from 'react';
 import SearchBar from '../components/SearchBar';
 import JobList from '../components/JobList';
 import '../App.css';
 
 function HomePage() {
+  const [keyword, setKeyword] = useState('');
+
   return (
     <div className="app-wrapper">
-      <Header />
       <main className="content">
-        <SearchBar />
-        <JobList />
+        <SearchBar onSearch={setKeyword} />
+        <JobList keyword={keyword} />
       </main>
     </div>
   );

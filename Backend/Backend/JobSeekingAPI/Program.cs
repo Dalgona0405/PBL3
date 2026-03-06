@@ -45,10 +45,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader());
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
 
 var app = builder.Build();
@@ -72,6 +74,7 @@ else
 app.UseCors("AllowAll");
 
 // app.UseAuthentication();
+app.UseCors("AllowReactApp");
 app.UseAuthorization();
 
 app.MapControllers();
@@ -87,6 +90,5 @@ app.MapGet("/", () => Results.Redirect("/swagger"));
 //    var context = services.GetRequiredService<ApplicationDbContext>();
 //    DbInitializer.Initialize(context);
 //}
-
 
 app.Run();

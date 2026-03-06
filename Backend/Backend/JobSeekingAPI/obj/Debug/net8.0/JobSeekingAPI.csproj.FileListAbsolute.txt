@@ -276,3 +276,4 @@ D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\obj\Debug\net8.0\refint\Job
 D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\obj\Debug\net8.0\JobSeekingAPI.pdb
 D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\obj\Debug\net8.0\JobSeekingAPI.genruntimeconfig.cache
 D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\obj\Debug\net8.0\ref\JobSeekingAPI.dll
+D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\obj\Debug\net8.0\JobSeekingAPI.sourcelink.json

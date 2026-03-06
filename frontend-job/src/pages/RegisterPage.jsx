@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Header from '../components/Header';
 import { useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import '../App.css';
@@ -60,7 +59,6 @@ function RegisterPage() {
 
     return (
         <div className="app-wrapper">
-            <Header />
             <div className="register-container">
                 <div className="register-box">
                     <h2>Chào mừng đến với IT Job Hunter!</h2>

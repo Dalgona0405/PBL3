@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using JobSeekingAPI.Data;
 using JobSeekingAPI.Models;
@@ -100,7 +100,18 @@ namespace JobSeekingAPI.Controllers
                                 StartDate = e.StartDate ?? DateTime.MinValue,
                                 EndDate = e.EndDate,
                                 Description = e.Description
-                            }).ToList()
+                            }).ToList(),
+                        Applications = u.Candidate.Applications.Select(a => new ApplicationDTO
+                        {
+                            ApplicationId = a.AppId,
+                            AppliedDate = a.AppliedDate ?? DateTime.Now,
+                            Status = a.Status ?? 0,
+                            Job = new JobSummaryDTO
+                            {
+                                Title = a.Job?.Title ?? "Chưa rõ",
+                                CompanyName = a.Job?.Company?.CompanyName ?? "Chưa rõ"
+                            }
+                        }).ToList()
                     },
                     
                     Recruiter = u.Recruiter == null ? null : new RecruiterDetailDTO
@@ -115,23 +126,7 @@ namespace JobSeekingAPI.Controllers
                             Website = u.Recruiter.Company.Website
                             // ✅ FIX: XÓA Size - CompanySummaryDTO không có Size
                         }
-                    },
-
-                    Applications = u.Candidate == null ? null : u.Candidate.Applications
-                        .Where(a => a.DeletedAt == null)
-                        .Select(a => new ApplicationResponseDTO
-                        {
-                            ApplicationId = a.AppId,
-                            UserId = a.UserId,
-                            JobId = a.JobId,
-                            AppliedDate = a.AppliedDate,
-                            Status = a.Status,
-                            Job = a.Job == null ? null : new JobSummaryDTO
-                            {
-                                Title = a.Job.Title ?? "Chưa rõ",
-                                CompanyName = a.Job.Company != null ? a.Job.Company.CompanyName : "Chưa rõ"
-                            }
-                        }).ToList()
+                    }
                 })
                 .FirstOrDefaultAsync();
 

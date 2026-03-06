@@ -3,12 +3,16 @@
   "WorkspaceRootPath": "D:\\BachKhoa\\Ki_5\\_pbl3\\Backend\\Backend\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{BB275ADC-5F2A-4DB0-B403-650138FB265D}|JobSeekingAPI\\JobSeekingAPI.csproj|d:\\bachkhoa\\ki_5\\_pbl3\\backend\\backend\\jobseekingapi\\controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BB275ADC-5F2A-4DB0-B403-650138FB265D}|JobSeekingAPI\\JobSeekingAPI.csproj|solutionrelative:jobseekingapi\\controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{BB275ADC-5F2A-4DB0-B403-650138FB265D}|JobSeekingAPI\\JobSeekingAPI.csproj|d:\\bachkhoa\\ki_5\\_pbl3\\backend\\backend\\jobseekingapi\\controllers\\searchcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{BB275ADC-5F2A-4DB0-B403-650138FB265D}|JobSeekingAPI\\JobSeekingAPI.csproj|solutionrelative:jobseekingapi\\controllers\\searchcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{BB275ADC-5F2A-4DB0-B403-650138FB265D}|JobSeekingAPI\\JobSeekingAPI.csproj|d:\\bachkhoa\\ki_5\\_pbl3\\backend\\backend\\jobseekingapi\\repositories\\jobrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{BB275ADC-5F2A-4DB0-B403-650138FB265D}|JobSeekingAPI\\JobSeekingAPI.csproj|solutionrelative:jobseekingapi\\repositories\\jobrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{BB275ADC-5F2A-4DB0-B403-650138FB265D}|JobSeekingAPI\\JobSeekingAPI.csproj|d:\\bachkhoa\\ki_5\\_pbl3\\backend\\backend\\jobseekingapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BB275ADC-5F2A-4DB0-B403-650138FB265D}|JobSeekingAPI\\JobSeekingAPI.csproj|solutionrelative:jobseekingapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,32 +22,45 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "JobRepository.cs",
-              "DocumentMoniker": "D:\\BachKhoa\\Ki_5\\_pbl3\\Backend\\Backend\\JobSeekingAPI\\Repositories\\JobRepository.cs",
-              "RelativeDocumentMoniker": "JobSeekingAPI\\Repositories\\JobRepository.cs",
-              "ToolTip": "D:\\BachKhoa\\Ki_5\\_pbl3\\Backend\\Backend\\JobSeekingAPI\\Repositories\\JobRepository.cs",
-              "RelativeToolTip": "JobSeekingAPI\\Repositories\\JobRepository.cs",
-              "ViewState": "AgIAAGsAAAAAAAAAAAAewHcAAAAPAAAAAAAAAA==",
+              "DocumentIndex": 0,
+              "Title": "UsersController.cs",
+              "DocumentMoniker": "D:\\BachKhoa\\Ki_5\\_pbl3\\Backend\\Backend\\JobSeekingAPI\\Controllers\\UsersController.cs",
+              "RelativeDocumentMoniker": "JobSeekingAPI\\Controllers\\UsersController.cs",
+              "ToolTip": "D:\\BachKhoa\\Ki_5\\_pbl3\\Backend\\Backend\\JobSeekingAPI\\Controllers\\UsersController.cs",
+              "RelativeToolTip": "JobSeekingAPI\\Controllers\\UsersController.cs",
+              "ViewState": "AgIAAG0AAAAAAAAAAAAawH8AAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-27T16:43:17.901Z",
+              "WhenOpened": "2026-03-06T14:27:15.952Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "SearchController.cs",
               "DocumentMoniker": "D:\\BachKhoa\\Ki_5\\_pbl3\\Backend\\Backend\\JobSeekingAPI\\Controllers\\SearchController.cs",
               "RelativeDocumentMoniker": "JobSeekingAPI\\Controllers\\SearchController.cs",
               "ToolTip": "D:\\BachKhoa\\Ki_5\\_pbl3\\Backend\\Backend\\JobSeekingAPI\\Controllers\\SearchController.cs",
               "RelativeToolTip": "JobSeekingAPI\\Controllers\\SearchController.cs",
-              "ViewState": "AgIAAEcAAAAAAAAAAAAewFMAAAAPAAAAAAAAAA==",
+              "ViewState": "AgIAAMAAAAAAAAAAAAAmwM8AAAA7AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-27T16:39:34.786Z",
+              "WhenOpened": "2026-03-06T14:18:02.077Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\BachKhoa\\Ki_5\\_pbl3\\Backend\\Backend\\JobSeekingAPI\\Program.cs",
+              "RelativeDocumentMoniker": "JobSeekingAPI\\Program.cs",
+              "ToolTip": "D:\\BachKhoa\\Ki_5\\_pbl3\\Backend\\Backend\\JobSeekingAPI\\Program.cs",
+              "RelativeToolTip": "JobSeekingAPI\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-05T17:02:57.219Z",
               "EditorCaption": ""
             }
           ]

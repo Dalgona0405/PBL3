@@ -47,7 +47,7 @@ namespace JobSeekingAPI.Controllers
                             ExpId = e.ExpId,
                             JobTitle = e.JobTitle,
                             CompanyName = e.CompanyName,
-                            StartDate = (DateTime)e.StartDate,
+                            StartDate = e.StartDate ?? DateTime.MinValue,
                             EndDate = e.EndDate,
                             Description = e.Description
                         }).ToList()
@@ -108,7 +108,7 @@ namespace JobSeekingAPI.Controllers
                                 ExpId = e.ExpId,
                                 JobTitle = e.JobTitle,
                                 CompanyName = e.CompanyName,
-                                StartDate = (DateTime)e.StartDate,
+                                StartDate = e.StartDate ?? DateTime.MinValue,
                                 EndDate = e.EndDate,
                                 Description = e.Description
                             }).ToList()

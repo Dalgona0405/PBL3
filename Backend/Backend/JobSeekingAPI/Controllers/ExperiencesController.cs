@@ -32,7 +32,7 @@ namespace JobSeekingAPI.Controllers
                     UserId = e.UserId,
                     JobTitle = e.JobTitle,
                     CompanyName = e.CompanyName,
-                    StartDate = (DateTime)e.StartDate,
+                    StartDate = e.StartDate ?? DateTime.MinValue,
                     EndDate = e.EndDate,
                     Description = e.Description,
                     CandidateName = e.Candidate != null ? e.Candidate.FullName : "",
@@ -59,7 +59,7 @@ namespace JobSeekingAPI.Controllers
                     UserId = e.UserId,
                     JobTitle = e.JobTitle,
                     CompanyName = e.CompanyName,
-                    StartDate = (DateTime)e.StartDate,
+                    StartDate = e.StartDate ?? DateTime.MinValue,
                     EndDate = e.EndDate,
                     Description = e.Description,
                     CandidateName = e.Candidate != null ? e.Candidate.FullName : "",
@@ -183,7 +183,7 @@ namespace JobSeekingAPI.Controllers
                     UserId = e.UserId,
                     JobTitle = e.JobTitle,
                     CompanyName = e.CompanyName,
-                    StartDate = (DateTime)e.StartDate,
+                    StartDate = e.StartDate ?? DateTime.MinValue,
                     EndDate = e.EndDate,
                     Description = e.Description,
                     Duration = e.EndDate.HasValue 
@@ -207,7 +207,7 @@ namespace JobSeekingAPI.Controllers
                     ExpId = e.ExpId,
                     JobTitle = e.JobTitle,
                     CompanyName = e.CompanyName,
-                    StartDate = (DateTime)e.StartDate,
+                    StartDate = e.StartDate ?? DateTime.MinValue,
                     Description = e.Description
                 })
                 .FirstOrDefaultAsync();

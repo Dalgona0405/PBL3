@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import Header from "../components/Header";
+import { useParams, useNavigate } from "react-router-dom";
 import { API_URLS } from "../api/api";
-import { useNavigate } from "react-router-dom";
 import "../App.css";
 
 function DetailJobPage() {
     const navigate = useNavigate();
     const { id } = useParams(); 
     const [jobDetail, setJobDetail] = useState(null);
+    const [user, setUser] = useState(null);
 
     useEffect(() => {
         fetch(`${API_URLS.JOBS}/${id}`) 
@@ -19,29 +18,71 @@ function DetailJobPage() {
             })
             .catch(error => console.error('Lỗi lấy chi tiết:', error));
     }, [id]);
+
+    useEffect(() => {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+            setUser(JSON.parse(savedUser));
+        }
+    }, []);
+
     if (!jobDetail) {
         return (
             <div className="app-wrapper">
-                <Header />
-                <div style={{ textAlign: 'center', marginTop: '50px' }}>Đang tải thông tin...🌿</div>
+                <div style={{ textAlign: 'center', marginTop: '50px', color: '#8E9775' }}>Đang tải thông tin... 🌿</div>
             </div>
         );
     }
+
     let displaySalary = "";
     if (!jobDetail.salaryMin && !jobDetail.salaryMax) {
         displaySalary = "Thỏa thuận";
-    } 
-    else {
+    } else {
         displaySalary = `${jobDetail.salaryMin} - ${jobDetail.salaryMax} triệu`; 
     }
+    
     let displayAddress = jobDetail.address || "Chưa cập nhật";
+
+    const handleApply = async () => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+
+        if (user.role !== 'Candidate') {
+            alert("Bạn là nhà tuyển dụng mà, sao lại tự đi xin việc? 😆");
+            return;
+        }
+
+        try {
+            const payload = {
+                userId: user.id,
+                jobId: parseInt(id)
+            };
+
+            const response = await fetch(API_URLS.APPLICATIONS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert("🎉 Chúc mừng bạn! Nộp CV thành công rồi nè, chuẩn bị tinh thần HR gọi nha!");
+            } else {
+                alert("Bạn đã ứng tuyển công việc này. 🌿");
+            }
+        } catch (error) {
+            console.error("Lỗi khi ứng tuyển:", error);
+            alert("Lỗi kết nối. Vui lòng thử lại sau nhé! 🌿");
+        }
+    };
+
     return (
         <div className="app-wrapper">
-            <Header />
             <div className="detail-job-container">
                 <h1>{jobDetail.title}</h1>
                 <div>
-                    <p onClick={() => navigate(`/detail-company/${jobDetail.company?.companyId}`)}>
+                    <p onClick={() => navigate(`/detail-company/${jobDetail.company?.companyId}`)} style={{ cursor: 'pointer' }}>
                         <strong>🏢 Công ty:</strong> {jobDetail.company?.companyName}
                     </p>
                     <p><strong>📍 Khu vực:</strong> {jobDetail.location?.locationName}</p>
@@ -52,12 +93,20 @@ function DetailJobPage() {
 
                 <h3>Mô tả công việc</h3>
                 <p>{jobDetail.description}</p>
+                
                 <h3>Yêu cầu ứng viên</h3>
                 <p>{jobDetail.requirement}</p>
+                
                 <h3>Quyền lợi</h3>
                 <p>{jobDetail.benefits}</p>
-                
-                <button className="btn-submit">Ứng tuyển ngay</button>
+
+                <button className="btn-submit" onClick={handleApply}>
+                    {user ? (
+                        user.role === 'Candidate' ? "Ứng tuyển ngay" : "Bạn là nhà tuyển dụng"
+                    ) : (
+                        "Đăng nhập để ứng tuyển"
+                    )}
+                </button>
             </div>
         </div>
     );

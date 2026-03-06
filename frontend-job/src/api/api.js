@@ -4,5 +4,6 @@ export const API_URLS = {
     JOBS: `${BASE_URL}/Jobs`,
     COMPANIES: `${BASE_URL}/Companies`,
     SEARCH: `${BASE_URL}/Search/jobs`,
-    USERS: `${BASE_URL}/Users`
+    USERS: `${BASE_URL}/Users`,
+    APPLICATIONS: `${BASE_URL}/Applications`
 };

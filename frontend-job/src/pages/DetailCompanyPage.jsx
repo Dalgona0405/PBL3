@@ -1,7 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import Header from "../components/Header";
 import { API_URLS } from "../api/api";
 import "../App.css";
 
@@ -21,7 +20,6 @@ function DetailCompanyPage() {
     if (!companyDetail) {
         return (
             <div className="app-wrapper">
-                <Header />
                 <div style={{ textAlign: 'center', marginTop: '50px' }}>Đang tải thông tin...🌿</div>
             </div>
         );
@@ -29,7 +27,6 @@ function DetailCompanyPage() {
     let displayWebsite = companyDetail.website || "Chưa cập nhật";
     return (
         <div className="app-wrapper">
-            <Header />
             <div className="detail-company-container">
                 <h1>{companyDetail.companyName}</h1>
                 <div>
