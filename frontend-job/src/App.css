@@ -131,3 +131,58 @@ button {
   font-weight: bold;
   cursor: pointer;
 }
+
+.link-register:hover {
+  text-decoration: underline;
+}
+
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.register-box {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  width: 100%;
+  max-width: 400px;
+  border-top: 5px solid #8E9775; /* Nhấn màu xanh olive */
+}
+
+.register-box h2 {
+  margin-top: 0;
+  color: #4A4A4A;
+}
+
+.register-subtitle {
+  color: #888;
+  margin-bottom: 25px;
+  font-size: 0.9rem;
+}
+
+.register-form .input-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.register-form .input-group label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.register-form .input-group input,
+.register-form .input-group select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}

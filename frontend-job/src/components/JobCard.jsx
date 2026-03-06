@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function JobCard(props) {
+    const navigate = useNavigate();
     let displaySalary = "";
     if (!props.salaryMin && !props.salaryMax) {
         displaySalary = "Thỏa thuận";
@@ -14,7 +16,9 @@ function JobCard(props) {
       <p className="job-company">Công ty: {props.company?.companyName || "Chưa cập nhật"}</p>
       <p className="job-location">Địa điểm: {props.location?.locationName}</p>
       <p className="job-salary">Lương: {displaySalary}</p>
-      <button className="btn-detail">Xem chi tiết</button>
+      <button className="btn-detail" onClick={() => navigate('/detail-job')}>
+        Xem chi tiết
+      </button>
     </div>
   );
 }

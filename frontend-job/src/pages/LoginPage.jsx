@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import '../App.css';
 
 function LoginPage() {
+  const navigate = useNavigate();
   return (
     <div className="app-wrapper">
       <Header />
@@ -25,7 +27,7 @@ function LoginPage() {
           </form>
           
           <p className="login-footer">
-            Chưa có tài khoản? <span className="link-register">Đăng ký tại đây</span>
+            Chưa có tài khoản? <span className="link-register" onClick={() => navigate('/register')}>Đăng ký tại đây</span>
           </p>
         </div>
       </div>
