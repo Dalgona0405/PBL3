@@ -3,6 +3,7 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DetailJobPage from "./pages/DetailJobPage";
+import DetailCompanyPage from "./pages/DetailCompanyPage";
 import './App.css';
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -17,6 +18,8 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/detail-job/:id" element={<DetailJobPage />} />
+        <Route path="/detail-company/:id" element={<DetailCompanyPage />} /> 
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

@@ -1,5 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Header from "../components/Header";
 import { API_URLS } from "../api/api";
 import "../App.css";
@@ -25,14 +26,16 @@ function DetailCompanyPage() {
             </div>
         );
     }
+    let displayWebsite = companyDetail.website || "Chưa cập nhật";
     return (
         <div className="app-wrapper">
             <Header />
             <div className="detail-company-container">
                 <h1>{companyDetail.companyName}</h1>
                 <div>
-                    <p><strong>🌐 Website:</strong> {companyDetail.Website}</p>
-                    <p><strong> Nhân viên:</strong> {companyDetail.Size}</p>
+                    <img src={companyDetail.logoImg} alt={`${companyDetail.companyName} logo`}/>
+                    <p><strong>🌐 Website:</strong> {displayWebsite}</p>
+                    <p><strong> Nhân viên:</strong> {companyDetail.size}</p>
                 </div>
             </div>
         </div>
