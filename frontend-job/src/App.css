@@ -1,7 +1,7 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #FAF9F6; /* Màu trắng kem */
+  background-color: #faf9f6; /* Màu trắng kem */
   color: #4A4A4A; /* Màu xám đậm */
 }
 
@@ -185,4 +185,46 @@ button {
   outline: none;
   font-family: inherit;
   transition: border-color 0.3s;
+}
+
+.btn-submit {
+  width: 200px;
+  margin-top: 20px;
+}
+
+.app-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-wrapper > * {
+  flex-shrink: 0;
+}
+
+.app-wrapper main {
+  flex-grow: 1;
+}
+
+.detail-job-container {
+  padding: 40px 10%;
+  background: #faf9f6;
+  min-height: 80vh;
+}
+
+.detail-job-container h1 {
+  color: #8E9775;
+  margin-bottom: 20px;
+}
+
+.detail-job-container h3 {
+  color: #4A4A4A;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  font-size: 20px;
+}
+
+.detail-job-container p {
+  color: #4A4A4A;
+  font-size: 18px;
 }

@@ -14,9 +14,9 @@ function JobCard(props) {
     <div className="job-card">
       <h3 className="job-title">{props.title}</h3>
       <p className="job-company">Công ty: {props.company?.companyName || "Chưa cập nhật"}</p>
-      <p className="job-location">Địa điểm: {props.location?.locationName}</p>
+      <p className="job-location">Khu vực: {props.location?.locationName}</p>
       <p className="job-salary">Lương: {displaySalary}</p>
-      <button className="btn-detail" onClick={() => navigate('/detail-job')}>
+      <button className="btn-detail" onClick={() => navigate(`/detail-job/${props.jobId}`)}>
         Xem chi tiết
       </button>
     </div>
