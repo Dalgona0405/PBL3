@@ -277,3 +277,6 @@ D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\obj\Debug\net8.0\JobSeeking
 D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\obj\Debug\net8.0\JobSeekingAPI.genruntimeconfig.cache
 D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\obj\Debug\net8.0\ref\JobSeekingAPI.dll
 D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\obj\Debug\net8.0\JobSeekingAPI.sourcelink.json
+D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\bin\Debug\net8.0\Npgsql.dll
+D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\bin\Debug\net8.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
+D:\BachKhoa\Ki_5\_pbl3\Backend\Backend\JobSeekingAPI\bin\Debug\net8.0\EFCore.NamingConventions.dll

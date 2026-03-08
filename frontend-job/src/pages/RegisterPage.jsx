@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import '../App.css';
 
-function RegisterPage() {
+function RegisterPage( { setUser } ) {
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
@@ -21,7 +21,7 @@ function RegisterPage() {
     };
 
     const handleRegister = async (e) => {
-        e.preventDefault(); // Ngăn trình duyệt tự động load lại trang khi bấm form
+        e.preventDefault(); 
 
         if (formData.password !== formData.confirmPassword) {
             setMessage('Mật khẩu xác nhận không khớp nha!');
@@ -38,22 +38,38 @@ function RegisterPage() {
 
             const response = await fetch(API_URLS.USERS, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
             if (response.ok) {
-                setMessage('🎉 Đăng ký thành công! Đang chuyển sang đăng nhập...');
-                setTimeout(() => navigate('/login'), 2000); 
+                const data = await response.json();
+
+                const userInfo = {
+                    id: data.userId,
+                    email: data.email,
+                    role: data.role,
+                    name: data.fullName
+                };
+
+                localStorage.setItem('user', JSON.stringify(userInfo));
+                setUser(userInfo);
+                
+                setMessage('🎉 Đăng ký thành công! Đang tự động đăng nhập...');
+                
+                if (userInfo.role === 'Recruiter') {
+                    setTimeout(() => navigate('/recruiter-dashboard'), 1500);
+                } else {
+                    setTimeout(() => navigate('/'), 1500);
+                }
+                
             } else {
                 const errorData = await response.json();
                 setMessage(errorData.message || 'Có lỗi xảy ra, thử lại sau nhé.');
             }
         } catch (error) {
             console.error("Lỗi kết nối:", error);
-            setMessage('Lỗi kết nối máy chủ.');
+            setMessage('Lỗi kết nối máy chủ 🌿');
         }
     };
 

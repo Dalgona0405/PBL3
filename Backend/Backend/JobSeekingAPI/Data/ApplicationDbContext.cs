@@ -32,7 +32,7 @@ namespace JobSeekingAPI.Data
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(u => u.UserId);
-                
+
                 entity.HasIndex(u => u.Email)
                     .IsUnique()
                     .HasDatabaseName("IX_Users_Email_Unique");
@@ -60,7 +60,7 @@ namespace JobSeekingAPI.Data
             modelBuilder.Entity<Company>(entity =>
             {
                 entity.HasKey(c => c.CompanyId);
-                
+
                 entity.Property(c => c.CompanyName)
                     .IsRequired()
                     .HasMaxLength(255);
@@ -83,7 +83,7 @@ namespace JobSeekingAPI.Data
             modelBuilder.Entity<Location>(entity =>
             {
                 entity.HasKey(l => l.LocationId);
-                
+
                 entity.Property(l => l.LocationName)
                     .IsRequired()
                     .HasMaxLength(255);
@@ -95,7 +95,7 @@ namespace JobSeekingAPI.Data
             modelBuilder.Entity<Tag>(entity =>
             {
                 entity.HasKey(t => t.TagId);
-                
+
                 entity.Property(t => t.TagName)
                     .IsRequired()
                     .HasMaxLength(100);
@@ -207,8 +207,9 @@ namespace JobSeekingAPI.Data
                 entity.Property(j => j.ViewCount)
                     .HasDefaultValue(0);
 
+                // ✅ FIX: SQL Server dùng GETDATE(), PostgreSQL dùng now()
                 entity.Property(j => j.PostedDate)
-                    .HasDefaultValueSql("GETDATE()");
+                    .HasDefaultValueSql("now()");
 
                 entity.Property(j => j.Status)
                     .HasDefaultValue(1);
@@ -221,6 +222,7 @@ namespace JobSeekingAPI.Data
             // =================================================================
             modelBuilder.Entity<JobTag>(entity =>
             {
+                // Khóa chính của JobTag
                 entity.HasKey(jt => new { jt.JobId, jt.TagId });
 
                 entity.HasOne(jt => jt.Job)
@@ -237,10 +239,11 @@ namespace JobSeekingAPI.Data
             });
 
             // =================================================================
-            // 9. CANDIDATE TAGS - ĐÃ FIX WARNING
+            // 9. CANDIDATE TAGS
             // =================================================================
             modelBuilder.Entity<CandidateTag>(entity =>
             {
+                // Khóa chính của CandidateTag
                 entity.HasKey(ct => new { ct.UserId, ct.TagId });
 
                 entity.HasOne(ct => ct.Candidate)
@@ -256,23 +259,21 @@ namespace JobSeekingAPI.Data
                 entity.Property(ct => ct.Proficiency)
                     .HasMaxLength(50);
 
-                // ✅ FIX: Thêm filter để khớp với Candidate
-                entity.HasQueryFilter(ct => ct.Candidate != null && 
-                                           ct.Candidate.User != null && 
+                entity.HasQueryFilter(ct => ct.Candidate != null &&
+                                           ct.Candidate.User != null &&
                                            ct.Candidate.User.DeletedAt == null);
             });
 
             // =================================================================
-            // 10. APPLICATIONS - ĐÃ FIX HOÀN TOÀN
+            // 10. APPLICATIONS
             // =================================================================
             modelBuilder.Entity<Application>(entity =>
             {
                 entity.HasKey(a => a.AppId);
-                
+
                 entity.Property(a => a.AppId)
                     .ValueGeneratedOnAdd();
 
-                // ✅ CHỈ 1 QUAN HỆ - với Candidate
                 entity.HasOne(a => a.Candidate)
                     .WithMany(c => c.Applications)
                     .HasForeignKey(a => a.UserId)
@@ -283,29 +284,30 @@ namespace JobSeekingAPI.Data
                     .HasForeignKey(a => a.JobId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+                // ✅ FIX: Đổi thành now()
                 entity.Property(a => a.AppliedDate)
-                    .HasDefaultValueSql("GETDATE()");
+                    .HasDefaultValueSql("now()");
 
                 entity.Property(a => a.Status)
                     .HasDefaultValue(1);
 
+                // ✅ FIX: HasFilter phải dùng chữ thường "deletedat"
                 entity.HasIndex(a => new { a.UserId, a.JobId })
                     .IsUnique()
                     .HasDatabaseName("IX_Applications_UserId_JobId_Unique")
-                    .HasFilter("DeletedAt IS NULL");
+                    .HasFilter("deletedat IS NULL");
 
                 entity.HasIndex(a => a.Status)
                     .HasDatabaseName("IX_Applications_Status");
 
-                // ✅ FIX: Filter hoàn chỉnh
-                entity.HasQueryFilter(a => a.DeletedAt == null && 
-                                          a.Candidate != null && 
-                                          a.Candidate.User != null && 
+                entity.HasQueryFilter(a => a.DeletedAt == null &&
+                                          a.Candidate != null &&
+                                          a.Candidate.User != null &&
                                           a.Candidate.User.DeletedAt == null);
             });
 
             // =================================================================
-            // 11. EXPERIENCES - ĐÃ FIX WARNING
+            // 11. EXPERIENCES
             // =================================================================
             modelBuilder.Entity<Experience>(entity =>
             {
@@ -330,11 +332,35 @@ namespace JobSeekingAPI.Data
                 entity.Property(e => e.Description)
                     .HasMaxLength(2000);
 
-                // ✅ FIX: Thêm filter để khớp với Candidate
-                entity.HasQueryFilter(e => e.Candidate != null && 
-                                          e.Candidate.User != null && 
+                entity.HasQueryFilter(e => e.Candidate != null &&
+                                          e.Candidate.User != null &&
                                           e.Candidate.User.DeletedAt == null);
             });
+
+            // =================================================================
+            // ÉP TẤT CẢ VỀ CHỮ THƯỜNG CHO POSTGRESQL
+            // =================================================================
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                // Đổi tên bảng (VD: Users -> users)
+                entity.SetTableName(entity.GetTableName()?.ToLower());
+
+                // Đổi tên cột (VD: UserId -> userid)
+                foreach (var property in entity.GetProperties())
+                {
+                    property.SetColumnName(property.Name.ToLower());
+                }
+
+                // Đổi tên Khóa chính, Khóa ngoại, Index
+                foreach (var key in entity.GetKeys())
+                    key.SetName(key.GetName()?.ToLower());
+
+                foreach (var fk in entity.GetForeignKeys())
+                    fk.SetConstraintName(fk.GetConstraintName()?.ToLower());
+
+                foreach (var index in entity.GetIndexes())
+                    index.SetDatabaseName(index.GetDatabaseName()?.ToLower());
+            }
         }
     }
 }
