@@ -1,6 +1,7 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
+import JobList from "../components/JobList"; "../components/JobList.jsx";
 import { API_URLS } from "../api/api";
 import "../App.css";
 
@@ -34,6 +35,8 @@ function DetailCompanyPage() {
                     <p><strong>🌐 Website:</strong> {displayWebsite}</p>
                     <p><strong> Nhân viên:</strong> {companyDetail.size}</p>
                 </div>
+                <h1>Công việc đang tuyển</h1>
+                <JobList companyId={id} />
             </div>
         </div>
     );

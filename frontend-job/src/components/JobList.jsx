@@ -2,35 +2,50 @@ import React, { useState, useEffect } from 'react';
 import JobCard from './JobCard';
 import { API_URLS } from '../api/api';
 
-function JobList({ keyword }) {
+function JobList({ keyword, companyId }) {
     const [jobs, setJobs] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
+    // Khi đổi từ khóa hoặc đổi công ty thì quay về trang 1
     useEffect(() => {
         setCurrentPage(1);
-    }, [keyword]);
+    }, [keyword, companyId]);
 
     useEffect(() => {
-        const pageSize = 10;
-        
-        // Đường link cơ bản sẽ là: http://localhost:5000/api/Search/jobs?page=1&pageSize=10
-        let url = `${API_URLS.SEARCH}?page=${currentPage}&pageSize=${pageSize}`;
-        
-        if (keyword) {
-            url += `&keyword=${encodeURIComponent(keyword)}`;
-        }
-
-        fetch(url) 
-            .then(response => response.json())
-            .then(data => {
-                console.log("Dữ liệu API (Phân trang):", data);
-                setJobs(data.data || data.Data || []);
-                setTotalPages(data.totalPages || data.TotalPages || 1);
-            })
-            .catch(error => console.error('Lỗi lấy dữ liệu:', error));
+        // LUỒNG 1: DÀNH CHO TRANG CHI TIẾT CÔNG TY
+        if (companyId) {
+            // Tạm thời MVP mình gọi API tổng rồi lọc Frontend cho lẹ, 
+            // vì job của 1 công ty thường ít, không cần phân trang phức tạp.
+            fetch(API_URLS.JOBS)
+                .then(response => response.json())
+                .then(data => {
+                    // Lọc ra đúng công việc của công ty này
+                    const companyJobs = data.filter(job => job.company?.companyId === parseInt(companyId));
+                    setJobs(companyJobs);
+                    setTotalPages(1); // Ẩn nút lật trang vì ít việc
+                })
+                .catch(error => console.error('Lỗi lấy dữ liệu công ty:', error));
+        } 
+        // LUỒNG 2: DÀNH CHO TRANG CHỦ (TÌM KIẾM & PHÂN TRANG)
+        else {
+            const pageSize = 10;
+            let url = `${API_URLS.SEARCH}?page=${currentPage}&pageSize=${pageSize}`;
             
-    }, [keyword, currentPage]);
+            if (keyword) {
+                url += `&keyword=${encodeURIComponent(keyword)}`;
+            }
+
+            fetch(url) 
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Dữ liệu API (Phân trang):", data);
+                    setJobs(data.data || data.Data || []);
+                    setTotalPages(data.totalPages || data.TotalPages || 1);
+                })
+                .catch(error => console.error('Lỗi lấy dữ liệu:', error));
+        }
+    }, [keyword, companyId, currentPage]);
 
     // --- HÀM XỬ LÝ LẬT TRANG ---
     const handlePrevPage = () => {
