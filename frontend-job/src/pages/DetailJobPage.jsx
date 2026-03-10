@@ -79,7 +79,7 @@ function DetailJobPage() {
 
     return (
         <div className="app-wrapper">
-            <div className="detail-job-container">
+            <div className="basic-job-container">
                 <h1>{jobDetail.title}</h1>
                 <div>
                     <p onClick={() => navigate(`/detail-company/${jobDetail.company?.companyId}`)} style={{ cursor: 'pointer' }}>
@@ -90,6 +90,8 @@ function DetailJobPage() {
                     <p><strong>⏳ Cấp bậc:</strong> {jobDetail.level}</p>
                     <p><strong>🏠 Địa chỉ:</strong> {displayAddress}</p>
                 </div>
+            </div>
+            <div className="detail-job-container">
 
                 <h3>Mô tả công việc</h3>
                 <p>{jobDetail.description}</p>
@@ -99,15 +101,14 @@ function DetailJobPage() {
                 
                 <h3>Quyền lợi</h3>
                 <p>{jobDetail.benefits}</p>
-
-                <button className="btn-submit" onClick={handleApply}>
-                    {user ? (
-                        user.role === 'Candidate' ? "Ứng tuyển ngay" : "Bạn là nhà tuyển dụng"
-                    ) : (
-                        "Đăng nhập để ứng tuyển"
+            </div>
+            <button className="btn-submit" onClick={handleApply}>
+                {user ? (
+                    user.role === 'Candidate' ? "Ứng tuyển ngay" : "Bạn là nhà tuyển dụng"
+                ) : (
+                    "Đăng nhập để ứng tuyển"
                     )}
                 </button>
-            </div>
         </div>
     );
 }
