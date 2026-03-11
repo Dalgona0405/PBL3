@@ -2,6 +2,9 @@ using JobSeekingAPI.Data;
 using JobSeekingAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 // ✅ THÊM USING CHO REPOSITORIES (DÙ ĐANG COMMENT)
 using JobSeekingAPI.Repositories;
