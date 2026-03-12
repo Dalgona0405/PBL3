@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { API_URLS } from "../api/api";
-import "../App.css";
+import "../css/DetailJobPage.css";
 
 function DetailJobPage() {
     const navigate = useNavigate();
@@ -81,18 +81,17 @@ function DetailJobPage() {
         <div className="app-wrapper">
             <div className="basic-job-container">
                 <h1>{jobDetail.title}</h1>
-                <div>
-                    <p onClick={() => navigate(`/detail-company/${jobDetail.company?.companyId}`)} style={{ cursor: 'pointer' }}>
-                        <strong>🏢 Công ty:</strong> {jobDetail.company?.companyName}
+                <div className="basic-info-grid">
+                    <p onClick={() => navigate(`/detail-company/${jobDetail.company?.companyId}`)} style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#8E9775'} onMouseOut={(e) => e.target.style.color = '#555'}>
+                        <strong>🏢 Công ty:</strong> &nbsp;{jobDetail.company?.companyName}
                     </p>
-                    <p><strong>📍 Khu vực:</strong> {jobDetail.location?.locationName}</p>
-                    <p><strong>💰 Lương:</strong> {displaySalary}</p>
-                    <p><strong>⏳ Cấp bậc:</strong> {jobDetail.level}</p>
-                    <p><strong>🏠 Địa chỉ:</strong> {displayAddress}</p>
+                    <p><strong>📍 Khu vực:</strong> &nbsp;{jobDetail.location?.locationName}</p>
+                    <p><strong>💰 Lương:</strong> &nbsp;{displaySalary}</p>
+                    <p><strong>⏳ Cấp bậc:</strong> &nbsp;{jobDetail.level}</p>
+                    <p><strong>🏠 Địa chỉ:</strong> &nbsp;{displayAddress}</p>
                 </div>
             </div>
             <div className="detail-job-container">
-
                 <h3>Mô tả công việc</h3>
                 <p>{jobDetail.description}</p>
                 
@@ -101,14 +100,18 @@ function DetailJobPage() {
                 
                 <h3>Quyền lợi</h3>
                 <p>{jobDetail.benefits}</p>
+
+                <div className="apply-section">
+                    <button className="btn-submit" onClick={handleApply}>
+                        {user ? (
+                            user.role === 'Candidate' ? "Ứng tuyển ngay" : "Bạn là nhà tuyển dụng"
+                        ) : (
+                            "Đăng nhập để ứng tuyển"
+                        )}
+                    </button>
+                </div>
             </div>
-            <button className="btn-submit" onClick={handleApply}>
-                {user ? (
-                    user.role === 'Candidate' ? "Ứng tuyển ngay" : "Bạn là nhà tuyển dụng"
-                ) : (
-                    "Đăng nhập để ứng tuyển"
-                    )}
-                </button>
+            
         </div>
     );
 }

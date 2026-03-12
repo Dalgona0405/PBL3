@@ -1,9 +1,90 @@
-.basic_container_job {
-    padding: 40px 10%;
-    background: #faf9f6;
-    min-height: 80vh;
+/* Khung chứa tổng thể: Căn giữa, giới hạn chiều rộng để chữ không bị dài ngoằng */
+.basic-job-container {
+    margin: 40px auto 20px auto; /* Cách trên 40px, cách dưới 20px, căn giữa */
+    padding: 30px 40px;
+    max-width: 900px;
+    background: #ffffff;
+    border-radius: 16px; /* Bo góc mềm mại */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04); /* Đổ bóng nhẹ như sương */
+    border-top: 6px solid #8E9775; /* Nhấn nhá màu xanh Olive trên cùng */
 }
-.basic_container_job h1 {
-    color: #8E9775;
+
+.basic-job-container h1 {
+    color: #4A4A4A;
+    font-size: 28px;
+    margin-top: 0;
     margin-bottom: 20px;
+    border-bottom: 1px solid #eee; /* Đường gạch ngang phân cách */
+    padding-bottom: 15px;
+} 
+/* Biến danh sách thông tin thành dạng Lưới (Grid) xếp cạnh nhau cho gọn */
+.basic-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.basic-info-grid p {
+    margin: 0;
+    color: #555;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+}
+
+/* --- Khối Mô tả chi tiết bên dưới --- */
+.detail-job-container {
+    margin: 0 auto 50px auto;
+    padding: 40px;
+    max-width: 900px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+
+.detail-job-container h3 {
+    color: #8E9775; /* Tiêu đề xanh Olive */
+    font-size: 20px;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    border-left: 4px solid #D4A373; /* Gạch dọc màu nâu đất làm điểm nhấn */
+    padding-left: 10px;
+}
+
+.detail-job-container h3:first-child {
+    margin-top: 0; /* Bỏ khoảng trống thừa ở tiêu đề đầu tiên */
+}
+
+.detail-job-container p {
+    color: #4A4A4A;
+    font-size: 16px;
+    line-height: 1.8; /* Dãn khoảng cách giữa các dòng chữ cho mắt dễ thở */
+    white-space: pre-line; /* Giữ nguyên các dấu Enter xuống dòng từ Backend gửi về */
+}
+
+/* --- Khu vực Nút bấm --- */
+.apply-section {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px dashed #eee; /* Đường nét đứt phân cách nút bấm */
+}
+
+.btn-submit {
+    background-color: #D4A373; /* Nút màu nâu đất ấm áp */
+    color: white;
+    padding: 14px 40px;
+    border: none;
+    border-radius: 30px; /* Bo tròn hẳn luôn nhìn cho êm ái */
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 600;
+    transition: all 0.3s ease; /* Hiệu ứng chuyển động mượt 0.3 giây */
+    box-shadow: 0 4px 10px rgba(212, 163, 115, 0.3);
+}
+
+.btn-submit:hover {
+    background-color: #8E9775; /* Rê chuột vào chuyển sang xanh Olive */
+    transform: translateY(-3px); /* Nút bay nhẹ lên trên */
+    box-shadow: 0 6px 15px rgba(142, 151, 117, 0.4);
 }

@@ -211,29 +211,6 @@ button {
   flex-grow: 1;
 }
 
-.detail-job-container {
-  padding: 40px 10%;
-  background: #faf9f6;
-  min-height: 80vh;
-}
-
-.detail-job-container h1 {
-  color: #8E9775;
-  margin-bottom: 20px;
-}
-
-.detail-job-container h3 {
-  color: #4A4A4A;
-  margin-top: 30px;
-  margin-bottom: 15px;
-  font-size: 20px;
-}
-
-.detail-job-container p {
-  color: #4A4A4A;
-  font-size: 18px;
-}
-
 .detail-company-container {
   padding: 40px 10%;
   background: #faf9f6;
