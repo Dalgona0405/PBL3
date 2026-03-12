@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 namespace JobSeekingAPI.DTOs
 {
     // 💼 Job trả về cho Frontend
@@ -37,5 +39,20 @@ namespace JobSeekingAPI.DTOs
         public string? Level { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 20;
+    }
+    // Summary Job - dùng cho CompanySummaryDTO
+    public class JobSummaryDTO
+    {
+        public int JobId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public decimal? SalaryMin { get; set; }
+        public decimal? SalaryMax { get; set; }
+        public string? ExpYear { get; set; }
+        public string? Level { get; set; }
+        public string CompanyName { get; set; } = string.Empty;
+        public string LocationName { get; set; } = string.Empty;
+        public DateTime PostedDate { get; set; }
+        public DateTime? Deadline { get; set; }
+        public string? Status { get; set; }
     }
 }

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 namespace JobSeekingAPI.DTOs
 {
     public class CreateRecruiterDTO
@@ -30,5 +32,14 @@ namespace JobSeekingAPI.DTOs
     
         // ✅ SỬA: Đổi từ JobResponseDTO thành JobSummaryDTO
         public List<JobSummaryDTO> Jobs { get; set; } = new();
+    }
+
+    public class RecruiterSummaryDTO
+    {
+        public int UserId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string? Position { get; set; }
+        public string? Avatar { get; set; }
+        public string? Email { get; set; }
     }
 }
