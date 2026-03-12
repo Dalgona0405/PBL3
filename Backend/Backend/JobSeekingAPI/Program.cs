@@ -5,6 +5,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using JobSeekingAPI.Services;
 
 // ✅ THÊM USING CHO REPOSITORIES (DÙ ĐANG COMMENT)
 using JobSeekingAPI.Repositories;
@@ -19,6 +20,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 builder.Services.AddSwaggerGen(c =>
 {
