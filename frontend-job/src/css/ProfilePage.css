@@ -1,0 +1,32 @@
+.profile-header {
+  display: flex;
+  justify-content: space-between; /* Lệnh quan trọng: Đẩy nhóm Trái và Phải xa nhau ra */
+  align-items: flex-start; /* Ép cái Nút bấm dính lên mép trên cùng */
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  border-left: 8px solid #8E9775;
+  
+  /* Sửa lại chiều rộng để thẻ Profile to rãi thoải mái hơn */
+  max-width: 800px; 
+  width: 90%; 
+  margin: 40px auto 20px auto; /* Tự động căn giữa màn hình */
+}
+
+.update-profile {
+    cursor: pointer;
+    border: 1px solid #8E9775; /* Đổi thành viền mảnh nhìn tinh tế hơn */
+    border-radius: 20px; /* Bo tròn hợp với Soft Autumn */
+    padding: 8px 20px;
+    background-color: transparent; /* Nền trong suốt */
+    color: #8E9775;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* Hiệu ứng rê chuột vào chuyển màu xanh Olive */
+.update-profile:hover {
+    background-color: #8E9775;
+    color: white;
+}

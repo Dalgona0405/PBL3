@@ -253,17 +253,6 @@ button {
   padding: 0 20px;
 }
 
-.profile-header {
-  display: flex;
-  align-items: center;
-  background: white;
-  padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-  margin-bottom: 25px;
-  border-left: 8px solid #8E9775;
-}
-
 .profile-avatar {
   width: 100px;
   height: 100px;
@@ -364,4 +353,123 @@ button {
 .empty-text {
   color: #888;
   font-style: italic;
+}
+
+.header-container h1 {
+  cursor: pointer;
+}
+
+/* .welcome-message {
+  fontWeight: '500';
+  color: '#D4A373';
+  cursor: user ? 'pointer' : 'default';
+  textDecoration: user ? 'underline' : 'none';
+} */
+
+/* ========================================= */
+/* --- HIỆU ỨNG DROPDOWN MENU CHO HEADER --- */
+/* ========================================= */
+
+/* Cái hộp lớn bọc bên ngoài */
+.user-menu-container {
+    position: relative; /* Giữ chân đứa núp lùm không bị chạy lung tung */
+    display: inline-block;
+    padding: 10px 0; /* Tạo một khoảng đệm an toàn để chuột không bị trượt ra ngoài */
+}
+
+/* Chữ chào hỏi mặt tiền */
+.welcome-message {
+    font-weight: 500;
+    color: #D4A373;
+    cursor: pointer;
+    padding: 8px 15px;
+    border-radius: 20px;
+    transition: background 0.3s;
+}
+/* Khung tròn chứa ảnh */
+.header-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: #8E9775; /* Nền xanh Olive cho chữ cái đầu */
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: bold;
+    overflow: hidden; /* Cắt gọn những phần ảnh lồi ra ngoài vòng tròn */
+    border: 2px solid #ffffff; /* Viền trắng mỏng cho nổi bật */
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1); /* Đổ bóng nhẹ */
+    flex-shrink: 0; /* Chống bị méo khi màn hình nhỏ */
+}
+
+/* Chỉnh ảnh vừa vặn với khung tròn */
+.header-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Phủ kín khung mà không bị méo hình */
+}
+
+/* Đảm bảo chữ chào không bị gãy dòng lung tung */
+.greeting-text {
+    white-space: nowrap; 
+}
+
+.user-menu-container:hover .welcome-message {
+    background: #faf9f6; /* Đổi nền nhẹ khi rê chuột vào */
+}
+
+/* Đứa núp lùm (Dropdown Menu) */
+.dropdown-menu {
+    visibility: hidden; /* Giấu đi */
+    opacity: 0;         /* Trong suốt */
+    position: absolute;
+    top: 100%; /* Thòng xuống ngay dưới chữ Chào */
+    right: 0;  /* Canh lề phải */
+    background: white;
+    min-width: 220px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08); /* Đổ bóng sang trọng */
+    border-radius: 12px;
+    border: 1px solid #eee;
+    transform: translateY(10px); /* Kéo tuột xuống một xíu để tạo hiệu ứng bay lên */
+    transition: all 0.3s ease; /* Hiệu ứng mượt mà */
+    z-index: 1000; /* Luôn nằm đè lên trên tất cả các nội dung khác */
+}
+
+/* PHÉP THUẬT NẰM Ở ĐÂY: Khi rê chuột vào hộp lớn, cho hộp nhỏ hiện ra */
+.user-menu-container:hover .dropdown-menu {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0); /* Bay ngược lên vị trí cũ */
+}
+
+/* Các dòng chữ bên trong menu */
+.dropdown-item {
+    padding: 12px 20px;
+    color: #4A4A4A;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Khoảng cách giữa icon và chữ */
+}
+
+.dropdown-item:hover {
+    background-color: #faf9f6;
+    color: #8E9775; /* Chuyển sang màu xanh Olive cực tinh tế */
+}
+
+/* Đường kẻ ngang chia cách nút Đăng xuất */
+.dropdown-divider {
+    height: 1px;
+    background-color: #f0f0f0;
+    margin: 5px 0;
+}
+
+/* Nút đăng xuất làm màu đỏ nhẹ để cảnh báo */
+.logout-item:hover {
+    color: #e74c3c;
+    background-color: #fdf5f5;
 }
