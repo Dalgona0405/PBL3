@@ -1,32 +1,166 @@
-.profile-header {
-  display: flex;
-  justify-content: space-between; /* Lệnh quan trọng: Đẩy nhóm Trái và Phải xa nhau ra */
-  align-items: flex-start; /* Ép cái Nút bấm dính lên mép trên cùng */
-  background: white;
-  padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-  border-left: 8px solid #8E9775;
-  
-  /* Sửa lại chiều rộng để thẻ Profile to rãi thoải mái hơn */
-  max-width: 800px; 
-  width: 90%; 
-  margin: 40px auto 20px auto; /* Tự động căn giữa màn hình */
+/* Đưa về 62.5% để 1rem = 10px. Sống nhàn hạ, không cần bấm máy tính! */
+html {
+    font-size: 62.5%;
+}
+
+/* KHUNG LƯỚI CHIA 2 CỘT */
+.profile-layout-grid {
+    display: grid;
+    /* Chia 2 cột, cột trái 32rem (320px), cột phải 1fr */
+    grid-template-columns: 32rem 1fr; 
+    gap: 3rem; /* 30px -> 3rem */
+    max-width: -webkit-fill-available;
+    margin: 4rem 4rem 2rem;
+    align-items: flex-start; 
+}
+
+/* --- CỘT TRÁI (AVATAR) --- */
+.profile-left-column {
+    background: white;
+    padding: 4rem 2rem; /* 40px 20px -> 4rem 2rem */
+    border-radius: 1.6rem; /* 16px -> 1.6rem */
+    box-shadow: 0 0.4rem 1.5rem rgba(0,0,0,0.03); /* 4px 15px -> 0.4rem 1.5rem */
+    border-top: 0.8rem solid #8E9775; /* 8px -> 0.8rem */
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    text-align: center;
+}
+
+.profile-avatar {
+    width: 13rem; /* 130px -> 13rem */
+    height: 13rem;
+    border-radius: 50%;
+    background-color: #faf9f6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 2rem; /* 20px -> 2rem */
+    overflow: hidden;
+    border: 0.3rem solid #D4A373; /* 3px -> 0.3rem */
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-title h2 {
+    margin: 0 0 1.5rem 0; /* 15px -> 1.5rem */
+    color: #4A4A4A;
+    font-size: 2.4rem; /* 24px -> 2.4rem */
+}
+
+.role-badge {
+    background-color: #D4A373;
+    color: white;
+    padding: 0.6rem 1.8rem; /* 6px 18px -> 0.6rem 1.8rem */
+    border-radius: 2rem; /* 20px -> 2rem */
+    font-size: 1.4rem; /* 14px -> 1.4rem */
+    font-weight: 500;
+}
+
+/* --- CỘT PHẢI (THÔNG TIN & NÚT) --- */
+.profile-right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem; /* 20px -> 2rem */
+    width: 100%; 
+    align-items: stretch;
+}
+
+/* Thanh chứa nút bấm */
+.action-bar {
+    display: flex;
+    justify-content: flex-end; 
 }
 
 .update-profile {
     cursor: pointer;
-    border: 1px solid #8E9775; /* Đổi thành viền mảnh nhìn tinh tế hơn */
-    border-radius: 20px; /* Bo tròn hợp với Soft Autumn */
-    padding: 8px 20px;
-    background-color: transparent; /* Nền trong suốt */
+    border: 0.1rem solid #8E9775; /* 1px -> 0.1rem */
+    border-radius: 2rem; /* 20px -> 2rem */
+    padding: 1rem 2.4rem; /* 10px 24px -> 1rem 2.4rem */
+    background-color: transparent;
     color: #8E9775;
     font-weight: 600;
     transition: all 0.3s ease;
 }
 
-/* Hiệu ứng rê chuột vào chuyển màu xanh Olive */
 .update-profile:hover {
     background-color: #8E9775;
     color: white;
+}
+
+/* Các hộp thông tin trắng */
+.profile-section {
+    background: white;
+    padding: 3rem; /* 30px -> 3rem */
+    border-radius: 1.6rem; /* 16px -> 1.6rem */
+    box-shadow: 0 0.4rem 1.5rem rgba(0,0,0,0.03); /* 4px 15px -> 0.4rem 1.5rem */
+    width: 100%; 
+    box-sizing: border-box;
+}
+
+.profile-section h3 {
+    color: #8E9775;
+    margin-top: 0;
+    margin-bottom: 2rem; /* 20px -> 2rem */
+    border-bottom: 0.1rem dashed #eee; /* 1px -> 0.1rem */
+    padding-bottom: 1.2rem; /* 12px -> 1.2rem */
+    font-size: 2.4rem; /* larger thường tương đương 1.2em/1.5em, ở đây tui set chuẩn 24px cho đẹp */
+}
+
+/* --- NHÓM THÔNG TIN --- */
+.info-group {
+    display: flex;
+    align-items: center; 
+    margin-bottom: 1.5rem; 
+}
+
+/* Cái nhãn (Label) */
+.info-group p {
+    width: 12rem; 
+    color: #555;
+    font-size: 1.6rem;
+    font-weight: 500;
+}
+
+/* --- Ô TEXTBOX (INPUT) --- */
+.edit-input {
+    flex: 1; 
+    padding: 1rem 1.5rem; 
+    border: 0.1rem solid #ddd; 
+    border-radius: 0.8rem; 
+    font-size: 1.6rem;
+    color: #333;
+    background-color: #faf9f6; 
+    font-family: inherit; 
+    transition: all 0.3s ease; 
+}
+
+.edit-input:focus {
+    outline: none; 
+    border-color: #8E9775; 
+    box-shadow: 0 0 0 0.3rem rgba(142, 151, 117, 0.2); 
+    background-color: #fff; 
+}
+
+/* Thẻ tag kỹ năng */
+.skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    /* gap: 1.2rem; 12px -> 1.2rem */
+}
+
+.tag {
+    background-color: #f0f4eb; 
+    color: #7A865E;
+    padding: 0.8rem 1.6rem; /* 8px 16px -> 0.8rem 1.6rem */
+    border-radius: 2rem; /* 20px -> 2rem */
+    font-size: 1.4rem; /* 14px -> 1.4rem */
+    font-weight: 500;
+}
+.skill-tags p{
+    font-size: 1.5rem;
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import '../css/ProfilePage.css';
-import '../App.css';
+// import '../App.css';
 
 function ProfilePage() {
     const navigate = useNavigate();
@@ -37,24 +37,41 @@ function ProfilePage() {
 
     return (
         <div className="app-wrapper">
-            <div className="profile-header">
-                <div className="profile-header-left">
+            <div className="profile-layout-grid">
+                <div className="profile-left-column">
                     <div className="profile-avatar">
-                        {profile.avatar ? <img src={profile.avatar} alt="Avatar" /> : <span>👩‍💻</span>}
+                        {profile.avatar ? <img src={profile.avatar} alt="Avatar" /> : <span style={{fontSize: '50px'}}>👩‍💻</span>}
                     </div>
                     <div className="profile-title">
                         <h2>{profile.fullName || "Người dùng ẩn danh"}</h2>
-                        <span className="role-badge">{profile.role === 'Candidate' ? 'Ứng Viên' : 'Nhà Tuyển Dụng'}</span>
+                        <span className="role-badge">
+                            {profile.role === 'Candidate' ? 'Ứng Viên' : 'Nhà Tuyển Dụng'}
+                        </span>
                     </div>
                 </div>
-                <button className='update-profile'> Sửa thông tin </button>
-            </div>
-            <div className="profile-container">
-                <div className="profile-content">
+
+                <div className="profile-right-column">
+                    <div className="action-bar">
+                        <button className="update-profile">✏️ Sửa thông tin</button>
+                    </div>
                     <div className="profile-section">
                         <h3>Thông tin cá nhân</h3>
-                        <p><strong>📞 Điện thoại:</strong> {profile.phone || 'Chưa cập nhật'}</p>
-                        <p><strong>🏠 Địa chỉ:</strong> {profile.address || 'Chưa cập nhật'}</p>
+                        <div className="info-group">
+                            <p> ⚧️ Giới tính: </p>
+                            <input type="text" id="gender" className="edit-input" value={profile.gender || 'Chưa cập nhật'}></input>
+                        </div>
+                        <div className="info-group">
+                            <p>📞 Điện thoại:</p> 
+                            <input type="text" id="phone" className="edit-input" value={profile.phone || 'Chưa cập nhật'}></input>
+                        </div>
+                        <div className="info-group">
+                            <p>🏠 Địa chỉ:</p> 
+                            <input type="text" id="address" className="edit-input" value={profile.address || 'Chưa cập nhật'}></input>
+                        </div>
+                        <div className="info-group">
+                            <p>🎂 Sinh nhật: </p>
+                            <input type="text" id="birthday" className="edit-input" value={profile.birthday || 'Chưa cập nhật'}></input>
+                        </div>
                     </div>
 
                     {profile.candidate && (
@@ -72,6 +89,7 @@ function ProfilePage() {
                         </div>
                     )}
                 </div>
+
             </div>
         </div>
     );
