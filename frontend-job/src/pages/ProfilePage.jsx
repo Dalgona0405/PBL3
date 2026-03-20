@@ -2,11 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import '../css/ProfilePage.css';
-// import '../App.css';
+
+function EditProfileForm({ formData, setFormData }) {
+    const handleInputChange = (e) => {
+        const { id, value } = e.target;
+        setFormData({
+            ...formData, 
+            [id]: value  
+        });
+    };
+
+    return (
+        <div className="profile-section">
+            <h3>Thông tin cá nhân</h3>
+            <div className="info-group">
+                <p>⚧️ Giới tính:</p>
+                <input type="text" id="gender" className="edit-input" value={formData.gender || ''} onChange={handleInputChange} />
+            </div>
+            <div className="info-group">
+                <p>📞 Điện thoại:</p> 
+                <input type="text" id="phone" className="edit-input" value={formData.phone || ''} onChange={handleInputChange} />
+            </div>
+            <div className="info-group">
+                <p>🏠 Địa chỉ:</p> 
+                <input type="text" id="address" className="edit-input" value={formData.address || ''} onChange={handleInputChange} />
+            </div>
+            <div className="info-group">
+                <p>🎂 Sinh nhật:</p>
+                <input type="text" id="birthday" className="edit-input" value={formData.birthday || ''} onChange={handleInputChange} />
+            </div>
+        </div>
+    );
+}
 
 function ProfilePage() {
     const navigate = useNavigate();
-    const [profile, setProfile] = useState(null);
+    const [formData, setFormData] = useState(null);
 
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
@@ -15,22 +46,28 @@ function ProfilePage() {
 
         fetch(`${API_URLS.USERS}/${parsedUser.id}`)
             .then(res => {
-                if (!res.ok) {
-                    return res.text().then(text => { throw new Error(text) });
-                }
+                if (!res.ok) throw new Error("Lỗi fetch");
                 return res.json();
             })
-            .then(data => setProfile(data))
+            .then(data => {
+                setFormData(data); 
+            })
             .catch(err => {
                 console.error("Lỗi lấy hồ sơ:", err);
                 alert("Hệ thống đang bảo trì hoặc không tìm thấy User này. Vui lòng thử lại sau! 🌿");
             });
     }, [navigate]);
 
-    if (!profile) {
+    // HÀM XỬ LÝ KHI BẤM NÚT LƯU
+    const handleSave = () => {
+        console.log("Dữ liệu chuẩn bị gửi xuống Backend:", formData);
+        alert("Đã lưu thông tin thành công! 🌿"); 
+    };
+
+    if (!formData) {
         return (
             <div className="app-wrapper">
-                <div style={{ textAlign: 'center', marginTop: '50px', color: '#8E9775' }}>Đang tải hồ sơ của bạn... 🌿</div>
+                <div style={{ textAlign: 'center', marginTop: '5rem', color: '#8E9775', fontSize: '1.6rem' }}>Đang tải hồ sơ của bạn... 🌿</div>
             </div>
         );
     }
@@ -40,46 +77,29 @@ function ProfilePage() {
             <div className="profile-layout-grid">
                 <div className="profile-left-column">
                     <div className="profile-avatar">
-                        {profile.avatar ? <img src={profile.avatar} alt="Avatar" /> : <span style={{fontSize: '50px'}}>👩‍💻</span>}
+                        {formData.avatar ? <img src={formData.avatar} alt="Avatar" /> : <span style={{fontSize: '5rem'}}>👩‍💻</span>}
                     </div>
                     <div className="profile-title">
-                        <h2>{profile.fullName || "Người dùng ẩn danh"}</h2>
+                        <h2>{formData.fullName || "Người dùng ẩn danh"}</h2>
                         <span className="role-badge">
-                            {profile.role === 'Candidate' ? 'Ứng Viên' : 'Nhà Tuyển Dụng'}
+                            {formData.role === 'Candidate' ? 'Ứng Viên' : 'Nhà Tuyển Dụng'}
                         </span>
                     </div>
                 </div>
-
                 <div className="profile-right-column">
                     <div className="action-bar">
-                        <button className="update-profile">✏️ Sửa thông tin</button>
-                    </div>
-                    <div className="profile-section">
-                        <h3>Thông tin cá nhân</h3>
-                        <div className="info-group">
-                            <p> ⚧️ Giới tính: </p>
-                            <input type="text" id="gender" className="edit-input" value={profile.gender || 'Chưa cập nhật'}></input>
-                        </div>
-                        <div className="info-group">
-                            <p>📞 Điện thoại:</p> 
-                            <input type="text" id="phone" className="edit-input" value={profile.phone || 'Chưa cập nhật'}></input>
-                        </div>
-                        <div className="info-group">
-                            <p>🏠 Địa chỉ:</p> 
-                            <input type="text" id="address" className="edit-input" value={profile.address || 'Chưa cập nhật'}></input>
-                        </div>
-                        <div className="info-group">
-                            <p>🎂 Sinh nhật: </p>
-                            <input type="text" id="birthday" className="edit-input" value={profile.birthday || 'Chưa cập nhật'}></input>
-                        </div>
+                        <button className="update-profile" onClick={handleSave}>
+                            💾 Cập nhật thông tin
+                        </button>
                     </div>
 
-                    {profile.candidate && (
+                    <EditProfileForm formData={formData} setFormData={setFormData} />
+                    {formData.candidate && (
                         <div className="profile-section">
                             <h3>Kỹ năng chuyên môn</h3>
                             <div className="skill-tags">
-                                {profile.candidate.skills?.length > 0 ? (
-                                    profile.candidate.skills.map((skill, index) => (
+                                {formData.candidate.skills?.length > 0 ? (
+                                    formData.candidate.skills.map((skill, index) => (
                                         <span key={index} className="tag">{skill}</span>
                                     ))
                                 ) : (

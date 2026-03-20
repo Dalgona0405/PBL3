@@ -29,7 +29,7 @@ function JobList({ keyword, companyId }) {
         } 
         // LUỒNG 2: DÀNH CHO TRANG CHỦ (TÌM KIẾM & PHÂN TRANG)
         else {
-            const pageSize = 10;
+            const pageSize = 8;
             let url = `${API_URLS.SEARCH}?page=${currentPage}&pageSize=${pageSize}`;
             
             if (keyword) {
