@@ -1,5 +1,5 @@
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = 'http://localhost:5010/api';
 
 export const API_URLS = {
     JOBS: `${BASE_URL}/Jobs`,
