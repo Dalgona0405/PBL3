@@ -75,9 +75,24 @@ else
     app.UseHttpsRedirection();
 }
 
-app.UseCors("AllowAll");
+// app.UseCors("AllowAll");
 
 // app.UseAuthentication();
+builder.Services.AddScoped<JwtService>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("THIS_IS_SECRET_KEY")),
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
 app.UseCors("AllowReactApp");
 app.UseAuthorization();
 

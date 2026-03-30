@@ -291,7 +291,8 @@ namespace JobSeekingAPI.Controllers
                         a.Status,
                         Year = a.AppliedDate.Year,
                         Month = a.AppliedDate.Month,
-                        Week = EF.Functions.DateDiffWeek(startDate, a.AppliedDate),
+                        // Week = EF.Functions.DateDiffWeek(startDate, a.AppliedDate),
+                        Week = (a.AppliedDate - startDate).Days / 7,
                         Day = a.AppliedDate.Date
                     })
                     .ToListAsync(); // Thực thi query ngay tại đây
