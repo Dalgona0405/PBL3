@@ -173,3 +173,89 @@ html {
     font-style: italic;
     margin: 0;
 }
+
+/* --- CSS CHO PHẦN KỸ NĂNG MỚI --- */
+.add-skill-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.skill-select {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    border: 0.1rem solid #ddd;
+    border-radius: 0.8rem;
+    font-size: 1.5rem;
+    color: #4A4A4A;
+    background-color: #faf9f6;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.skill-select:focus {
+    border-color: #8E9775;
+}
+
+.btn-add-skill {
+    background-color: #D4A373;
+    color: white;
+    border: none;
+    border-radius: 0.8rem;
+    padding: 0 2rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-add-skill:hover {
+    background-color: #b5895e;
+}
+
+/* Nút Xóa (Dấu X) trên từng Tag */
+.btn-remove-tag {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-left: 0.8rem;
+    margin-right: -0.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.btn-remove-tag:hover {
+    color: #c0392b;
+    transform: scale(1.2);
+}
+
+/* Hiệu ứng Loading & Error */
+.loading-spinner {
+    text-align: center;
+    margin-top: 10rem;
+    font-size: 2rem;
+    color: #8E9775;
+    animation: pulse 1.5s infinite;
+}
+
+.error-message {
+    text-align: center;
+    margin-top: 10rem;
+    font-size: 1.8rem;
+    color: #e74c3c;
+    background: #fdf5f5;
+    padding: 2rem;
+    border-radius: 1rem;
+    max-width: 50rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
