@@ -6,30 +6,58 @@ import '../css/ProfilePage.css';
 function EditProfileForm({ formData, setFormData }) {
     const handleInputChange = (e) => {
         const { id, value } = e.target;
-        setFormData({
-            ...formData, 
-            [id]: value  
-        });
+        if (id === 'gender' || id === 'birthday'){
+            setFormData({
+                ...formData,
+                candidate: {
+                    ...formData.candidate,
+                    [id]: value
+                }
+            });
+        } else {
+            setFormData({
+                ...formData,
+                [id]: value
+            });
+        }
     };
 
     return (
         <div className="profile-section">
             <h3>Thông tin cá nhân</h3>
             <div className="info-group">
+                <p> Họ và tên:</p> 
+                <input type="text" id="fullName" className="edit-input" 
+                    value={formData.fullName || ''} 
+                    onChange={handleInputChange} />
+            </div>
+            <div className="info-group">
                 <p>⚧️ Giới tính:</p>
-                <input type="text" id="gender" className="edit-input" value={formData.gender || ''} onChange={handleInputChange} />
+                <select id="gender" className="edit-input" 
+                    value={formData.candidate?.gender || ''} 
+                    onChange={handleInputChange} >
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                    <option value="Khác">Khác</option>
+                </select>
             </div>
             <div className="info-group">
                 <p>📞 Điện thoại:</p> 
-                <input type="text" id="phone" className="edit-input" value={formData.phone || ''} onChange={handleInputChange} />
+                <input type="text" id="phone" className="edit-input" 
+                    value={formData.candidate?.phone || ''} 
+                    onChange={handleInputChange} />
             </div>
             <div className="info-group">
                 <p>🏠 Địa chỉ:</p> 
-                <input type="text" id="address" className="edit-input" value={formData.address || ''} onChange={handleInputChange} />
+                <input type="text" id="address" className="edit-input" 
+                    value={formData.candidate?.address || ''} 
+                    onChange={handleInputChange} />
             </div>
             <div className="info-group">
                 <p>🎂 Sinh nhật:</p>
-                <input type="text" id="birthday" className="edit-input" value={formData.birthday || ''} onChange={handleInputChange} />
+                <input type="date" id="birthday" className="edit-input" 
+                    value={formData.candidate?.birthday ? formData.candidate.birthday.split('T')[0] : ''} 
+                    onChange={handleInputChange} />
             </div>
         </div>
     );
@@ -39,35 +67,147 @@ function ProfilePage() {
     const navigate = useNavigate();
     const [formData, setFormData] = useState(null);
 
+    // State cho Skill
+    const[allTags, setAllTags] = useState([]);
+    const [userTags, setUserTags] = useState([]);
+    const[selectedTagId, setSelectedTagId] = useState('');
+
+    //State cho UI
+    const[isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    //Get data ban đầu
     useEffect(() => {
         const savedUser = localStorage.getItem('user');
-        if (!savedUser) { navigate('/login'); return; }
+        if (!savedUser) { navigate('/login'); return;}
         const parsedUser = JSON.parse(savedUser);
+        
+        const fetchData = async () => {
+            try {
+                setIsLoading(true);
 
-        fetch(`${API_URLS.USERS}/${parsedUser.id}`)
-            .then(res => {
-                if (!res.ok) throw new Error("Lỗi fetch");
-                return res.json();
-            })
-            .then(data => {
-                setFormData(data); 
-            })
-            .catch(err => {
-                console.error("Lỗi lấy hồ sơ:", err);
-                alert("Hệ thống đang bảo trì hoặc không tìm thấy User này. Vui lòng thử lại sau! 🌿");
-            });
+                const [profileRes, userTagsRes, allTagsRes] = await Promise.all([
+                    fetch(`${API_URLS.USERS}/${parsedUser.id}`),
+                    fetch(`${API_URLS.CANDIDATE_TAGS}/candidate/${parsedUser.id}`),
+                    fetch(`${API_URLS.TAGS}`)
+                ]);
+                
+                if (!profileRes.ok) throw new Error ("Không thể tải hồ sơ");
+
+                const profileData = await profileRes.json();
+                const userTagsData = userTagsRes.ok ? await userTagsRes.json() : [];
+                const allTagsData = allTagsRes.ok ? await allTagsRes.json() :[];
+
+                setFormData(profileData);
+                setUserTags(userTagsData);
+                setAllTags(allTagsData);
+            } catch (err) {
+                setError("Hệ thống đang bảo trì hoặc không tìm thấy User này. Vui lòng thử lại sau! 🌿");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
     }, [navigate]);
 
-    // HÀM XỬ LÝ KHI BẤM NÚT LƯU
-    const handleSave = () => {
-        console.log("Dữ liệu chuẩn bị gửi xuống Backend:", formData);
-        alert("Đã lưu thông tin thành công! 🌿"); 
+    //HÀM THÊM KỸ NĂNG
+    const handleAddSkill = async () => {
+        if (!selectedTagId) return;
+
+        if(userTags.some(t => t.tagId === parseInt(selectedTagId))){
+            alert("Bạn đã nhập kỹ năng này rồi nhé!");
+            return;
+        }
+        try{
+            const payload = {
+                userId: formData.userId,
+                tagId: parseInt(selectedTagId),
+                proficiency: "Beginner"
+            };
+            const res = await fetch(`${API_URLS.CANDIDATE_TAGS}`,{
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload) 
+            });
+            if (res.ok) {
+                const newTagData = await res.json();
+                //Cập nhật UI mà không reload
+                setUserTags([...userTags, {tagId: newTagData.tagId, tagName: newTagData.tagName}]);
+                setSelectedTagId(''); //Reset dropdown
+            } else {
+                alert("Lỗi khi thêm kĩ năng!");
+            }
+        } catch (err) {
+            alert("Hệ thống lỗi hoặc rớt mạng, không thể thêm kỹ năng!");
+        }
     };
 
-    if (!formData) {
+    //HÀM XÓA KỸ NĂNG
+    const handleRemoveSkill = async (tagId) => {
+        try {
+            const res = await fetch(`${API_URLS.CANDIDATE_TAGS}/${formData.userId}/${tagId}`,{
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setUserTags(userTags.filter(t => t.tagId !== tagId));
+            }
+        } catch (err){
+            alert("Hệ thống lỗi hoặc rớt mạng, không thể xóa được!");
+        }
+    };
+
+    // HÀM LƯU THÔNG TIN CÁ NHÂN
+    const handleSave = async () => {
+        try {
+            const payloadUser = {
+                fullName: formData.fullName,
+                phone: formData.candidate?.phone,
+                address: formData.candidate?.address
+            };
+            
+            const payloadCandidate = {
+                fullName: formData.fullName,
+                gender: formData.candidate?.gender,
+                birthday: formData.candidate?.birthday,
+                phone: formData.candidate?.phone,
+                address: formData.candidate?.address
+            };
+
+            const res = await Promise.all([
+                fetch(`${API_URLS.USERS}/${formData.userId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payloadUser)
+                }),
+                fetch(`${API_URLS.CANDIDATE}/${formData.userId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payloadCandidate)
+                })
+            ]);
+            
+            if(res[0].ok && res[1].ok){
+                alert("Đã lưu thông tin thành công! 🌿");
+            } else {
+                alert("Có lỗi xảy ra khi lưu thông tin.");
+            }
+        } catch (err){
+            alert("Hệ thống lỗi hoặc rớt mạng, không thể lưu được!");
+        }
+    };
+
+    if(isLoading){
         return (
             <div className="app-wrapper">
-                <div style={{ textAlign: 'center', marginTop: '5rem', color: '#8E9775', fontSize: '1.6rem' }}>Đang tải hồ sơ của bạn... 🌿</div>
+                <div className="loading-spinner">Đang tải hồ sơ của bạn... 🌿</div>
+            </div>
+        );
+    }
+
+    if(error) {
+        return (
+            <div className="app-wrapper">
+                <div className="error-message">{error}</div>
             </div>
         );
     }
@@ -94,22 +234,48 @@ function ProfilePage() {
                     </div>
 
                     <EditProfileForm formData={formData} setFormData={setFormData} />
-                    {formData.candidate && (
+
+                    {formData.role === 'Candidate' && (
                         <div className="profile-section">
                             <h3>Kỹ năng chuyên môn</h3>
+
+                            {/*Form thêm kỹ năng*/}
+                            <div className="add-skill-container">
+                                <select className= "skill-select"
+                                        value={selectedTagId}
+                                        onChange={(e) => setSelectedTagId(e.target.value)}>
+                                    <option value="">--Chọn kỹ năng muốn thêm--</option>
+                                    {allTags.map(tag => (
+                                        <option key={tag.tagId} value={tag.tagId}>
+                                            {tag.tagName}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button className="btn-add-skill" onClick={handleAddSkill}>
+                                    + Thêm
+                                </button>
+                            </div>
+
+                            {/* Danh sách kỹ năng đang có */}
                             <div className="skill-tags">
-                                {formData.candidate.skills?.length > 0 ? (
-                                    formData.candidate.skills.map((skill, index) => (
-                                        <span key={index} className="tag">{skill}</span>
+                                {userTags.length > 0 ? (
+                                    userTags.map((tag) => (
+                                        <span key={tag.tagId} className="tag">
+                                            {tag.tagName}
+                                            <button className="btn-remove-tag"
+                                                    onClick={() => handleRemoveSkill(tag.tagId)}
+                                                    title="Xóa kỹ năng này">
+                                                        x
+                                                    </button>
+                                        </span>
                                     ))
                                 ) : (
-                                    <p className="empty-text">Chưa cập nhật kỹ năng 🌿</p>
+                                    <p className="empty-text"> Chưa cập nhật kỹ năng. Hãy thêm kỹ năng để tìm được công việc phù hợp nhé! 🌿</p>
                                 )}
                             </div>
                         </div>
                     )}
                 </div>
-
             </div>
         </div>
     );

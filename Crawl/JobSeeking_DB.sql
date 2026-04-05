@@ -46,7 +46,7 @@ GO
 CREATE TABLE Candidates (
     UserId INT PRIMARY KEY,             -- Vừa là PK, vừa là FK
     FullName NVARCHAR(100) NOT NULL,
-    Gender NVARCHAR(10),                
+    Gender NVARCHAR(10),
     Birthday DATE,
     Phone VARCHAR(20),
     Address NVARCHAR(500),
@@ -59,7 +59,7 @@ GO
 -- Quan hệ 1-1 với Users và n-1 với Companies
 CREATE TABLE Recruiters (
     UserId INT PRIMARY KEY,             -- Vừa là PK, vừa là FK
-    CompanyId INT NOT NULL,
+    CompanyId INT NOT NULL, 
     Position NVARCHAR(100),             -- VD: HR Manager
     CONSTRAINT FK_Recruiters_Users FOREIGN KEY (UserId) REFERENCES Users(UserId),
     CONSTRAINT FK_Recruiters_Companies FOREIGN KEY (CompanyId) REFERENCES Companies(CompanyId)
@@ -83,6 +83,7 @@ CREATE TABLE Jobs (
     Benefits NVARCHAR(MAX),             -- Quyền lợi
     Address NVARCHAR(500),              -- Địa chỉ cụ thể
     ViewCount INT DEFAULT 0,            -- Đếm lượt xem
+    -- Status INT DEFAULT 1,              -- 1: Active, 2: Closed,3 : Expired 
     DeletedAt DATETIME,
     CONSTRAINT FK_Jobs_Companies FOREIGN KEY (CompanyId) REFERENCES Companies(CompanyId),
     CONSTRAINT FK_Jobs_Locations FOREIGN KEY (LocationId) REFERENCES Locations(LocationId)

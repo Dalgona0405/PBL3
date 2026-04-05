@@ -6,39 +6,43 @@ export const API_URLS = {
     COMPANIES: `${BASE_URL}/Companies`,
     SEARCH: `${BASE_URL}/Search/jobs`,
     USERS: `${BASE_URL}/Users`,
-    APPLICATIONS: `${BASE_URL}/Applications`
+    APPLICATIONS: `${BASE_URL}/Applications`,
+    TAGS: `${BASE_URL}/Tags`,
+    CANDIDATE_TAGS: `${BASE_URL}/CandidateTags`,
+    CANDIDATE: `${BASE_URL}/Candidates`
 };
-/*
-const PORTS = [5010, 5000];
 
-let BASE_URL = null;
+//
+// const PORTS = [5010, 5000];
 
-async function detectBackend() {
-    for (const port of PORTS) {
-        try {
-            const res = await fetch(`http://localhost:${port}/api/Jobs`);
-            if (res.ok) {
-                BASE_URL = `http://localhost:${port}/api`;
-                return BASE_URL;
-            }
-        } catch {
-            // Ignore errors and try the next port
-        }
-    }
-    throw new Error("Backend not found");
-}
+// let BASE_URL = null;
 
-export async function getApiUrls() {
-    if (!BASE_URL) {
-        await detectBackend();
-    }
+// async function detectBackend() {
+//     for (const port of PORTS) {
+//         try {
+//             const res = await fetch(`http://localhost:${port}/api/Jobs`);
+//             if (res.ok) {
+//                 BASE_URL = `http://localhost:${port}/api`;
+//                 return BASE_URL;
+//             }
+//         } catch {
+//             // Ignore errors and try the next port
+//         }
+//     }
+//     throw new Error("Backend not found");
+// }
 
-    return {
-        JOBS: `${BASE_URL}/Jobs`,
-        COMPANIES: `${BASE_URL}/Companies`,
-        SEARCH: `${BASE_URL}/Search/jobs`,
-        USERS: `${BASE_URL}/Users`,
-        APPLICATIONS: `${BASE_URL}/Applications`
-    };
-}
-*/
+// export async function getApiUrls() {
+//     if (!BASE_URL) {
+//         await detectBackend();
+//     }
+
+//     return {
+//         JOBS: `${BASE_URL}/Jobs`,
+//         COMPANIES: `${BASE_URL}/Companies`,
+//         SEARCH: `${BASE_URL}/Search/jobs`,
+//         USERS: `${BASE_URL}/Users`,
+//         APPLICATIONS: `${BASE_URL}/Applications`
+//     };
+// }
+//
