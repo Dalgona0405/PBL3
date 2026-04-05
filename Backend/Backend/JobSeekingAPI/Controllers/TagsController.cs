@@ -79,7 +79,7 @@ namespace JobSeekingAPI.Controllers
                         {
                             UserId = ct.Candidate != null ? ct.Candidate.UserId : 0,
                             FullName = ct.Candidate != null ? ct.Candidate.FullName : "",
-                            Avatar = ct.Candidate != null && ct.Candidate.User != null ? ct.Candidate.Avatar : null,  // ✅ FIX
+                            Avatar = ct.Candidate != null && ct.Candidate.User != null ? ct.Candidate.User.Avatar : null,  // ✅ FIX
                             Email = ct.Candidate != null && ct.Candidate.User != null ? ct.Candidate.User.Email : null,    // ✅ FIX
                             Proficiency = ct.Proficiency
                         }).ToList()

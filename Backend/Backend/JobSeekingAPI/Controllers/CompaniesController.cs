@@ -12,7 +12,7 @@ namespace JobSeekingAPI.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        public CompaniesController(ApplicationDbContext context)
+        public CompaniesController(ApplicationDbContext context) 
         {
             _context = context;
         }
@@ -127,7 +127,7 @@ namespace JobSeekingAPI.Controllers
                             UserId = r.UserId,
                             FullName = r.User != null ? r.FullName : "",
                             Position = r.Position,
-                            Avatar = r.User != null ? r.Avatar : null
+                            Avatar = r.User != null ? r.User.Avatar : null
                         }).ToList()
                 })
                 .FirstOrDefaultAsync();

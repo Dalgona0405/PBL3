@@ -11,7 +11,13 @@ namespace JobSeekingAPI.Models
         public int UserId { get; set; }           // PK = UserId
         
         public string FullName { get; set; } = string.Empty;
-        public string? Avatar { get; set; }
+        // public string? Avatar { get; set; }
+        [NotMapped] // Dòng này cực kỳ quan trọng: Nó bảo EF đừng tìm cột Avatar ở bảng Recruiter
+        public string? Avatar 
+        { 
+            get => User?.Avatar; 
+            set { if (User != null) User.Avatar = value; } 
+        }
 
         public string? Gender { get; set; }        // Thêm Gender
         

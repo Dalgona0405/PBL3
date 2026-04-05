@@ -35,7 +35,7 @@ namespace JobSeekingAPI.Controllers
                               (u.Recruiter != null && u.Recruiter.User != null ? u.Recruiter.FullName : ""),
                     Role = u.Role,
                     // ✅ FIX: Avatar nằm trong Candidate hoặc Recruiter
-                    Avatar = u.Candidate != null ? u.Candidate.Avatar : (u.Recruiter != null ? u.Recruiter.Avatar : null),
+                    Avatar = u.Candidate != null ? u.Candidate.User != null ? u.Candidate.User.Avatar : null : (u.Recruiter != null ? u.Recruiter.User != null ? u.Recruiter.User.Avatar : null : null),
                     CompanyName = u.Recruiter != null && u.Recruiter.Company != null 
                                 ? u.Recruiter.Company.CompanyName : null,
                     LastLogin = u.LastLogin
@@ -73,7 +73,7 @@ namespace JobSeekingAPI.Controllers
                     Address = u.Candidate != null ? u.Candidate.Address : null,
                     Role = u.Role,
                     // ✅ FIX: Avatar nằm trong Candidate hoặc Recruiter
-                    Avatar = u.Candidate != null ? u.Candidate.Avatar : (u.Recruiter != null ? u.Recruiter.Avatar : null),
+                    Avatar = u.Candidate != null ? u.Candidate.User != null ? u.Candidate.User.Avatar : null : (u.Recruiter != null ? u.Recruiter.User != null ? u.Recruiter.User.Avatar : null : null),
                     LastLogin = u.LastLogin,
                     DeletedAt = u.DeletedAt,
                     
@@ -190,7 +190,7 @@ namespace JobSeekingAPI.Controllers
                 Email = user.Email,
                 FullName = createUserDto.FullName,  // ✅ Lấy từ DTO
                 // ✅ FIX: Avatar lấy từ Candidate hoặc Recruiter
-                Avatar = user.Candidate != null ? user.Candidate.Avatar : (user.Recruiter != null ? user.Recruiter.Avatar : null),
+                Avatar = user.Candidate != null ? user.Candidate.User != null ? user.Candidate.User.Avatar : null : (user.Recruiter != null ? user.Recruiter.User != null ? user.Recruiter.User.Avatar : null : null),
                 Role = user.Role,
                 LastLogin = user.LastLogin
             };
@@ -292,7 +292,7 @@ namespace JobSeekingAPI.Controllers
                     FullName = u.Candidate != null ? u.Candidate.FullName : 
                               (u.Recruiter != null && u.Recruiter.User != null ? u.Recruiter.FullName : ""),  // ✅ FIX
                     Role = u.Role,
-                    Avatar = u.Candidate != null ? u.Candidate.Avatar : (u.Recruiter != null ? u.Recruiter.Avatar : null),
+                    Avatar = u.Candidate != null ? u.Candidate.User != null ? u.Candidate.User.Avatar : null : (u.Recruiter != null ? u.Recruiter.User != null ? u.Recruiter.User.Avatar : null : null),  // ✅ FIX
                     CompanyName = u.Recruiter != null && u.Recruiter.Company != null 
                                 ? u.Recruiter.Company.CompanyName : null,
                     LastLogin = u.LastLogin

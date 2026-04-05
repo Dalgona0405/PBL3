@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
+using JobSeekingAPI.Services;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -209,7 +210,7 @@ namespace JobSeekingAPI.Controllers
             // Cập nhật Avatar trong User nếu có
             if (updateCandidateDto.Avatar != null && existingCandidate.User != null)
             {
-                existingCandidate.Avatar = updateCandidateDto.Avatar;
+                existingCandidate.User.Avatar = updateCandidateDto.Avatar;
             }
 
             await _context.SaveChangesAsync();
@@ -317,7 +318,7 @@ namespace JobSeekingAPI.Controllers
                 {
                     UserId = c.UserId,
                     FullName = c.FullName,
-                    Avatar = c.User != null ? c.Avatar : null,
+                    Avatar = c.User != null ? c.User.Avatar : null,
                     CVUrl = c.CVUrl,
                     Email = c.User != null ? c.User.Email : null,
                     Skills = c.CandidateTags

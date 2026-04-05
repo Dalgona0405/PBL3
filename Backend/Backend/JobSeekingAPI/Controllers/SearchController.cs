@@ -196,7 +196,7 @@ namespace JobSeekingAPI.Controllers
                 {
                     UserId = c.UserId,
                     FullName = c.FullName,
-                    Avatar = c.User != null ? c.Avatar : null,
+                    Avatar = c.User != null ? c.User.Avatar : null,
                     Email = c.User != null ? c.User.Email : null,
                     CVUrl = c.CVUrl,
                     Skills = c.CandidateTags

@@ -29,9 +29,10 @@ namespace JobSeekingAPI.Controllers
                 {
                     UserId = r.UserId,
                     Position = r.Position,
-                    FullName = r.User != null ? r.FullName : "",
+                    // FullName = r.User != null ? r.FullName : "",
+                    FullName = r.FullName, // SỬA: Lấy FullName từ Recruiter thay vì User
                     Email = r.User != null ? r.User.Email : "",
-                    Avatar = r.User != null ? r.Avatar : null,
+                    Avatar = r.User != null ? r.User.Avatar : null,
                     LastLogin = r.User != null ? r.User.LastLogin : null,
                     Company = r.Company == null ? null : new CompanySummaryDTO
                     {
@@ -66,7 +67,7 @@ namespace JobSeekingAPI.Controllers
                     Position = r.Position,
                     FullName = r.User != null ? r.FullName : "",
                     Email = r.User != null ? r.User.Email : "",
-                    Avatar = r.User != null ? r.Avatar : null,
+                    Avatar = r.User != null ? r.User.Avatar : null,
                     LastLogin = r.User != null ? r.User.LastLogin : null,
                     
                     Company = r.Company == null ? null : new CompanyDetailDTO
@@ -147,6 +148,11 @@ namespace JobSeekingAPI.Controllers
                 FullName = createRecruiterDto.FullName ?? string.Empty,
                 Avatar = createRecruiterDto.Avatar
             };
+            // if(createRecruiterDto.Avatar != null)
+            // {
+            //     recruiter.User = user; // Gán User cho Recruiter để có thể cập nhật Avatar
+            //     user.Avatar = createRecruiterDto.Avatar; // Cập nhật Avatar cho User
+            // }
 
             _context.Recruiters.Add(recruiter);
             await _context.SaveChangesAsync();
@@ -157,7 +163,7 @@ namespace JobSeekingAPI.Controllers
                 Position = recruiter.Position,
                 FullName = recruiter.FullName,
                 Email = user.Email,
-                Avatar = recruiter.Avatar,
+                Avatar = recruiter.User != null ? recruiter.User.Avatar : null,
                 Company = new CompanySummaryDTO
                 {
                     CompanyId = company.CompanyId,
@@ -206,7 +212,7 @@ namespace JobSeekingAPI.Controllers
                 {
                     existingRecruiter.FullName = updateRecruiterDto.FullName;
                 }
-                existingRecruiter.Avatar = updateRecruiterDto.Avatar ?? existingRecruiter.Avatar;
+                existingRecruiter.User.Avatar = updateRecruiterDto.Avatar ?? existingRecruiter.User.Avatar;
             }
 
             await _context.SaveChangesAsync();
@@ -248,7 +254,7 @@ namespace JobSeekingAPI.Controllers
                     UserId = r.UserId,
                     FullName = r.User != null ? r.FullName : "",
                     Position = r.Position,
-                    Avatar = r.User != null ? r.Avatar : null,
+                    Avatar = r.User != null ? r.User.Avatar : null,
                     Email = r.User != null ? r.User.Email : ""
                 })
                 .ToListAsync();

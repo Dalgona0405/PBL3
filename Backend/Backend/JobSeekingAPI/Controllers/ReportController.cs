@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Services;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -11,11 +12,13 @@ namespace JobSeekingAPI.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ReportsController> _logger;
+        private readonly IReportService _reportService;
 
-        public ReportsController(ApplicationDbContext context, ILogger<ReportsController> logger)
+        public ReportsController(ApplicationDbContext context, ILogger<ReportsController> logger, IReportService reportService)
         {
             _context = context;
             _logger = logger;
+            _reportService = reportService;
         }
 
         /// <summary>
@@ -221,7 +224,7 @@ namespace JobSeekingAPI.Controllers
                         Expired = g.Count(j => j.Deadline < today),
                         Total = g.Count()
                     })
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync(); 
 
                 // Chờ tất cả tasks hoàn thành
                 await Task.WhenAll(
@@ -413,36 +416,39 @@ namespace JobSeekingAPI.Controllers
         [HttpGet("top-companies")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetTopCompanies([FromQuery] int limit = 10)
+        public async Task<IActionResult> GetTopCompanies([FromQuery] int limit = 5)
         {
             try
             {
-                var topCompanies = await _context.Companies
-                    .Where(c => c.DeletedAt == null && c.Jobs.Any(j => j.DeletedAt == null))
-                    .Select(c => new
-                    {
-                        CompanyId = c.CompanyId,
-                        CompanyName = c.CompanyName,
-                        LogoImg = c.LogoImg,
-                        JobCount = c.Jobs.Count(j => j.DeletedAt == null),
-                        TotalApplications = c.Jobs
-                            .Where(j => j.DeletedAt == null)
-                            .SelectMany(j => j.Applications)
-                            .Count(a => a.DeletedAt == null),
-                        TotalViews = c.Jobs
-                            .Where(j => j.DeletedAt == null)
-                            .Sum(j => j.ViewCount ?? 0),
-                        AvgSalary = c.Jobs
-                            .Where(j => j.DeletedAt == null && j.SalaryMin.HasValue && j.SalaryMax.HasValue)
-                            .Average(j => (j.SalaryMin + j.SalaryMax) / 2 ?? 0),
-                        LatestJobDate = c.Jobs
-                            .Where(j => j.DeletedAt == null)
-                            .Max(j => (DateTime?)j.PostedDate)
-                    })
-                    .OrderByDescending(x => x.TotalApplications)
-                    .Take(limit)
-                    .ToListAsync();
+                // var topCompanies = await _context.Companies
+                //     .Where(c => c.DeletedAt == null && c.Jobs.Any(j => j.DeletedAt == null))
+                //     .Select(c => new
+                //     {
+                //         CompanyId = c.CompanyId,
+                //         CompanyName = c.CompanyName,
+                //         LogoImg = c.LogoImg,
+                //         JobCount = c.Jobs.Count(j => j.DeletedAt == null),
+                //         TotalApplications = c.Jobs
+                //             .Where(j => j.DeletedAt == null)
+                //             .SelectMany(j => j.Applications)
+                //             .Count(a => a.DeletedAt == null),
+                //         TotalViews = c.Jobs
+                //             .Where(j => j.DeletedAt == null)
+                //             .Sum(j => j.ViewCount ?? 0),
+                //         AvgSalary = c.Jobs
+                //             .Where(j => j.DeletedAt == null && j.SalaryMin.HasValue && j.SalaryMax.HasValue)
+                //             .Average(j => (j.SalaryMin + j.SalaryMax) / 2 ?? 0),
+                //         LatestJobDate = c.Jobs
+                //             .Where(j => j.DeletedAt == null)
+                //             .Max(j => (DateTime?)j.PostedDate)
+                //     })
+                //     .OrderByDescending(x => x.TotalApplications) 
+                //     .Take(limit)
+                //     .ToListAsync();
 
+                // return Ok(topCompanies);
+
+                var topCompanies = await _reportService.GetTopCompaniesAsync(limit);
                 return Ok(topCompanies);
             }
             catch (Exception ex)

@@ -17,7 +17,7 @@ namespace JobSeekingAPI.Models
         
         public string Role { get; set; } = string.Empty;      // Candidate, Recruiter, Admin
         
-        
+        public string? Avatar { get; set; } // Nếu muốn lưu avatar ở đây, nhưng hiện tại đã có ở Candidate và Recruiter
         public DateTime? DeletedAt { get; set; }              // Soft delete
         
         public DateTime? LastLogin { get; set; }              // Thêm LastLogin

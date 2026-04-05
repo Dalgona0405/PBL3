@@ -73,7 +73,7 @@ namespace JobSeekingAPI.Migrations
                         .HasDatabaseName("ix_applications_userid_jobid_unique")
                         .HasFilter("deletedat IS NULL");
 
-                    b.ToTable("applications");
+                    b.ToTable("applications", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Candidate", b =>
@@ -119,7 +119,7 @@ namespace JobSeekingAPI.Migrations
                     b.HasKey("UserId")
                         .HasName("pk_candidates");
 
-                    b.ToTable("candidates");
+                    b.ToTable("candidates", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.CandidateTag", b =>
@@ -143,7 +143,7 @@ namespace JobSeekingAPI.Migrations
                     b.HasIndex("TagId")
                         .HasDatabaseName("ix_candidatetags_tagid");
 
-                    b.ToTable("candidatetags");
+                    b.ToTable("candidatetags", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Company", b =>
@@ -183,7 +183,7 @@ namespace JobSeekingAPI.Migrations
                     b.HasKey("CompanyId")
                         .HasName("pk_companies");
 
-                    b.ToTable("companies");
+                    b.ToTable("companies", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Experience", b =>
@@ -231,7 +231,7 @@ namespace JobSeekingAPI.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_experiences_userid");
 
-                    b.ToTable("experiences");
+                    b.ToTable("experiences", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Job", b =>
@@ -335,7 +335,7 @@ namespace JobSeekingAPI.Migrations
                     b.HasIndex("LocationId")
                         .HasDatabaseName("ix_jobs_locationid");
 
-                    b.ToTable("jobs");
+                    b.ToTable("jobs", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.JobTag", b =>
@@ -354,7 +354,7 @@ namespace JobSeekingAPI.Migrations
                     b.HasIndex("TagId")
                         .HasDatabaseName("ix_jobtags_tagid");
 
-                    b.ToTable("jobtags");
+                    b.ToTable("jobtags", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Location", b =>
@@ -375,7 +375,7 @@ namespace JobSeekingAPI.Migrations
                     b.HasKey("LocationId")
                         .HasName("pk_locations");
 
-                    b.ToTable("locations");
+                    b.ToTable("locations", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Recruiter", b =>
@@ -408,7 +408,7 @@ namespace JobSeekingAPI.Migrations
                     b.HasIndex("CompanyId")
                         .HasDatabaseName("ix_recruiters_companyid");
 
-                    b.ToTable("recruiters");
+                    b.ToTable("recruiters", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Tag", b =>
@@ -438,7 +438,7 @@ namespace JobSeekingAPI.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_tags_tagname_unique");
 
-                    b.ToTable("tags");
+                    b.ToTable("tags", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.User", b =>
@@ -483,7 +483,7 @@ namespace JobSeekingAPI.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_email_unique");
 
-                    b.ToTable("users");
+                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Application", b =>

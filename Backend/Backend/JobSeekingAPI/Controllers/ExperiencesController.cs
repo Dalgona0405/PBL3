@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
+using JobSeekingAPI.Services;
 
 namespace JobSeekingAPI.Controllers
 {
