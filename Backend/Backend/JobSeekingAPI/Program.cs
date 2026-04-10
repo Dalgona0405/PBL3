@@ -12,15 +12,14 @@ using JobSeekingAPI.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== Services =====
+// Register all services here (before Build)
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
-// 🚨 TẠM THỜI COMMENT - CHỜ FIX SAU
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddSwaggerGen(c =>
 {
