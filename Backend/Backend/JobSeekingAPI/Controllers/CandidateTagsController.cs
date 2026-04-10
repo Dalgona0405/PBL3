@@ -29,7 +29,7 @@ namespace JobSeekingAPI.Controllers
                 .Select(ct => new
                 {
                     UserId = ct.UserId,
-                    CandidateName = ct.Candidate != null ? ct.Candidate.FullName : "",
+                    CandidateName = ct.Candidate != null ? ct.Candidate.User.FullName : "",
                     Email = ct.Candidate != null && ct.Candidate.User != null ? ct.Candidate.User.Email : "",
                     TagId = ct.TagId,
                     TagName = ct.Tag != null ? ct.Tag.TagName : "",
@@ -83,7 +83,7 @@ namespace JobSeekingAPI.Controllers
                 Message = "Tag added to candidate successfully",
                 UserId = candidateTag.UserId,
                 TagId = candidateTag.TagId,
-                CandidateName = candidate.FullName,
+                CandidateName = candidate.User.FullName,
                 TagName = tag.TagName,
                 Proficiency = candidateTag.Proficiency
             });
@@ -184,7 +184,7 @@ namespace JobSeekingAPI.Controllers
                 .Select(ct => new
                 {
                     UserId = ct.Candidate!.UserId,
-                    FullName = ct.Candidate.FullName,
+                    FullName = ct.Candidate.User.FullName,
                     Avatar = ct.Candidate.User != null ? ct.Candidate.User.Avatar : null,
                     Email = ct.Candidate.User != null ? ct.Candidate.User.Email : null,
                     Proficiency = ct.Proficiency,

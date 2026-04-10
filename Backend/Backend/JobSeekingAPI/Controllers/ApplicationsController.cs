@@ -41,7 +41,7 @@ namespace JobSeekingAPI.Controllers
                     Candidate = a.Candidate == null ? null : new CandidateSummaryDTO
                     {
                         UserId = a.Candidate.UserId,
-                        FullName = a.Candidate.FullName,
+                        FullName = a.Candidate.User.FullName,
                         Avatar = a.Candidate.User != null ? a.Candidate.User.Avatar : null,
                         Email = a.Candidate.User != null ? a.Candidate.User.Email : null,
                         CVUrl = a.Candidate.CVUrl
@@ -86,7 +86,7 @@ namespace JobSeekingAPI.Controllers
                     Candidate = a.Candidate == null ? null : new CandidateSummaryDTO
                     {
                         UserId = a.Candidate.UserId,
-                        FullName = a.Candidate.FullName,
+                        FullName = a.Candidate.User.FullName,
                         // ❌ XÓA Gender, Birthday, Phone, Address - không có trong CandidateSummaryDTO
                         Avatar = a.Candidate.User != null ? a.Candidate.User.Avatar : null,
                         Email = a.Candidate.User != null ? a.Candidate.User.Email : null,
@@ -173,7 +173,7 @@ namespace JobSeekingAPI.Controllers
                 Candidate = new CandidateSummaryDTO
                 {
                     UserId = candidate.UserId,
-                    FullName = candidate.FullName,
+                    FullName = candidate.User.FullName,
                     Avatar = candidate.User != null ? candidate.User.Avatar : null,
                     Email = candidate.User != null ? candidate.User.Email : null
                 },
@@ -244,7 +244,7 @@ namespace JobSeekingAPI.Controllers
                     Candidate = a.Candidate == null ? null : new CandidateSummaryDTO
                     {
                         UserId = a.Candidate.UserId,
-                        FullName = a.Candidate.FullName,
+                        FullName = a.Candidate.User.FullName,
                         Avatar = a.Candidate.User != null ? a.Candidate.User.Avatar : null,
                         Email = a.Candidate.User != null ? a.Candidate.User.Email : null,
                         CVUrl = a.Candidate.CVUrl

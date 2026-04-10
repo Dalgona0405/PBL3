@@ -29,9 +29,10 @@ namespace JobSeekingAPI.Controllers
                     .ThenInclude(ct => ct.Tag)
                 .Where(c => c.User != null && c.User.DeletedAt == null)
                 .Select(c => new CandidateDetailDTO
-                { 
+                {
                     UserId = c.UserId,
-                    FullName = c.FullName,
+                    // ✅ ĐÃ SỬA: Lấy FullName từ User
+                    FullName = c.User != null ? c.User.FullName : "",
                     Gender = c.Gender,
                     Birthday = c.Birthday,
                     Phone = c.Phone,
@@ -54,7 +55,7 @@ namespace JobSeekingAPI.Controllers
                         }).ToList()
                 })
                 .ToListAsync();
-            
+
             return Ok(candidates);
         }
 
@@ -62,7 +63,6 @@ namespace JobSeekingAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCandidateById(int id)
         {
-            // ✅ CÁCH 2: Dùng UserDetailDTO để trả về đầy đủ thông tin
             var user = await _context.Users
                 .Include(u => u.Candidate)
                     .ThenInclude(c => c!.Experiences)
@@ -82,17 +82,19 @@ namespace JobSeekingAPI.Controllers
                 {
                     UserId = u.UserId,
                     Email = u.Email,
-                    FullName = u.Candidate!.FullName,
+                    // ✅ ĐÃ SỬA: Lấy FullName từ User (u)
+                    FullName = u.FullName,
                     Phone = u.Candidate.Phone,
                     Address = u.Candidate.Address,
                     Role = u.Role,
                     LastLogin = u.LastLogin,
                     DeletedAt = u.DeletedAt,
-                    
+
                     Candidate = new CandidateDetailDTO
                     {
                         UserId = u.Candidate.UserId,
-                        FullName = u.Candidate.FullName,
+                        // ✅ ĐÃ SỬA: Lấy FullName từ User (u)
+                        FullName = u.FullName,
                         Gender = u.Candidate.Gender,
                         Birthday = u.Candidate.Birthday,
                         Phone = u.Candidate.Phone,
@@ -114,8 +116,7 @@ namespace JobSeekingAPI.Controllers
                                 Description = e.Description
                             }).ToList()
                     },
-                    
-                    // ✅ Applications được đặt trong UserDetailDTO
+
                     Applications = u.Candidate.Applications
                         .Where(a => a.DeletedAt == null)
                         .OrderByDescending(a => a.AppliedDate)
@@ -153,25 +154,32 @@ namespace JobSeekingAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            // Kiểm tra User tồn tại
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.UserId == createCandidateDto.UserId && u.DeletedAt == null);
-            
+
             if (user == null)
                 return NotFound("User not found");
 
-            // Kiểm tra Candidate đã tồn tại chưa
             var existingCandidate = await _context.Candidates
                 .AnyAsync(c => c.UserId == createCandidateDto.UserId);
-            
+
             if (existingCandidate)
                 return BadRequest("Candidate already exists for this user");
 
-            // Tạo Candidate mới
+            // ✅ ĐÃ SỬA: Cập nhật FullName và Avatar cho User (nếu có gửi lên)
+            if (!string.IsNullOrWhiteSpace(createCandidateDto.FullName))
+            {
+                user.FullName = createCandidateDto.FullName;
+            }
+            if (!string.IsNullOrWhiteSpace(createCandidateDto.Avatar))
+            {
+                user.Avatar = createCandidateDto.Avatar;
+            }
+
+            // Tạo Candidate mới (KHÔNG CÒN FullName ở đây nữa)
             var candidate = new Candidate
             {
                 UserId = createCandidateDto.UserId,
-                FullName = createCandidateDto.FullName,
                 Gender = createCandidateDto.Gender,
                 Birthday = createCandidateDto.Birthday,
                 Phone = createCandidateDto.Phone,
@@ -195,22 +203,28 @@ namespace JobSeekingAPI.Controllers
             var existingCandidate = await _context.Candidates
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(c => c.UserId == id);
-            
+
             if (existingCandidate == null)
                 return NotFound("Candidate not found");
 
-            // Cập nhật thông tin
-            existingCandidate.FullName = updateCandidateDto.FullName ?? existingCandidate.FullName;
+            // Cập nhật thông tin Candidate
             existingCandidate.Gender = updateCandidateDto.Gender ?? existingCandidate.Gender;
             existingCandidate.Birthday = updateCandidateDto.Birthday ?? existingCandidate.Birthday;
             existingCandidate.Phone = updateCandidateDto.Phone ?? existingCandidate.Phone;
             existingCandidate.Address = updateCandidateDto.Address ?? existingCandidate.Address;
             existingCandidate.CVUrl = updateCandidateDto.CVUrl ?? existingCandidate.CVUrl;
 
-            // Cập nhật Avatar trong User nếu có
-            if (updateCandidateDto.Avatar != null && existingCandidate.User != null)
+            // ✅ ĐÃ SỬA: Cập nhật FullName và Avatar vào bảng User
+            if (existingCandidate.User != null)
             {
-                existingCandidate.User.Avatar = updateCandidateDto.Avatar;
+                if (!string.IsNullOrWhiteSpace(updateCandidateDto.FullName))
+                {
+                    existingCandidate.User.FullName = updateCandidateDto.FullName;
+                }
+                if (!string.IsNullOrWhiteSpace(updateCandidateDto.Avatar))
+                {
+                    existingCandidate.User.Avatar = updateCandidateDto.Avatar;
+                }
             }
 
             await _context.SaveChangesAsync();
@@ -225,11 +239,10 @@ namespace JobSeekingAPI.Controllers
             var candidate = await _context.Candidates
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(c => c.UserId == id);
-            
+
             if (candidate == null)
                 return NotFound("Candidate not found");
 
-            // Soft delete User
             if (candidate.User != null)
             {
                 candidate.User.DeletedAt = DateTime.Now;
@@ -294,10 +307,11 @@ namespace JobSeekingAPI.Controllers
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 keyword = keyword.ToLower();
-                query = query.Where(c => 
-                    c.FullName.ToLower().Contains(keyword) ||
+                query = query.Where(c =>
+                    // ✅ ĐÃ SỬA: Tìm kiếm FullName trong bảng User
+                    (c.User != null && c.User.FullName.ToLower().Contains(keyword)) ||
                     (c.Phone != null && c.Phone.Contains(keyword)) ||
-                    c.Experiences.Any(e => 
+                    c.Experiences.Any(e =>
                         e.JobTitle.ToLower().Contains(keyword) ||
                         e.CompanyName.ToLower().Contains(keyword)));
             }
@@ -308,16 +322,17 @@ namespace JobSeekingAPI.Controllers
                 query = query.Where(c => c.CandidateTags.Any(ct => ct.TagId == tagId));
             }
 
-            // Phân trang
             var totalCount = await query.CountAsync();
             var candidates = await query
-                .OrderBy(c => c.FullName)
+                // ✅ ĐÃ SỬA: Sắp xếp theo FullName của User
+                .OrderBy(c => c.User != null ? c.User.FullName : "")
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(c => new CandidateSummaryDTO
                 {
                     UserId = c.UserId,
-                    FullName = c.FullName,
+                    // ✅ ĐÃ SỬA: Lấy FullName và Avatar từ User
+                    FullName = c.User != null ? c.User.FullName : "",
                     Avatar = c.User != null ? c.User.Avatar : null,
                     CVUrl = c.CVUrl,
                     Email = c.User != null ? c.User.Email : null,
@@ -347,19 +362,17 @@ namespace JobSeekingAPI.Controllers
         {
             var candidate = await _context.Candidates
                 .FirstOrDefaultAsync(c => c.UserId == id);
-            
+
             if (candidate == null)
                 return NotFound("Candidate not found");
 
-            // Kiểm tra Tag tồn tại
             var tag = await _context.Tags.FindAsync(addSkillDto.TagId);
             if (tag == null)
                 return NotFound("Tag not found");
 
-            // Kiểm tra đã có chưa
             var existing = await _context.CandidateTags
                 .AnyAsync(ct => ct.UserId == id && ct.TagId == addSkillDto.TagId);
-            
+
             if (existing)
                 return BadRequest("Skill already added");
 
@@ -382,7 +395,7 @@ namespace JobSeekingAPI.Controllers
         {
             var candidateTag = await _context.CandidateTags
                 .FirstOrDefaultAsync(ct => ct.UserId == id && ct.TagId == tagId);
-            
+
             if (candidateTag == null)
                 return NotFound("Skill not found");
 

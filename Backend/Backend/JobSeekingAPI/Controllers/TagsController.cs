@@ -78,7 +78,7 @@ namespace JobSeekingAPI.Controllers
                         .Select(ct => new CandidateSummaryDTO
                         {
                             UserId = ct.Candidate != null ? ct.Candidate.UserId : 0,
-                            FullName = ct.Candidate != null ? ct.Candidate.FullName : "",
+                            FullName = ct.Candidate != null ? ct.Candidate.User.FullName : "",
                             Avatar = ct.Candidate != null && ct.Candidate.User != null ? ct.Candidate.User.Avatar : null,  // ✅ FIX
                             Email = ct.Candidate != null && ct.Candidate.User != null ? ct.Candidate.User.Email : null,    // ✅ FIX
                             Proficiency = ct.Proficiency

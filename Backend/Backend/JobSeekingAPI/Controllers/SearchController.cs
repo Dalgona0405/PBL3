@@ -174,7 +174,7 @@ namespace JobSeekingAPI.Controllers
             {
                 keyword = keyword.ToLower();
                 query = query.Where(c => 
-                    c.FullName.ToLower().Contains(keyword) ||
+                    c.User.FullName.ToLower().Contains(keyword) ||
                     (c.Phone != null && c.Phone.Contains(keyword)) ||
                     c.Experiences.Any(e => 
                         e.JobTitle.ToLower().Contains(keyword) ||
@@ -189,13 +189,13 @@ namespace JobSeekingAPI.Controllers
 
             var totalCount = await query.CountAsync();
             var candidates = await query
-                .OrderBy(c => c.FullName)
+                .OrderBy(c => c.User.FullName)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(c => new CandidateSummaryDTO
                 {
                     UserId = c.UserId,
-                    FullName = c.FullName,
+                    FullName = c.User.FullName,
                     Avatar = c.User != null ? c.User.Avatar : null,
                     Email = c.User != null ? c.User.Email : null,
                     CVUrl = c.CVUrl,

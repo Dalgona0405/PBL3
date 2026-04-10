@@ -42,8 +42,8 @@ return (
                             </div>
                             
                             {user.role === 'Candidate' && (
-                                <div className="dropdown-item" onClick={() => navigate('/profile')}>
-                                    📝 Việc làm đã ứng tuyển
+                                <div className="dropdown-item" onClick={() => navigate('/history-applied')}>
+                                    📤 Việc làm đã ứng tuyển
                                 </div>
                             )}
                             {user.role === 'Candidate' && (
@@ -53,7 +53,7 @@ return (
                             )}
                             {user.role === 'Candidate' && (
                                 <div className="dropdown-item" onClick={() => navigate('/')}>
-                                    📝 Việc làm phù hợp
+                                    🧩 Việc làm phù hợp
                                 </div>
                             )}
 

@@ -49,6 +49,10 @@ namespace JobSeekingAPI.Data
                     .IsRequired()
                     .HasMaxLength(50);
 
+                entity.Property(u => u.FullName)
+                    .IsRequired()
+                    .HasMaxLength(255);
+
                 entity.Property(u => u.LastLogin);
 
                 entity.HasQueryFilter(u => u.DeletedAt == null);
@@ -119,10 +123,6 @@ namespace JobSeekingAPI.Data
                     .WithOne(u => u.Candidate)
                     .HasForeignKey<Candidate>(c => c.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                entity.Property(c => c.FullName)
-                    .IsRequired()
-                    .HasMaxLength(255);
 
                 entity.Property(c => c.Gender)
                     .HasMaxLength(10);

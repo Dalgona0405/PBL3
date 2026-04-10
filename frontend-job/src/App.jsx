@@ -6,8 +6,8 @@ import RegisterPage from "./pages/RegisterPage";
 import DetailJobPage from "./pages/DetailJobPage";
 import DetailCompanyPage from "./pages/DetailCompanyPage";
 import ProfilePage from "./pages/ProfilePage";
+import HistoryAppliedPage from "./pages/HistoryAppliedPage";
 import './App.css';
-
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 function App() {
@@ -28,6 +28,10 @@ function App() {
         <Route 
           path="/profile" 
           element={user ? <ProfilePage /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/history-applied" 
+          element={user ? <HistoryAppliedPage /> : <Navigate to="/login" />} 
         />
         <Route 
           path="/recruiter-dashboard" 

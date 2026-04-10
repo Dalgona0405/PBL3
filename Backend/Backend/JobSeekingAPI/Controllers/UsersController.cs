@@ -30,12 +30,9 @@ namespace JobSeekingAPI.Controllers
                 {
                     UserId = u.UserId,
                     Email = u.Email,
-                    // ✅ FIX: Lấy FullName từ Candidate hoặc Recruiter.User
-                    FullName = u.Candidate != null ? u.Candidate.FullName : 
-                              (u.Recruiter != null && u.Recruiter.User != null ? u.Recruiter.FullName : ""),
+                    FullName = u.FullName,
                     Role = u.Role,
-                    // ✅ FIX: Avatar nằm trong Candidate hoặc Recruiter
-                    Avatar = u.Candidate != null ? u.Candidate.User != null ? u.Candidate.User.Avatar : null : (u.Recruiter != null ? u.Recruiter.User != null ? u.Recruiter.User.Avatar : null : null),
+                    Avatar = u.Avatar,
                     CompanyName = u.Recruiter != null && u.Recruiter.Company != null 
                                 ? u.Recruiter.Company.CompanyName : null,
                     LastLogin = u.LastLogin
@@ -66,21 +63,18 @@ namespace JobSeekingAPI.Controllers
                 {
                     UserId = u.UserId,
                     Email = u.Email,
-                    // ✅ FIX: Lấy FullName từ Candidate hoặc Recruiter.User
-                    FullName = u.Candidate != null ? u.Candidate.FullName : 
-                              (u.Recruiter != null && u.Recruiter.User != null ? u.Recruiter.FullName : ""),
+                    FullName = u.FullName,
                     Phone = u.Candidate != null ? u.Candidate.Phone : null,
                     Address = u.Candidate != null ? u.Candidate.Address : null,
                     Role = u.Role,
-                    // ✅ FIX: Avatar nằm trong Candidate hoặc Recruiter
-                    Avatar = u.Candidate != null ? u.Candidate.User != null ? u.Candidate.User.Avatar : null : (u.Recruiter != null ? u.Recruiter.User != null ? u.Recruiter.User.Avatar : null : null),
+                    Avatar = u.Avatar,
                     LastLogin = u.LastLogin,
                     DeletedAt = u.DeletedAt,
                     
                     Candidate = u.Candidate == null ? null : new CandidateDetailDTO
                     {
                         UserId = u.Candidate.UserId,
-                        FullName = u.Candidate.FullName,
+                        FullName = u.FullName,
                         Gender = u.Candidate.Gender,
                         Birthday = u.Candidate.Birthday,
                         Phone = u.Candidate.Phone,
@@ -154,13 +148,13 @@ namespace JobSeekingAPI.Controllers
             if (existingUser)
                 return Conflict(new { message = "Email already exists" });
 
-            // ✅ FIX: User KHÔNG có FullName - bỏ property này
             var user = new User
             {
                 Email = createUserDto.Email,
                 Password = BCrypt.Net.BCrypt.HashPassword(createUserDto.Password),
                 Role = createUserDto.Role,
-                LastLogin = null
+                LastLogin = null,
+                FullName = createUserDto.FullName
             };
 
             _context.Users.Add(user);
@@ -171,7 +165,6 @@ namespace JobSeekingAPI.Controllers
                 var candidate = new Candidate
                 {
                     UserId = user.UserId,
-                    FullName = createUserDto.FullName,  // ✅ FullName lưu ở Candidate
                     Phone = createUserDto.Phone,
                     Address = createUserDto.Address
                 };
@@ -222,7 +215,7 @@ namespace JobSeekingAPI.Controllers
             // Update Candidate if exists
             if (existingUser.Candidate != null)
             {
-                existingUser.Candidate.FullName = updateUserDto.FullName ?? existingUser.Candidate.FullName;
+                existingUser.FullName = updateUserDto.FullName ?? existingUser.FullName;
                 existingUser.Candidate.Phone = updateUserDto.Phone ?? existingUser.Candidate.Phone;
                 existingUser.Candidate.Address = updateUserDto.Address ?? existingUser.Candidate.Address;
             }
@@ -269,8 +262,8 @@ namespace JobSeekingAPI.Controllers
             {
                 query = query.Where(u => 
                     u.Email.Contains(keyword) || 
-                    (u.Candidate != null && u.Candidate.FullName.Contains(keyword)) ||  // ✅ FIX
-                    (u.Recruiter != null && u.Recruiter.User != null && u.Recruiter.FullName.Contains(keyword)) ||
+                    (u.Candidate != null && u.FullName.Contains(keyword)) ||  // ✅ FIX
+                    (u.Recruiter != null && u.Recruiter.User != null && u.FullName.Contains(keyword)) ||
                     (u.Candidate != null && u.Candidate.Phone != null && u.Candidate.Phone.Contains(keyword)));
             }
 
@@ -281,16 +274,16 @@ namespace JobSeekingAPI.Controllers
 
             var totalCount = await query.CountAsync();
             var users = await query
-                .OrderBy(u => u.Candidate != null ? u.Candidate.FullName : 
-                            (u.Recruiter != null && u.Recruiter.User != null ? u.Recruiter.FullName : ""))  // ✅ FIX
+                .OrderBy(u => u.Candidate != null ? u.FullName : 
+                            (u.Recruiter != null && u.Recruiter.User != null ? u.FullName : ""))  // ✅ FIX
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(u => new UserListDTO
                 {
                     UserId = u.UserId,
                     Email = u.Email,
-                    FullName = u.Candidate != null ? u.Candidate.FullName : 
-                              (u.Recruiter != null && u.Recruiter.User != null ? u.Recruiter.FullName : ""),  // ✅ FIX
+                    FullName = u.Candidate != null ? u.FullName : 
+                              (u.Recruiter != null && u.Recruiter.User != null ? u.FullName : ""),  // ✅ FIX
                     Role = u.Role,
                     Avatar = u.Candidate != null ? u.Candidate.User != null ? u.Candidate.User.Avatar : null : (u.Recruiter != null ? u.Recruiter.User != null ? u.Recruiter.User.Avatar : null : null),  // ✅ FIX
                     CompanyName = u.Recruiter != null && u.Recruiter.Company != null 

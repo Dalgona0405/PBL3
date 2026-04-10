@@ -159,6 +159,7 @@ namespace JobSeekingAPI.Data
                     { 
                         Email = "candidate1@gmail.com", 
                         Password = BCrypt.Net.BCrypt.HashPassword("Candidate@123"),
+                        FullName = "Lê Văn C",
                         Role = "Candidate",
                         LastLogin = null
                     },
@@ -166,6 +167,7 @@ namespace JobSeekingAPI.Data
                     { 
                         Email = "candidate2@gmail.com", 
                         Password = BCrypt.Net.BCrypt.HashPassword("Candidate@123"),
+                        FullName = "Phạm Thị D",
                         Role = "Candidate",
                         LastLogin = null
                     }
@@ -201,7 +203,6 @@ namespace JobSeekingAPI.Data
                     new Candidate
                     {
                         UserId = users[3].UserId,
-                        FullName = "Lê Văn C",
                         Gender = "Nam",
                         Birthday = new DateTime(1995, 5, 15),
                         Phone = "0965123456",
@@ -211,7 +212,6 @@ namespace JobSeekingAPI.Data
                     new Candidate
                     {
                         UserId = users[4].UserId,
-                        FullName = "Phạm Thị D",
                         Gender = "Nữ",
                         Birthday = new DateTime(1997, 8, 20),
                         Phone = "0955123456",

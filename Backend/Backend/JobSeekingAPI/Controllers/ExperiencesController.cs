@@ -36,7 +36,7 @@ namespace JobSeekingAPI.Controllers
                     StartDate = e.StartDate ?? DateTime.MinValue,
                     EndDate = e.EndDate,
                     Description = e.Description,
-                    CandidateName = e.Candidate != null ? e.Candidate.FullName : "",
+                    CandidateName = e.Candidate != null ? e.Candidate.User.FullName : "",
                     Duration = e.EndDate.HasValue 
                         ? $"{e.EndDate.Value.Year - e.StartDate.Value.Year} years" 
                         : $"{DateTime.Now.Year - e.StartDate.Value.Year} years (Current)"
@@ -63,7 +63,7 @@ namespace JobSeekingAPI.Controllers
                     StartDate = e.StartDate ?? DateTime.MinValue,
                     EndDate = e.EndDate,
                     Description = e.Description,
-                    CandidateName = e.Candidate != null ? e.Candidate.FullName : "",
+                    CandidateName = e.Candidate != null ? e.Candidate.User.FullName : "",
                     CandidateEmail = e.Candidate != null && e.Candidate.User != null ? e.Candidate.User.Email : ""
                 })
                 .FirstOrDefaultAsync();
@@ -117,7 +117,7 @@ namespace JobSeekingAPI.Controllers
                 StartDate = (DateTime)experience.StartDate,
                 EndDate = experience.EndDate,
                 Description = experience.Description,
-                CandidateName = candidate.FullName
+                CandidateName = candidate.User.FullName
             };
 
             return CreatedAtAction(nameof(GetExperienceById), new { id = experience.ExpId }, experienceDto);

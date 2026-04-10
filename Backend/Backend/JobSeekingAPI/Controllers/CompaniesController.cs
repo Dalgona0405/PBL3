@@ -125,7 +125,7 @@ namespace JobSeekingAPI.Controllers
                         .Select(r => new RecruiterSummaryDTO
                         {
                             UserId = r.UserId,
-                            FullName = r.User != null ? r.FullName : "",
+                            FullName = r.User != null ? r.User.FullName : "",
                             Position = r.Position,
                             Avatar = r.User != null ? r.User.Avatar : null
                         }).ToList()
