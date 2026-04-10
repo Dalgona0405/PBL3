@@ -7,6 +7,7 @@ import DetailJobPage from "./pages/DetailJobPage";
 import DetailCompanyPage from "./pages/DetailCompanyPage";
 import ProfilePage from "./pages/ProfilePage";
 import HistoryAppliedPage from "./pages/HistoryAppliedPage";
+import RecruiterDashboardPage from "./pages/RecruiterDashboardPage";
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
@@ -35,7 +36,11 @@ function App() {
         />
         <Route 
           path="/recruiter-dashboard" 
-          element={user?.role === 'Recruiter' ? <div style={{padding: '50px'}}>Giao diện của Nhà Tuyển Dụng (Đang xây)</div> : <Navigate to="/login" />} 
+          element={user?.role === 'Recruiter' ? <RecruiterDashboardPage /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/recruiter-dashboard" 
+          element={user?.role === 'Recruiter' ? <RecruiterDashboardPage /> : <Navigate to="/login" />} 
         />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

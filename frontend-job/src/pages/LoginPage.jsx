@@ -1,68 +1,67 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import { API_URLS } from '../api/api'; // Tạm thời comment lại chờ Backend có API Login
+import { API_URLS } from '../api/api';
 import '../App.css';
 
-// Nhận cái phễu setUser từ App.jsx truyền xuống
 function LoginPage({ setUser }) { 
   const navigate = useNavigate();
   
-  // 1. Hộp chứa email và password
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
   });
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // Thêm state loading cho mượt
 
-  // 2. Hàm hứng chữ khi gõ phím
   const handleChange = (e) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
   };
 
-  // 3. Hàm xử lý khi bấm Đăng nhập
   const handleLogin = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setMessage(''); // Xóa thông báo cũ
     
-    // ==========================================
-    // LOGIC GỌI API
-    /*
     try {
-      const response = await fetch(`${API_URLS.USERS}/login`, { // Đổi link này theo Backend
+      // 1. Gửi Email/Password lên Backend
+      const response = await fetch(API_URLS.LOGIN, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)
       });
 
+      const data = await response.json();
+
+      // 2. Nếu Backend trả về OK (Status 200)
       if (response.ok) {
-        const data = await response.json(); // Data thường chứa token và thông tin user
-        // Xử lý thành công...
+        // Cất Token (Thẻ VIP) vào ví (localStorage)
+        localStorage.setItem('token', data.token); 
+        
+        // Cất thông tin User vào localStorage và State của React
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
+        
+        setMessage("Đăng nhập thành công! Đang chuyển hướng... 🌿");
+        
+        // Chuyển hướng dựa theo Role
+        setTimeout(() => {
+            if (data.user.role === 'Recruiter') {
+                navigate('/recruiter-dashboard');
+            } else {
+                navigate('/');
+            }
+        }, 1000);
+
+      } else {
+        // 3. Nếu sai pass hoặc email không tồn tại (Status 401)
+        setMessage(data.message || "Sai email hoặc mật khẩu rùi nha!");
       }
-    } catch (error) { ... }
-    */
-    // ==========================================
-
-    // MÔ PHỎNG (MOCK) ĐỂ TEST PHÂN QUYỀN:
-    if (credentials.email === "recruiter@gmail.com" && credentials.password === "123") {
-      // Giả sử Backend trả về data như sau
-      const fakeRecruiter = { id: 1, email: "recruiter@gmail.com", role: "Recruiter", name: "Chị HR xinh đẹp" };
-      
-      setUser(fakeRecruiter);
-      localStorage.setItem('user', JSON.stringify(fakeRecruiter));
-      
-      setMessage("Đăng nhập thành công! Đang vào cổng Nhà Tuyển Dụng...");
-      setTimeout(() => navigate('/recruiter-dashboard'), 1500);
-
-    } else if (credentials.email === "abc@gmail.com" && credentials.password === "123") {
-      
-      const fakeCandidate = { id: 6, email: "abc@gmail.com", role: "Candidate", name: "ABC Dev" };
-      setUser(fakeCandidate);
-      localStorage.setItem('user', JSON.stringify(fakeCandidate));
-      
-      setMessage("Chào bạn! Đang đưa bạn về trang chủ...");
-      setTimeout(() => navigate('/'), 1500);
-
-    } else {
-      setMessage("Sai email hoặc mật khẩu rùi nha!");
+    } catch (error) {
+      // 4. Bắt lỗi khi rớt mạng hoặc Backend chưa chạy
+      console.error("Lỗi đăng nhập:", error);
+      setMessage("Lỗi kết nối máy chủ. Bạn kiểm tra lại mạng hoặc Backend nhé! 🔌");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -73,7 +72,19 @@ function LoginPage({ setUser }) {
           <h2>Chào mừng trở lại! ✨</h2>
           <p className="login-subtitle">Đăng nhập để tìm kiếm cơ hội IT của bạn</p>
           
-          {message && <p style={{ color: '#D4A373', fontWeight: 'bold' }}>{message}</p>}
+          {/* Hiển thị thông báo lỗi hoặc thành công */}
+          {message && (
+            <p style={{ 
+                color: message.includes('thành công') ? '#8E9775' : '#e74c3c', 
+                fontWeight: 'bold',
+                backgroundColor: message.includes('thành công') ? '#f0f4eb' : '#fdf5f5',
+                padding: '10px',
+                borderRadius: '8px',
+                textAlign: 'center'
+            }}>
+                {message}
+            </p>
+          )}
 
           <form className="login-form" onSubmit={handleLogin}>
             <div className="input-group">
@@ -85,6 +96,7 @@ function LoginPage({ setUser }) {
                 value={credentials.email}
                 onChange={handleChange}
                 required
+                disabled={isLoading} // Khóa ô nhập khi đang loading
               />
             </div>
             
@@ -97,10 +109,13 @@ function LoginPage({ setUser }) {
                 value={credentials.password}
                 onChange={handleChange}
                 required
+                disabled={isLoading}
               />
             </div>
             
-            <button type="submit" className="btn-submit">Đăng nhập ngay</button>
+            <button type="submit" className="btn-submit" disabled={isLoading}>
+                {isLoading ? 'Đang xử lý...' : 'Đăng nhập ngay'}
+            </button>
           </form>
           
           <p className="login-footer">

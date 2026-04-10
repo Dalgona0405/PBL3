@@ -6,20 +6,24 @@ import '../css/ProfilePage.css';
 function EditProfileForm({ formData, setFormData }) {
     const handleInputChange = (e) => {
         const { id, value } = e.target;
-        if (id === 'gender' || id === 'birthday'){
-            setFormData({
-                ...formData,
-                candidate: {
-                    ...formData.candidate,
-                    [id]: value
-                }
-            });
-        } else {
-            setFormData({
-                ...formData,
-                [id]: value
-            });
-        }
+        if (id === 'fullName') {
+                setFormData({ ...formData, [id]: value });
+                return;
+            }
+        if (['gender', 'birthday', 'phone', 'address'].includes(id)) {
+                setFormData({
+                    ...formData,
+                    candidate: { ...formData.candidate, [id]: value }
+                });
+                return;
+            }
+        if (id === 'position') {
+                setFormData({
+                    ...formData,
+                    recruiter: { ...formData.recruiter, [id]: value }
+                });
+                return;
+            }
     };
 
     return (
@@ -41,24 +45,36 @@ function EditProfileForm({ formData, setFormData }) {
                     <option value="Khác">Khác</option>
                 </select>
             </div>
-            <div className="info-group">
-                <p>📞 Điện thoại:</p> 
-                <input type="text" id="phone" className="edit-input" 
-                    value={formData.candidate?.phone || ''} 
-                    onChange={handleInputChange} />
-            </div>
-            <div className="info-group">
-                <p>🏠 Địa chỉ:</p> 
-                <input type="text" id="address" className="edit-input" 
-                    value={formData.candidate?.address || ''} 
-                    onChange={handleInputChange} />
-            </div>
-            <div className="info-group">
-                <p>🎂 Sinh nhật:</p>
-                <input type="date" id="birthday" className="edit-input" 
-                    value={formData.candidate?.birthday ? formData.candidate.birthday.split('T')[0] : ''} 
-                    onChange={handleInputChange} />
-            </div>
+            {formData.role === 'Candidate' && (
+                <>
+                    <div className="info-group">
+                        <p>📞 Điện thoại:</p> 
+                        <input type="text" id="phone" className="edit-input" 
+                            value={formData.candidate?.phone || ''} 
+                            onChange={handleInputChange} />
+                    </div>
+                    <div className="info-group">
+                        <p>🏠 Địa chỉ:</p> 
+                        <input type="text" id="address" className="edit-input" 
+                            value={formData.candidate?.address || ''} 
+                            onChange={handleInputChange} />
+                    </div>
+                    <div className="info-group">
+                        <p>🎂 Sinh nhật:</p>
+                        <input type="date" id="birthday" className="edit-input" 
+                            value={formData.candidate?.birthday ? formData.candidate.birthday.split('T')[0] : ''} 
+                            onChange={handleInputChange} />
+                    </div>
+                </>
+            )}
+            {formData.role === 'Recruiter' && (
+                <div className="info-group">
+                    <p> Chức vụ:</p>
+                    <input type="text" id="position" className="edit-input" 
+                        value={formData.recruiter?.position || ''} 
+                        onChange={handleInputChange} />
+                </div>
+            )}
         </div>
     );
 }
@@ -85,28 +101,45 @@ function ProfilePage() {
         const fetchData = async () => {
             try {
                 setIsLoading(true);
+                setError(null);
 
-                const [profileRes, userTagsRes, allTagsRes] = await Promise.all([
+                const [profileRes, allTagsRes] = await Promise.all([
                     fetch(`${API_URLS.USERS}/${parsedUser.id}`),
-                    fetch(`${API_URLS.CANDIDATE_TAGS}/candidate/${parsedUser.id}`),
                     fetch(`${API_URLS.TAGS}`)
                 ]);
-                
-                if (!profileRes.ok) throw new Error ("Không thể tải hồ sơ");
+
+                if (!profileRes.ok) {
+                    throw new Error("Không thể tải hồ sơ. User có thể không tồn tại.");
+                }
 
                 const profileData = await profileRes.json();
-                const userTagsData = userTagsRes.ok ? await userTagsRes.json() : [];
-                const allTagsData = allTagsRes.ok ? await allTagsRes.json() :[];
+                const allTagsData = allTagsRes.ok ? await allTagsRes.json() : [];
 
                 setFormData(profileData);
-                setUserTags(userTagsData);
                 setAllTags(allTagsData);
+
+                if (profileData.role === 'Candidate') {
+                    const userTagsRes = await fetch(`${API_URLS.CANDIDATE_TAGS}/candidate/${parsedUser.id}`);
+                    if (userTagsRes.ok) {
+                        const userTagsData = await userTagsRes.json();
+                        setUserTags(userTagsData);
+                    } else {
+                        console.warn("Không thể tải skill của user, có thể user chưa có skill nào.");
+                        setUserTags([]);
+                    }
+                } else {
+                    // Nếu là Recruiter, không cần fetch skill, set mảng rỗng
+                    setUserTags([]);
+                }
+
             } catch (err) {
-                setError("Hệ thống đang bảo trì hoặc không tìm thấy User này. Vui lòng thử lại sau! 🌿");
+                console.error("Lỗi fetchData:", err);
+                setError("Hệ thống đang bảo trì. Vui lòng thử lại sau! 🌿");
             } finally {
                 setIsLoading(false);
             }
         };
+
         fetchData();
     }, [navigate]);
 
