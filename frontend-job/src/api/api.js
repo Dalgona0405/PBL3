@@ -10,7 +10,9 @@ export const API_URLS = {
     APPLICATIONS: `${BASE_URL}/applications`,
     TAGS: `${BASE_URL}/tags`,
     CANDIDATE_TAGS: `${BASE_URL}/candidatetags`,
-    CANDIDATE: `${BASE_URL}/candidates`
+    CANDIDATE: `${BASE_URL}/candidates`,
+    RECRUITERS: `${BASE_URL}/recruiters`,
+    LOCATION: `${BASE_URL}/locations`
 };
 
 //

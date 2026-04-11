@@ -31,14 +31,16 @@ function RecruiterDashboardPage() {
         const fetchJobs = async () => {
             try {
                 setIsLoading(true);
-                const res = await fetch(`${API_URLS.USERS}/${parsedUser.id}`);
+                
+                // Thay vì gọi API Users, ta gọi API chuyên dụng của Recruiter
+                const res = await fetch(`${API_URLS.RECRUITERS}/${parsedUser.id}/jobs`);
                 if (!res.ok) throw new Error("Không thể tải dữ liệu.");
                 
-                const userData = await res.json();
-                // Lấy danh sách jobs từ thông tin công ty của recruiter
-                if (userData.recruiter?.company?.jobs) {
-                    setJobs(userData.recruiter.company.jobs);
-                }
+                // API này trả về trực tiếp một Mảng (Array) các công việc
+                const jobsData = await res.json();
+                
+                setJobs(jobsData); // Lưu thẳng vào State
+                
             } catch (err) {
                 setError("Lỗi kết nối máy chủ. Vui lòng thử lại sau! 🌿");
             } finally {
@@ -132,7 +134,7 @@ function RecruiterDashboardPage() {
                                 <div className="job-card-header">
                                     <div>
                                         <h3 onClick={() => navigate(`/detail-job/${job.jobId}`)}>{job.title}</h3>
-                                        <p className="job-meta">📍 {job.locationName} | ⏳ Hạn chót: {job.deadline ? new Date(job.deadline).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}</p>
+                                        <p className="job-meta">📍 {job.location?.locationName} | ⏳ Hạn chót: {job.deadline ? new Date(job.deadline).toLocaleDateString('vi-VN') : 'Chưa cập nhật'}</p>
                                     </div>
                                     <button 
                                         className="btn-view-apps"

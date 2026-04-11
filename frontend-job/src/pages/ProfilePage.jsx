@@ -17,7 +17,7 @@ function EditProfileForm({ formData, setFormData }) {
                 });
                 return;
             }
-        if (id === 'position') {
+        if (id === 'position' || id === 'company') {
                 setFormData({
                     ...formData,
                     recruiter: { ...formData.recruiter, [id]: value }
@@ -68,12 +68,20 @@ function EditProfileForm({ formData, setFormData }) {
                 </>
             )}
             {formData.role === 'Recruiter' && (
+                <>
                 <div className="info-group">
                     <p> Chức vụ:</p>
                     <input type="text" id="position" className="edit-input" 
                         value={formData.recruiter?.position || ''} 
                         onChange={handleInputChange} />
                 </div>
+                <div className="info-group">
+                    <p> Công ty:</p>
+                    <input type="text" id="companies" className="edit-input" 
+                        value={formData.recruiter?.company?.companyName || ''} 
+                        onChange={handleInputChange} />
+                </div>
+                </>
             )}
         </div>
     );
