@@ -30,7 +30,7 @@ function JobList({ keyword, companyId }) {
         // LUỒNG 2: DÀNH CHO TRANG CHỦ (TÌM KIẾM & PHÂN TRANG)
         else {
             const pageSize = 8;
-            let url = `${API_URLS.SEARCH}?page=${currentPage}&pageSize=${pageSize}`;
+            let url = `${API_URLS.SEARCH}?page=${currentPage}&pageSize=${pageSize}&pageNumber=${currentPage}`;
             
             if (keyword) {
                 url += `&keyword=${encodeURIComponent(keyword)}`;
@@ -48,12 +48,25 @@ function JobList({ keyword, companyId }) {
     }, [keyword, companyId, currentPage]);
 
     // --- HÀM XỬ LÝ LẬT TRANG ---
-    const handlePrevPage = () => {
-        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    // const handlePrevPage = () => {
+    //     if (currentPage > 1) setCurrentPage(currentPage - 1);
+    // };
+
+    // const handleNextPage = () => {
+    //     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    // };
+    const handleNextPage = () => {
+        setCurrentPage(prev => {
+            console.log("Prev:", prev, "Next:", prev + 1);
+            return prev + 1;
+        });
     };
 
-    const handleNextPage = () => {
-        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    const handlePrevPage = () => {
+        setCurrentPage(prev => {
+            console.log("Prev:", prev, "Next:", prev - 1);
+            return prev - 1;
+        });
     };
 
     return (
@@ -96,7 +109,7 @@ function JobList({ keyword, companyId }) {
                                 disabled={currentPage === 1} // Nếu đang ở trang 1 thì khóa nút lại
                                 style={{ 
                                     background: currentPage === 1 ? '#e0e0e0' : '#8E9775',
-                                    color: currentPage === 1 ? '#888' : 'white',
+                                    color: currentPage === 1  ? '#888' : 'white',
                                     cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
                                 }}
                             >
