@@ -5,7 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 
 public class JwtService
 {
-    private readonly string key = "THIS_IS_SECRET_KEY";
+    private readonly string key = "THIS_IS_A_VERY_SECRET_KEY_FOR_JOB_SEEKING_API_2026_SUPER_SAFE";
 
     public string GenerateToken(string username, string role)
     {

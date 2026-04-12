@@ -63,6 +63,12 @@ return (
                                 </div>
                             )}
 
+                            {user.role === 'Recruiter' && (
+                                <div className="dropdown-item" onClick={() => navigate('/recruiter-dashboard')}>
+                                    📝 Đăng tin tuyển dụng
+                                </div>
+                            )}
+
                             <div className="dropdown-divider"></div>
                             
                             <div className="dropdown-item logout-item" onClick={handleLogout}>

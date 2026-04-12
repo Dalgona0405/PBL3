@@ -81,6 +81,7 @@
     font-weight: 600;
     transition: all 0.3s ease; /* Hiệu ứng chuyển động mượt 0.3 giây */
     box-shadow: 0 4px 10px rgba(212, 163, 115, 0.3);
+    width: 30rem;
 }
 
 .btn-submit:hover {

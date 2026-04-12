@@ -339,5 +339,52 @@ namespace JobSeekingAPI.Controllers
         {
             return _context.Users.Any(e => e.UserId == id && e.DeletedAt == null);
         }
+
+        // POST: api/users/login
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDTO loginDto, [FromServices] JwtService jwtService)
+        {
+            // 1. Tìm user theo email
+            var user = await _context.Users
+                .Include(u => u.Candidate)
+                .Include(u => u.Recruiter)
+                .FirstOrDefaultAsync(u => u.Email == loginDto.Email && u.DeletedAt == null);
+
+            if (user == null)
+                return Unauthorized(new { message = "Email không tồn tại!" });
+
+            // 2. KIỂM TRA MẬT KHẨU (Đã sửa thành kiểu cơ bản)
+            // So sánh trực tiếp chữ bình thường. Ví dụ: "123456" == "123456"
+            // (Sau này khi nào làm tính năng Hash Password thì sẽ bật lại BCrypt sau)
+            if (user.Password != loginDto.Password)
+            {
+                return Unauthorized(new { message = "Sai mật khẩu!" });
+            }
+
+            // 3. Cập nhật thời gian đăng nhập lần cuối
+            user.LastLogin = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            // 4. Tạo Token (Thẻ VIP)
+            var token = jwtService.GenerateToken(user.Email, user.Role);
+
+            // 5. Lấy Avatar (nếu có)
+            string? avatar = user.Avatar;
+
+            // 6. Trả về Token và thông tin User cho Frontend
+            return Ok(new
+            {
+                message = "Đăng nhập thành công",
+                token = token,
+                user = new
+                {
+                    id = user.UserId,
+                    email = user.Email,
+                    role = user.Role,
+                    name = user.FullName,
+                    avatar = avatar
+                }
+            });
+        }
     }
 }
