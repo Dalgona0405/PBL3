@@ -14,37 +14,89 @@ namespace JobSeekingAPI.Services
             _context = context;
         }
         
+        // 1. MARKET TREND: Kéo dữ liệu đếm về RAM rồi mới chia phần trăm
         public async Task<List<MarketTrendDTO>> GetMarketTrendAsync(int limit)
         {
             var totalJobs = await _context.Jobs.CountAsync(j => j.DeletedAt == null);
             if (totalJobs == 0) return new List<MarketTrendDTO>();
 
-            return await _context.Tags
-                .Select(t => new MarketTrendDTO (
+            // Bước 1: Kéo data thô từ DB (EF Core dịch cực dễ)
+            var rawTags = await _context.Tags
+                .Select(t => new {
                     t.TagName,
-                    // t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
-                    t.JobTags.Count(),
-                    // Tính toán phần trăm an toàn
-                    totalJobs > 0 ? Math.Round((double)t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null) / totalJobs * 100, 2) : 0
-                ))
-                .OrderByDescending(x => x.JobCount) 
+                    JobCount = t.JobTags.Count()
+                })
+                .OrderByDescending(x => x.JobCount)
                 .Take(limit)
-                .ToListAsync();
+                .ToListAsync(); // <--- Cắt đứt lệnh SQL tại đây
+
+            // Bước 2: Map sang DTO và dùng Math.Round trên RAM của C#
+            return rawTags.Select(t => new MarketTrendDTO (
+                t.TagName,
+                t.JobCount,
+                totalJobs > 0 ? Math.Round((double)t.JobCount / totalJobs * 100, 2) : 0
+            )).ToList();
         }
 
+        // 2. SALARY BY LOCATION: Tính Average thô ở DB, Round ở RAM
         public async Task<List<SalaryReportDTO>> GetSalaryByLocationAsync()
         {
-            return await _context.Jobs
-                .Where(j => j.DeletedAt == null && j.SalaryMin.HasValue && j.Location != null)
+            // Bước 1: Kéo data thô
+            var rawSalaries = await _context.Jobs
+                .Where(j => j.DeletedAt == null && j.Location != null && (j.SalaryMin > 0 || j.SalaryMax > 0))
                 .GroupBy(j => j.Location!.LocationName)
+                .Select(g => new {
+                    LocationName = g.Key,
+                    AvgMin = g.Average(j => (decimal?)j.SalaryMin),
+                    AvgMax = g.Average(j => (decimal?)j.SalaryMax),
+                    JobCount = g.Count()
+                })
+                .ToListAsync(); // <--- Kéo về RAM
+
+            // Bước 2: Dùng Math.Round và map DTO
+            return rawSalaries
                 .Select(g => new SalaryReportDTO(
-                    g.Key,
-                    Math.Round(g.Average(j => (decimal?)j.SalaryMin ?? 0), 0),
-                    Math.Round(g.Average(j => (decimal?)j.SalaryMax ?? 0), 0),
-                    g.Count()
+                    g.LocationName,
+                    Math.Round(g.AvgMin ?? 0, 0),
+                    Math.Round(g.AvgMax ?? 0, 0),
+                    g.JobCount
                 ))
                 .OrderByDescending(x => x.AverageMaxSalary)
-                .ToListAsync();
+                .ToList();
+        }
+
+        // 3. TOP COMPANIES: Tách gọn câu LINQ khổng lồ
+        public async Task<List<TopCompanyDTO>> GetTopCompaniesAsync(int limit)
+        {
+            // Bước 1: Chỉ lấy các số liệu Count, Sum, Average căn bản từ DB
+            var rawCompanies = await _context.Companies
+                .Where(c => c.DeletedAt == null)
+                .Select(c => new {
+                    c.CompanyId,
+                    c.CompanyName,
+                    c.LogoImg,
+                    JobCount = c.Jobs.Count(j => j.DeletedAt == null),
+                    AppCount = c.Jobs.SelectMany(j => j.Applications).Count(a => a.DeletedAt == null),
+                    ViewCount = c.Jobs.Where(j => j.DeletedAt == null).Sum(j => (int?)j.ViewCount),
+                    AvgSalary = c.Jobs.Where(j => j.DeletedAt == null && (j.SalaryMin > 0 || j.SalaryMax > 0))
+                                    .Average(j => (decimal?)((j.SalaryMin + j.SalaryMax) / 2)),
+                    LatestJobDate = c.Jobs.Where(j => j.DeletedAt == null).Max(j => (DateTime?)j.PostedDate)
+                })
+                .OrderByDescending(c => c.JobCount)
+                .Take(limit)
+                .ToListAsync(); // <--- Ép chạy SQL tại đây
+
+            // Bước 2: Đẩy vào DTO an toàn
+            return rawCompanies.Select(c => new TopCompanyDTO(
+                c.CompanyId,
+                c.CompanyName,
+                c.LogoImg,
+                c.JobCount,
+                c.AppCount,
+                c.ViewCount ?? 0,
+                c.AvgSalary ?? 0, 
+                c.LatestJobDate
+            )).ToList();
         }
 
         public async Task<object> GetSkillsGraphAsync(int nodeLimit)
@@ -121,27 +173,6 @@ namespace JobSeekingAPI.Services
                 ApplicationRate = totalJobs > 0 ? Math.Round((double)totalCandidates / totalJobs, 2) : 0,
                 LastUpdated = now
             };
-        }
-
-        public async Task<List<TopCompanyDTO>> GetTopCompaniesAsync(int limit) // tránh tình trạng lỗi lệch cột
-        {
-            return await _context.Companies
-            .Where(c => c.DeletedAt == null)
-            .Select(c => new TopCompanyDTO(
-                c.CompanyId,
-                c.CompanyName,
-                c.LogoImg,
-                c.Jobs.Count(j => j.DeletedAt == null),
-                c.Jobs.SelectMany(j => j.Applications).Count(a => a.DeletedAt == null),
-                c.Jobs.Sum(j => j.ViewCount ?? 0),
-                // ✅ Tính AvgSalary an toàn: Tránh lỗi khi không có Job
-                c.Jobs.Any(j => j.DeletedAt == null && j.SalaryMin.HasValue)? c.Jobs.Where(j => j.DeletedAt == null && j.SalaryMin.HasValue).Average(j => (j.SalaryMin + j.SalaryMax) / 2) ?? 0 : 0,
-                // ✅ Lấy LatestJobDate an toàn: Ép kiểu nullable DateTime để tránh lỗi rỗng
-                c.Jobs.Where(j => j.DeletedAt == null).Max(j => (DateTime?)j.PostedDate)
-            ))
-                .OrderByDescending(c => c.JobCount)
-                .Take(limit)
-                .ToListAsync();
         }
 
         // Logic: Thống kê tỉ lệ công việc theo Level (Dùng cho biểu đồ Tròn/Pie Chart)

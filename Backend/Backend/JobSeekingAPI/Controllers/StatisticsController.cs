@@ -25,8 +25,9 @@ namespace JobSeekingAPI.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error in GetDashboard: {ex.Message}");
                 // Thêm cái này để nếu có lỗi trong Service thì mình còn biết đường mà fix
-                return StatusCode(500, $"Lỗi hệ thống: {ex.Message}");
+                return StatusCode(500, new{ message = "An error occurred while fetching dashboard statistics : " + ex.Message });
             }
         }
     }

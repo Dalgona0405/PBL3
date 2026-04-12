@@ -164,7 +164,7 @@ namespace JobSeekingAPI.Data
                 entity.Property(j => j.Status).HasDefaultValue(1);
                 entity.Property(j => j.DeletedAt);
 
-                entity.HasQueryFilter(j => j.DeletedAt == null);
+                entity.HasQueryFilter(j => j.DeletedAt == null); // Không nên filter ở đây vì có thể cần lấy cả Job đã xóa để hiển thị lịch sử ứng tuyển hoặc báo cáo thống kê
             });
 
             // =================================================================
