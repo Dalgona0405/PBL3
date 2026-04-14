@@ -13,49 +13,90 @@ namespace JobSeekingAPI.Services
         {
             _context = context;
         }
-
+        
+        // 1. MARKET TREND: Kéo dữ liệu đếm về RAM rồi mới chia phần trăm
         public async Task<List<MarketTrendDTO>> GetMarketTrendAsync(int limit)
         {
-            // 1. Lấy tổng số job hợp lệ trước
             var totalJobs = await _context.Jobs.CountAsync(j => j.DeletedAt == null);
-            
-            // Nếu không có job nào thì trả về list rỗng luôn, tránh tính toán bên dưới
             if (totalJobs == 0) return new List<MarketTrendDTO>();
 
-            // 2. Truy vấn xu hướng
-            var trends = await _context.Tags
-                .Where(t => t.JobTags.Any(jt => jt.Job != null && jt.Job.DeletedAt == null))
-                .Select(t => new 
-                {
-                    TagName = t.TagName,
-                    // Đếm số lượng job liên quan đến tag này mà chưa bị xóa
-                    Count = t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null)
+            // Bước 1: Kéo data thô từ DB (EF Core dịch cực dễ)
+            var rawTags = await _context.Tags
+                .Select(t => new {
+                    t.TagName,
+                    JobCount = t.JobTags.Count()
                 })
-                .OrderByDescending(x => x.Count)
+                .OrderByDescending(x => x.JobCount)
                 .Take(limit)
-                .ToListAsync();
+                .ToListAsync(); // <--- Cắt đứt lệnh SQL tại đây
 
-            // 3. Map sang DTO và tính toán phần trăm ở bộ nhớ (Memory) để tránh lỗi SQL
-            return trends.Select(x => new MarketTrendDTO(
-                x.TagName,
-                x.Count,
-                Math.Round((double)x.Count / totalJobs * 100, 2)
+            // Bước 2: Map sang DTO và dùng Math.Round trên RAM của C#
+            return rawTags.Select(t => new MarketTrendDTO (
+                t.TagName,
+                t.JobCount,
+                totalJobs > 0 ? Math.Round((double)t.JobCount / totalJobs * 100, 2) : 0
             )).ToList();
         }
 
+        // 2. SALARY BY LOCATION: Tính Average thô ở DB, Round ở RAM
         public async Task<List<SalaryReportDTO>> GetSalaryByLocationAsync()
         {
-            return await _context.Jobs
-                .Where(j => j.DeletedAt == null && j.SalaryMin.HasValue && j.Location != null)
+            // Bước 1: Kéo data thô
+            var rawSalaries = await _context.Jobs
+                .Where(j => j.DeletedAt == null && j.Location != null && (j.SalaryMin > 0 || j.SalaryMax > 0))
                 .GroupBy(j => j.Location!.LocationName)
+                .Select(g => new {
+                    LocationName = g.Key,
+                    AvgMin = g.Average(j => (decimal?)j.SalaryMin),
+                    AvgMax = g.Average(j => (decimal?)j.SalaryMax),
+                    JobCount = g.Count()
+                })
+                .ToListAsync(); // <--- Kéo về RAM
+
+            // Bước 2: Dùng Math.Round và map DTO
+            return rawSalaries
                 .Select(g => new SalaryReportDTO(
-                    g.Key,
-                    Math.Round(g.Average(j => j.SalaryMin ?? 0), 0),
-                    Math.Round(g.Average(j => j.SalaryMax ?? 0), 0),
-                    g.Count()
+                    g.LocationName,
+                    Math.Round(g.AvgMin ?? 0, 0),
+                    Math.Round(g.AvgMax ?? 0, 0),
+                    g.JobCount
                 ))
                 .OrderByDescending(x => x.AverageMaxSalary)
-                .ToListAsync();
+                .ToList();
+        }
+
+        // 3. TOP COMPANIES: Tách gọn câu LINQ khổng lồ
+        public async Task<List<TopCompanyDTO>> GetTopCompaniesAsync(int limit)
+        {
+            // Bước 1: Chỉ lấy các số liệu Count, Sum, Average căn bản từ DB
+            var rawCompanies = await _context.Companies
+                .Where(c => c.DeletedAt == null)
+                .Select(c => new {
+                    c.CompanyId,
+                    c.CompanyName,
+                    c.LogoImg,
+                    JobCount = c.Jobs.Count(j => j.DeletedAt == null),
+                    AppCount = c.Jobs.SelectMany(j => j.Applications).Count(a => a.DeletedAt == null),
+                    ViewCount = c.Jobs.Where(j => j.DeletedAt == null).Sum(j => (int?)j.ViewCount),
+                    AvgSalary = c.Jobs.Where(j => j.DeletedAt == null && (j.SalaryMin > 0 || j.SalaryMax > 0))
+                                    .Average(j => (decimal?)((j.SalaryMin + j.SalaryMax) / 2)),
+                    LatestJobDate = c.Jobs.Where(j => j.DeletedAt == null).Max(j => (DateTime?)j.PostedDate)
+                })
+                .OrderByDescending(c => c.JobCount)
+                .Take(limit)
+                .ToListAsync(); // <--- Ép chạy SQL tại đây
+
+            // Bước 2: Đẩy vào DTO an toàn
+            return rawCompanies.Select(c => new TopCompanyDTO(
+                c.CompanyId,
+                c.CompanyName,
+                c.LogoImg,
+                c.JobCount,
+                c.AppCount,
+                c.ViewCount ?? 0,
+                c.AvgSalary ?? 0, 
+                c.LatestJobDate
+            )).ToList();
         }
 
         public async Task<object> GetSkillsGraphAsync(int nodeLimit)
@@ -105,46 +146,80 @@ namespace JobSeekingAPI.Services
         public async Task<DashboardSummaryDTO> GetDashboardSummaryAsync()
         {
             var now = DateTime.Now;
-            return new DashboardSummaryDTO(
-                await _context.Jobs.CountAsync(j => j.DeletedAt == null),
-                await _context.Candidates.CountAsync(),
-                await _context.Companies.CountAsync(c => c.DeletedAt == null),
-                await _context.Recruiters.CountAsync(),
-                new ApplicationStatsDTO(
+            
+            // Tính toán trước các thông số để code sạch sẽ hơn
+            var totalJobs = await _context.Jobs.CountAsync(j => j.DeletedAt == null);
+            var totalCandidates = await _context.Candidates.CountAsync();
+            var totalCompanies = await _context.Companies.CountAsync(c => c.DeletedAt == null);
+            var totalRecruiters = await _context.Recruiters.CountAsync();
+
+            return new DashboardSummaryDTO
+            {
+                TotalJobs = totalJobs,
+                TotalCandidates = totalCandidates,
+                TotalCompanies = totalCompanies,
+                TotalRecruiters = totalRecruiters,
+                Applications = new ApplicationStatsDTO(
                     await _context.Applications.CountAsync(a => a.DeletedAt == null),
                     await _context.Applications.CountAsync(a => a.AppliedDate >= now.AddDays(-7)),
                     await _context.Applications.CountAsync(a => a.AppliedDate >= now.AddMonths(-1)),
                     await _context.Applications.CountAsync(a => a.AppliedDate.Year == now.Year)
                 ),
-                new JobStatusStatsDTO(
+                JobsByStatus = new JobStatusStatsDTO(
                     await _context.Jobs.CountAsync(j => j.DeletedAt == null && j.Status == 1),
                     await _context.Jobs.CountAsync(j => j.DeletedAt == null && j.Deadline < now),
-                    await _context.Jobs.CountAsync(j => j.DeletedAt == null)
+                    totalJobs
                 ),
-                0, // Tỷ lệ này có thể tính thêm dựa trên hồ sơ/tin tuyển dụng
-                DateTime.Now
-            );
+                ApplicationRate = totalJobs > 0 ? Math.Round((double)totalCandidates / totalJobs, 2) : 0,
+                LastUpdated = now
+            };
         }
 
-        public async Task<List<TopCompanyDTO>> GetTopCompaniesAsync(int limit) // tránh tình trạng lỗi lệch cột
+        // Logic: Thống kê tỉ lệ công việc theo Level (Dùng cho biểu đồ Tròn/Pie Chart)
+        public async Task<List<SimpleStatDTO>> GetJobDistributionByLevelAsync()
         {
-            return await _context.Companies
-            .Where(c => c.DeletedAt == null)
-            .Select(c => new TopCompanyDTO(
-                c.CompanyId,
-                c.CompanyName,
-                c.LogoImg,
-                c.Jobs.Count(j => j.DeletedAt == null),
-                c.Jobs.SelectMany(j => j.Applications).Count(a => a.DeletedAt == null),
-                c.Jobs.Sum(j => j.ViewCount ?? 0),
-                // ✅ Tính AvgSalary an toàn: Tránh lỗi khi không có Job
-                c.Jobs.Any(j => j.DeletedAt == null && j.SalaryMin.HasValue)? c.Jobs.Where(j => j.DeletedAt == null && j.SalaryMin.HasValue).Average(j => (j.SalaryMin + j.SalaryMax) / 2) ?? 0 : 0,
-                // ✅ Lấy LatestJobDate an toàn: Ép kiểu nullable DateTime để tránh lỗi rỗng
-                c.Jobs.Where(j => j.DeletedAt == null).Max(j => (DateTime?)j.PostedDate)
-            ))
-                .OrderByDescending(c => c.JobCount)
-                .Take(limit)
+            return await _context.Jobs
+                .Where(j => j.DeletedAt == null)
+                .GroupBy(j => j.Level)
+                .Select(g => new SimpleStatDTO { 
+                    Label = g.Key ?? "Chưa phân loại", 
+                    Value = g.Count() 
+                })
                 .ToListAsync();
+        }
+        // Logic: Dự báo xu hướng qua từng năm (Dùng cho biểu đồ Đường/Line Chart)
+        public async Task<List<TrendStatDTO>> GetHiringTrendsAndForecastAsync()
+        {
+            var history = await _context.Jobs
+                .Where(j => j.DeletedAt == null)
+                .GroupBy(j => j.PostedDate.Year)
+                .Select(g => new { Year = g.Key, Count = g.Count() })
+                .OrderBy(x => x.Year)
+                .ToListAsync();
+
+            var trends = history.Select(h => new TrendStatDTO {
+                Period = h.Year.ToString(),
+                Actual = h.Count,
+                Forecast = 0 // Hiện tại là thực tế nên forecast = 0
+            }).ToList();
+
+            // Thuật toán dự báo đơn giản: Nếu có từ 2 năm dữ liệu trở lên
+            if (history.Count >= 2)
+            {
+                var last = history.Last();
+                var prev = history[history.Count - 2];
+                
+                // Tính tỷ lệ tăng trưởng so với năm ngoái
+                double growth = prev.Count > 0 ? (double)last.Count / prev.Count : 1.1;
+                
+                // Thêm một mốc cho năm tiếp theo (Dự báo)
+                trends.Add(new TrendStatDTO {
+                    Period = (last.Year + 1).ToString() + " (Dự báo)",
+                    Actual = 0, // Năm tương lai chưa có thực tế
+                    Forecast = (int)(last.Count * growth)
+                });
+            }
+            return trends;
         }
     }
 }

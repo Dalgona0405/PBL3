@@ -10,6 +10,8 @@ using JobSeekingAPI.Services;
 // ✅ THÊM USING CHO REPOSITORIES (DÙ ĐANG COMMENT)
 using JobSeekingAPI.Repositories;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Register all services here (before Build)
@@ -18,7 +20,15 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
-builder.Services.AddScoped<IReportService, ReportService>();
+
+builder.Services.AddScoped<IStatisticsService, StatisticsService>(); // TẠM THỜI COMMENT - CHỜ FIX SAU Graph AI & Dashboard Stats
+builder.Services.AddScoped<IReportService, ReportService>(); // TẠM THỜI COMMENT - CHỜ FIX SAU Graph AI & Dashboard Stats
+
+
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowAll", builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+}); // CORS - TẠM THỜI COMMENT - CHỜ FIX SAU
+
 builder.Services.AddScoped<JwtService>();
 
 builder.Services.AddSwaggerGen(c =>
@@ -56,7 +66,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-var app = builder.Build();
+var app = builder.Build(); // Noin builder.Build() để tạo ứng dụng từ cấu hình đã thiết lập ở trên
 
 // ===== Middleware =====
 if (app.Environment.IsDevelopment())
@@ -94,7 +104,7 @@ else
 
 app.UseCors("AllowReactApp");
 app.UseAuthorization();
-
+app.UseCors("AllowAll"); // Đặt sau UseAuthorization để đảm bảo CORS được áp dụng cho tất cả các endpoint, kể cả những endpoint yêu cầu xác thực
 app.MapControllers();
 
 // Redirect root → Swagger

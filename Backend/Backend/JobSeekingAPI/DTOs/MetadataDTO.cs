@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 namespace JobSeekingAPI.DTOs
 {
     public record MarketTrendDTO(
@@ -25,30 +27,6 @@ namespace JobSeekingAPI.DTOs
         int To, 
         int Value,
         double Strength
-    );
-
-    public record DashboardSummaryDTO(
-        int TotalJobs,
-        int TotalCandidates,
-        int TotalCompanies,
-        int TotalRecruiters,
-        ApplicationStatsDTO Applications,
-        JobStatusStatsDTO JobsByStatus,
-        double ApplicationRate,
-        DateTime LastUpdated
-    );
-
-    public record ApplicationStatsDTO(
-        int Total,
-        int ThisWeek,
-        int ThisMonth,
-        int ThisYear
-    );
-
-    public record JobStatusStatsDTO(
-        int Active,
-        int Expired,
-        int Total
     );
 
     public record TimelineDataDTO(

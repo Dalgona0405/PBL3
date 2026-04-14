@@ -31,32 +31,32 @@ namespace JobSeekingAPI.Controllers
         {
             try
             {
-                var totalJobs = await _context.Jobs
-                    .CountAsync(j => j.DeletedAt == null);
+                // var totalJobs = await _context.Jobs
+                //     .CountAsync(j => j.DeletedAt == null);
 
-                if (totalJobs == 0)
-                {
-                    return Ok(new List<MarketTrendDTO>());
-                }
+                // if (totalJobs == 0)
+                // {
+                //     return Ok(new List<MarketTrendDTO>());
+                // }
 
-                var trends = await _context.Tags
-                    .Where(t => t.JobTags.Any(jt => jt.Job != null && jt.Job.DeletedAt == null))
-                    .Select(t => new MarketTrendDTO
-                    (
-                        t.TagName,
-                        t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
-                        Math.Round((double)t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null) / totalJobs * 100, 2)
-                    ))
-                    .OrderByDescending(x => x.JobCount)
-                    .Take(limit)
-                    .ToListAsync();
-
+                // var trends = await _context.Tags
+                //     .Where(t => t.JobTags.Any(jt => jt.Job != null && jt.Job.DeletedAt == null))
+                //     .Select(t => new MarketTrendDTO
+                //     (
+                //         t.TagName,
+                //         t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
+                //         Math.Round((double)t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null) / totalJobs * 100, 2)
+                //     ))
+                //     .OrderByDescending(x => x.JobCount)
+                //     .Take(limit)
+                //     .ToListAsync();
+                var trends = await _reportService.GetMarketTrendAsync(limit);
                 return Ok(trends);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting market trend");
-                return StatusCode(500, new { message = "An error occurred while fetching market trend" });
+                return StatusCode(500, new { message = "An error occurred while fetching market trend : " + ex.Message });
             }
         }
 
@@ -70,28 +70,28 @@ namespace JobSeekingAPI.Controllers
         {
             try
             {
-                var salaryReport = await _context.Jobs
-                    .Where(j => j.DeletedAt == null 
-                        && j.SalaryMin.HasValue 
-                        && j.SalaryMax.HasValue 
-                        && j.Location != null)
-                    .GroupBy(j => j.Location!.LocationName)
-                    .Select(g => new SalaryReportDTO
-                    (
-                        g.Key,
-                        Math.Round(g.Average(x => x.SalaryMin ?? 0), 0),
-                        Math.Round(g.Average(x => x.SalaryMax ?? 0), 0),
-                        g.Count()
-                    ))
-                    .OrderByDescending(x => x.AverageMaxSalary)
-                    .ToListAsync();
-
+                // var salaryReport = await _context.Jobs
+                //     .Where(j => j.DeletedAt == null 
+                //         && j.SalaryMin.HasValue 
+                //         && j.SalaryMax.HasValue 
+                //         && j.Location != null)
+                //     .GroupBy(j => j.Location!.LocationName)
+                //     .Select(g => new SalaryReportDTO
+                //     (
+                //         g.Key,
+                //         Math.Round(g.Average(x => x.SalaryMin ?? 0), 0),
+                //         Math.Round(g.Average(x => x.SalaryMax ?? 0), 0),
+                //         g.Count()
+                //     ))
+                //     .OrderByDescending(x => x.AverageMaxSalary)
+                //     .ToListAsync();
+                var salaryReport = await _reportService.GetSalaryByLocationAsync();
                 return Ok(salaryReport);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting salary by location");
-                return StatusCode(500, new { message = "An error occurred while fetching salary data" });
+                return StatusCode(500, new { message = "An error occurred while fetching salary data : " + ex.Message });
             }
         }
 
@@ -420,41 +420,14 @@ namespace JobSeekingAPI.Controllers
         {
             try
             {
-                // var topCompanies = await _context.Companies
-                //     .Where(c => c.DeletedAt == null && c.Jobs.Any(j => j.DeletedAt == null))
-                //     .Select(c => new
-                //     {
-                //         CompanyId = c.CompanyId,
-                //         CompanyName = c.CompanyName,
-                //         LogoImg = c.LogoImg,
-                //         JobCount = c.Jobs.Count(j => j.DeletedAt == null),
-                //         TotalApplications = c.Jobs
-                //             .Where(j => j.DeletedAt == null)
-                //             .SelectMany(j => j.Applications)
-                //             .Count(a => a.DeletedAt == null),
-                //         TotalViews = c.Jobs
-                //             .Where(j => j.DeletedAt == null)
-                //             .Sum(j => j.ViewCount ?? 0),
-                //         AvgSalary = c.Jobs
-                //             .Where(j => j.DeletedAt == null && j.SalaryMin.HasValue && j.SalaryMax.HasValue)
-                //             .Average(j => (j.SalaryMin + j.SalaryMax) / 2 ?? 0),
-                //         LatestJobDate = c.Jobs
-                //             .Where(j => j.DeletedAt == null)
-                //             .Max(j => (DateTime?)j.PostedDate)
-                //     })
-                //     .OrderByDescending(x => x.TotalApplications) 
-                //     .Take(limit)
-                //     .ToListAsync();
-
-                // return Ok(topCompanies);
-
+                // Sử dụng Service để tách biệt logic, Controller chỉ tập trung vào việc nhận request và trả response
                 var topCompanies = await _reportService.GetTopCompaniesAsync(limit);
                 return Ok(topCompanies);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting top companies");
-                return StatusCode(500, new { message = "An error occurred while fetching top companies" });
+                return StatusCode(500, new { message = "An error occurred while fetching top companies : " + ex.Message });
             }
         }
     }

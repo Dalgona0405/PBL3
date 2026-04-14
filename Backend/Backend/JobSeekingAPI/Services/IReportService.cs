@@ -18,5 +18,7 @@ namespace JobSeekingAPI.Services
         
         // Thống kê doanh nghiệp hàng đầu (Dữ liệu cho Frontend)
         Task<List<TopCompanyDTO>> GetTopCompaniesAsync(int limit);
+        Task<List<SimpleStatDTO>> GetJobDistributionByLevelAsync();
+        Task<List<TrendStatDTO>> GetHiringTrendsAndForecastAsync();
     }
 }
