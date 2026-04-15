@@ -2,20 +2,18 @@ using JobSeekingAPI.Models;
 
 namespace JobSeekingAPI.Repositories
 {
-    public interface IUserRepository
+    public interface IUserRepository : IBaseRepository<User>
     {
-        // Auth
+        // AUTH
         Task<User?> GetByEmailAsync(string email);
         Task<bool> IsEmailExistsAsync(string email);
-        
+
         // CRUD
-        Task<IEnumerable<User>> GetAllAsync();
-        Task<User?> GetByIdAsync(int id);
-        Task<User> CreateAsync(User user);
-        Task UpdateAsync(User user);
-        Task DeleteAsync(int id);
-        
-        // Profile
+        Task<IEnumerable<User>> GetAllUsersWithDetailsAsync();
+        Task<User?> GetUserDetailByIdAsync(int id);
+        Task SoftDeleteUserAsync(int id);
+
+        // ===== PROFILE (Gom chung Candidates & Recruiters vào đây) =====
         Task<Candidate?> GetCandidateProfileAsync(int userId);
         Task<Recruiter?> GetRecruiterProfileAsync(int userId);
     }

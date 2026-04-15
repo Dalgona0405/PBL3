@@ -4,28 +4,27 @@ using JobSeekingAPI.Models;
 
 namespace JobSeekingAPI.Repositories
 {
-    public class ApplicationRepository : IApplicationRepository
+    public class ApplicationRepository : BaseRepository<Application>, IApplicationRepository
     {
-        private readonly ApplicationDbContext _context;
-
-        public ApplicationRepository(ApplicationDbContext context)
+        public ApplicationRepository(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
 
-        public async Task<IEnumerable<Application>> GetAllAsync()
+        public async Task<IEnumerable<Application>> GetAllApplicationsWithDetailsAsync()
         {
             return await _context.Applications
                 .Include(a => a.Candidate!)
                     .ThenInclude(c => c.User)
                 .Include(a => a.Job!)
                     .ThenInclude(j => j.Company)
+                .Include(a => a.Job!)
+                    .ThenInclude(j => j.Location)
                 .Where(a => a.DeletedAt == null)
                 .OrderByDescending(a => a.AppliedDate)
                 .ToListAsync();
         }
 
-        public async Task<Application?> GetByIdAsync(int id)
+        public async Task<Application?> GetApplicationDetailByIdAsync(int id)
         {
             return await _context.Applications
                 .Include(a => a.Candidate!)
@@ -35,25 +34,17 @@ namespace JobSeekingAPI.Repositories
                 .FirstOrDefaultAsync(a => a.AppId == id && a.DeletedAt == null);
         }
 
-        public async Task<Application> CreateAsync(Application application)
+        public async Task<Application> CreateApplicationDetailAsync(Application application)
         {
             application.AppliedDate = DateTime.Now;
             application.Status = 1;
-            
-            _context.Applications.Add(application);
-            await _context.SaveChangesAsync();
-            return application;
+
+            return await base.CreateAsync(application);
         }
 
-        public async Task UpdateAsync(Application application)
+        public async Task SoftDeleteApplicationAsync(int id)
         {
-            _context.Entry(application).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(int id)
-        {
-            var application = await _context.Applications.FindAsync(id);
+            var application = await GetByIdAsync(id);
             if (application != null)
             {
                 application.DeletedAt = DateTime.Now;

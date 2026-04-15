@@ -4,13 +4,10 @@ using JobSeekingAPI.Models;
 
 namespace JobSeekingAPI.Repositories
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository : BaseRepository<User>, IUserRepository
     {
-        private readonly ApplicationDbContext _context;
-
-        public UserRepository(ApplicationDbContext context)
+        public UserRepository(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
 
         public async Task<User?> GetByEmailAsync(string email)
@@ -25,7 +22,7 @@ namespace JobSeekingAPI.Repositories
                 .AnyAsync(u => u.Email == email && u.DeletedAt == null);
         }
 
-        public async Task<IEnumerable<User>> GetAllAsync()
+        public async Task<IEnumerable<User>> GetAllUsersWithDetailsAsync()
         {
             return await _context.Users
                 .Include(u => u.Candidate)
@@ -34,7 +31,7 @@ namespace JobSeekingAPI.Repositories
                 .ToListAsync();
         }
 
-        public async Task<User?> GetByIdAsync(int id)
+        public async Task<User?> GetUserDetailByIdAsync(int id)
         {
             return await _context.Users
                 .Include(u => u.Candidate)
@@ -42,20 +39,7 @@ namespace JobSeekingAPI.Repositories
                 .FirstOrDefaultAsync(u => u.UserId == id && u.DeletedAt == null);
         }
 
-        public async Task<User> CreateAsync(User user)
-        {
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-            return user;
-        }
-
-        public async Task UpdateAsync(User user)
-        {
-            _context.Entry(user).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(int id)
+        public async Task SoftDeleteUserAsync(int id)
         {
             var user = await _context.Users.FindAsync(id);
             if (user != null)

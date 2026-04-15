@@ -3,15 +3,15 @@ using JobSeekingAPI.Models;
 
 namespace JobSeekingAPI.Repositories
 {
-    public interface IJobRepository
+    public interface IJobRepository : IBaseRepository<Job>
     {
-        // ===== CRUD CƠ BẢN =====
-        Task<IEnumerable<Job>> GetAllAsync();
-        Task<Job?> GetByIdAsync(int id);
-        Task<Job> CreateAsync(Job job);
-        Task UpdateAsync(Job job);
-        Task DeleteAsync(int id);
-        
+        // CRUD
+        Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync();
+        Task<Job?> GetJobDetailByIdAsync(int id);
+        Task<Job> CreateJobWithDefaultsAsync(Job job);
+        Task SoftDeleteJobAsync(int id);
+        Task<Job?> GetJobEntityByIdAsync(int id);
+
         // ===== TÌM KIẾM NÂNG CAO =====
         Task<PagedResultDTO<Job>> SearchJobsAsync(JobSearchDTO searchParams);
         

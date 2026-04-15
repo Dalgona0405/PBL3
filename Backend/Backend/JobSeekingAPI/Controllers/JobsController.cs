@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
+using JobSeekingAPI.Repositories;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -10,129 +9,159 @@ namespace JobSeekingAPI.Controllers
     [ApiController]
     public class JobsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IJobRepository _jobRepository;
 
-        public JobsController(ApplicationDbContext context)
+        public JobsController(IJobRepository jobRepository)
         {
-            _context = context;
+            _jobRepository = jobRepository;
         }
 
         // GET: api/jobs
         [HttpGet]
         public async Task<IActionResult> GetAllJobs()
         {
-            var jobs = await _context.Jobs
-                .Include(j => j.Company)
-                .Include(j => j.Location)
-                .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-                .Where(j => j.DeletedAt == null)
-                .Select(j => new JobResponseDTO
-                {
-                    JobId = j.JobId,
-                    CompanyId = j.CompanyId,
-                    OriginalId = j.OriginalId,
-                    Title = j.Title,
-                    SalaryMin = j.SalaryMin,
-                    SalaryMax = j.SalaryMax,
-                    ExpYear = j.ExpYear,
-                    Level = j.Level,
-                    PostedDate = j.PostedDate,
-                    Deadline = j.Deadline,
-                    Description = j.Description,
-                    Requirement = j.Requirement,
-                    Benefits = j.Benefits,
-                    Address = j.Address,
-                    ViewCount = j.ViewCount ?? 0,
-                    
-                    Company = new CompanySummaryDTO
-                    {
-                        CompanyId = j.Company!.CompanyId,
-                        CompanyName = j.Company.CompanyName,
-                        LogoImg = j.Company.LogoImg,
-                        Website = j.Company.Website
-                    },
-                    
-                    Location = new LocationSummaryDTO
-                    {
-                        LocationId = j.Location!.LocationId,
-                        LocationName = j.Location.LocationName
-                    },
-                    
-                    Tags = j.JobTags.Where(jt => jt.Tag != null)
-                        .Select(jt => new TagSummaryDTO
-                        {
-                            TagId = jt.Tag!.TagId,
-                            TagName = jt.Tag.TagName,
-                            Type = jt.Tag.Type
-                        }).ToList(),
-                    
-                    ApplicationCount = j.Applications != null ? 
-                        j.Applications.Count(a => a.DeletedAt == null) : 0
-                })
-                .ToListAsync();
-            
-            return Ok(jobs);
+            var jobs = await _jobRepository.GetAllJobsWithDetailsAsync();
+            var jobDTOs = jobs.Select(j => MapToDTO(j));
+            return Ok(jobDTOs);
         }
 
         // GET: api/jobs/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetJobById(int id)
         {
-            var job = await _context.Jobs
-                .Include(j => j.Company)
-                .Include(j => j.Location)
-                .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-                .Include(j => j.Applications)
-                .Where(j => j.JobId == id && j.DeletedAt == null)
-                .Select(j => new JobResponseDTO
-                {
-                    JobId = j.JobId,
-                    CompanyId = j.CompanyId,
-                    OriginalId = j.OriginalId,
-                    Title = j.Title,
-                    SalaryMin = j.SalaryMin,
-                    SalaryMax = j.SalaryMax,
-                    ExpYear = j.ExpYear,
-                    Level = j.Level,
-                    PostedDate = j.PostedDate,
-                    Deadline = j.Deadline,
-                    Description = j.Description,
-                    Requirement = j.Requirement,
-                    Benefits = j.Benefits,
-                    Address = j.Address,
-                    ViewCount = j.ViewCount ?? 0,
-                    
-                    Company = new CompanySummaryDTO
-                    {
-                        CompanyId = j.Company!.CompanyId,
-                        CompanyName = j.Company.CompanyName,
-                        LogoImg = j.Company.LogoImg,
-                        Website = j.Company.Website
-                    },
-                    
-                    Location = new LocationSummaryDTO
-                    {
-                        LocationId = j.Location!.LocationId,
-                        LocationName = j.Location.LocationName
-                    },
-                    
-                    Tags = j.JobTags.Where(jt => jt.Tag != null)
-                        .Select(jt => new TagSummaryDTO
-                        {
-                            TagId = jt.Tag!.TagId,
-                            TagName = jt.Tag.TagName,
-                            Type = jt.Tag.Type
-                        }).ToList(),
-                    
-                    ApplicationCount = j.Applications != null ? 
-                        j.Applications.Count(a => a.DeletedAt == null) : 0
-                })
-                .FirstOrDefaultAsync();
-
+            var job = await _jobRepository.GetJobDetailByIdAsync(id);
             if (job == null)
-                return NotFound("Job not found");
+                return NotFound(new { message = "Job not found" });
+            return Ok(MapToDTO(job));
+        }
 
-            return Ok(job);
+        //POST: api/jobs
+        [HttpPost]
+        public async Task<IActionResult> CreateJob([FromBody] CreateJobDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var job = new Job
+            {
+                CompanyId = dto.CompanyId,
+                LocationId = dto.LocationId,
+                Title = dto.Title,
+                SalaryMin = dto.SalaryMin,
+                SalaryMax = dto.SalaryMax,
+                ExpYear = dto.ExpYear,
+                Level = dto.Level,
+                Deadline = dto.Deadline,
+                Description = dto.Description,
+                Requirement = dto.Requirement,
+                Benefits = dto.Benefits,
+                Address = dto.Address
+            };
+
+            await _jobRepository.CreateJobWithDefaultsAsync(job);
+            return Ok(new { message = "Crate success", jobId = job.JobId });
+        }
+
+        //PUT: api/jobs/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateJob(int id, [FromBody] UpdateJobDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var existingJob = await _jobRepository.GetJobEntityByIdAsync(id);
+            if (existingJob == null)
+                return NotFound(new { message = "Job not found" });
+
+            existingJob.Title = dto.Title ?? existingJob.Title;
+            existingJob.LocationId = dto.LocationId ?? existingJob.LocationId;
+            existingJob.SalaryMin = dto.SalaryMin ?? existingJob.SalaryMin;
+            existingJob.SalaryMax = dto.SalaryMax ?? existingJob.SalaryMax;
+            existingJob.ExpYear = dto.ExpYear ?? existingJob.ExpYear;
+            existingJob.Level = dto.Level ?? existingJob.Level;
+            existingJob.Deadline = dto.Deadline ?? existingJob.Deadline;
+            existingJob.Description = dto.Description ?? existingJob.Description;
+            existingJob.Requirement = dto.Requirement ?? existingJob.Requirement;
+            existingJob.Benefits = dto.Benefits ?? existingJob.Benefits;
+            existingJob.Address = dto.Address ?? existingJob.Address;
+            existingJob.Status = dto.Status ?? existingJob.Status;
+
+            await _jobRepository.UpdateAsync(existingJob);
+            return Ok(new { message = "Update Success" });
+        }
+        //DELETE: api/jobs/id
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteJob(int id)
+        {
+            var existingJob = await _jobRepository.GetJobEntityByIdAsync(id);
+            if (existingJob == null)
+                return NotFound(new { message = "Job not found" });
+            await _jobRepository.SoftDeleteJobAsync(id);
+            return Ok(new { message = "Delete success" });
+        }
+        //GET: api/jobs/"search"
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchJobs([FromQuery] JobSearchDTO searchParams)
+        {
+            var result = await _jobRepository.SearchJobsAsync(searchParams);
+            var mappedData = result.Data.Select(j => MapToDTO(j)).ToList();
+            return Ok(new
+            {
+                result.TotalCount,
+                result.Page,
+                result.PageSize,
+                result.TotalPages,
+                Data = mappedData
+            });
+        }
+        //GET: api/jobs/"recent"
+        [HttpGet("recent")]
+        public async Task<IActionResult> GetRecentJobs([FromQuery] int count = 8)
+        {
+            var jobs = await _jobRepository.GetRecentJobsAsync(count);
+            var jobDTOs = jobs.Select(j => MapToDTO(j));
+            return Ok(jobDTOs);
+        }
+        private JobResponseDTO MapToDTO(Job j)
+        {
+            return new JobResponseDTO
+            {
+                JobId = j.JobId,
+                CompanyId = j.CompanyId,
+                OriginalId = j.OriginalId,
+                Title = j.Title,
+                SalaryMin = j.SalaryMin,
+                SalaryMax = j.SalaryMax,
+                ExpYear = j.ExpYear,
+                Level = j.Level,
+                PostedDate = j.PostedDate,
+                Deadline = j.Deadline,
+                Description = j.Description,
+                Requirement = j.Requirement,
+                Benefits = j.Benefits,
+                Address = j.Address,
+                ViewCount = j.ViewCount ?? 0,
+                Company = j.Company != null ? new CompanySummaryDTO
+                {
+                    CompanyId = j.Company.CompanyId,
+                    CompanyName = j.Company.CompanyName,
+                    LogoImg = j.Company.LogoImg,
+                    Website = j.Company.Website
+                } : null,
+                Location = j.Location != null ? new LocationSummaryDTO
+                {
+                    LocationId = j.Location.LocationId,
+                    LocationName = j.Location.LocationName
+                } : null,
+                Tags = j.JobTags?.Where(jt => jt.Tag != null)
+                    .Select(jt => new TagSummaryDTO
+                    {
+                        TagId = jt.Tag!.TagId,
+                        TagName = jt.Tag.TagName,
+                        Type = jt.Tag.Type
+                    }).ToList() ?? new List<TagSummaryDTO>(),
+                ApplicationCount = j.Applications?.Count(a => a.DeletedAt == null) ?? 0
+            };
         }
     }
 }

@@ -2,14 +2,13 @@ using JobSeekingAPI.Models;
 
 namespace JobSeekingAPI.Repositories
 {
-    public interface IApplicationRepository
+    public interface IApplicationRepository : IBaseRepository<Application>
     {
         // CRUD
-        Task<IEnumerable<Application>> GetAllAsync();
-        Task<Application?> GetByIdAsync(int id);
-        Task<Application> CreateAsync(Application application);
-        Task UpdateAsync(Application application);
-        Task DeleteAsync(int id);
+        Task<IEnumerable<Application>> GetAllApplicationsWithDetailsAsync();
+        Task<Application?> GetApplicationDetailByIdAsync(int id);
+        Task<Application> CreateApplicationDetailAsync(Application application);
+        Task SoftDeleteApplicationAsync(int id);
         
         // Lọc theo quan hệ
         Task<IEnumerable<Application>> GetByJobIdAsync(int jobId);

@@ -5,17 +5,14 @@ using JobSeekingAPI.DTOs;
 
 namespace JobSeekingAPI.Repositories
 {
-    public class JobRepository : IJobRepository
+    public class JobRepository : BaseRepository<Job>, IJobRepository
     {
-        private readonly ApplicationDbContext _context;
-        
-        public JobRepository(ApplicationDbContext context)
+        public JobRepository(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
         
         // ===== CRUD =====
-        public async Task<IEnumerable<Job>> GetAllAsync()
+        public async Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync()
         {
             return await _context.Jobs
                 .Include(j => j.Company)
@@ -25,36 +22,26 @@ namespace JobSeekingAPI.Repositories
                 .ToListAsync();
         }
         
-        public async Task<Job?> GetByIdAsync(int id)
+        public async Task<Job?> GetJobDetailByIdAsync(int id)
         {
             return await _context.Jobs
                 .Include(j => j.Company)
                 .Include(j => j.Location)
                 .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
                 .Include(j => j.Applications)
-                .ThenInclude(a => a.Candidate)  // ✅ SỬA: User -> Candidate
-                .ThenInclude(c => c!.User)   // ✅ THÊM: Lấy thông tin User từ Candidate
+                .ThenInclude(a => a.Candidate)
+                .ThenInclude(c => c!.User)
                 .FirstOrDefaultAsync(j => j.JobId == id && j.DeletedAt == null);
         }
-        
-        public async Task<Job> CreateAsync(Job job)
+        public async Task<Job> CreateJobWithDefaultsAsync(Job job)
         {
             job.PostedDate = DateTime.Now;
-            job.Status = 1;  // ✅ FIX: Bỏ IsActive, chỉ dùng Status
+            job.Status = 1;
             job.ViewCount = 0;
-            
-            _context.Jobs.Add(job);
-            await _context.SaveChangesAsync();
-            return job;
+
+            return await base.CreateAsync(job);
         }
-        
-        public async Task UpdateAsync(Job job)
-        {
-            _context.Entry(job).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-        }
-        
-        public async Task DeleteAsync(int id)
+        public async Task SoftDeleteJobAsync(int id)
         {
             var job = await _context.Jobs.FindAsync(id);
             if (job != null)
@@ -63,7 +50,11 @@ namespace JobSeekingAPI.Repositories
                 await _context.SaveChangesAsync();
             }
         }
-        
+        public async Task<Job?> GetJobEntityByIdAsync(int id)
+        {
+            return await _context.Jobs.FirstOrDefaultAsync(j => j.JobId == id && j.DeletedAt == null);
+        }
+
         // ===== TÌM KIẾM NÂNG CAO =====
         public async Task<PagedResultDTO<Job>> SearchJobsAsync(JobSearchDTO searchParams)
         {
@@ -71,7 +62,7 @@ namespace JobSeekingAPI.Repositories
                 .Include(j => j.Company)
                 .Include(j => j.Location)
                 .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-                .Where(j => j.DeletedAt == null && j.Status == 1)  // ✅ FIX: IsActive -> Status == 1
+                .Where(j => j.DeletedAt == null && j.Status == 1)
                 .AsQueryable();
             
             // 🔍 Lọc theo từ khóa
