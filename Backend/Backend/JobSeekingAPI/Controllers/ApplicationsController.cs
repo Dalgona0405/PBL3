@@ -1,293 +1,182 @@
-//using Microsoft.AspNetCore.Mvc;
-//using Microsoft.EntityFrameworkCore;
-//using JobSeekingAPI.Data;
-//using JobSeekingAPI.DTOs;
-//using JobSeekingAPI.Models;
-//using JobSeekingAPI.Repositories;
+using Microsoft.AspNetCore.Mvc;
+using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Models;
+using JobSeekingAPI.Repositories;
 
-//namespace JobSeekingAPI.Controllers
-//{
-//    [Route("api/[controller]")]
-//    [ApiController]
-//    public class ApplicationsController : ControllerBase
-//    {
-//        private readonly IApplicationRepository _applicationRepository;
-//        private readonly IJobRepository _jobRepository;
-//        private readonly IUserRepository _userRepository;
+namespace JobSeekingAPI.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ApplicationsController : ControllerBase
+    {
+        private readonly IApplicationRepository _applicationRepository;
+        private readonly IJobRepository _jobRepository;
 
-//        public ApplicationsController(IApplicationRepository applicationRepository, IJobRepository jobRepository, IUserRepository userRepository)
-//        {
-//            _applicationRepository = applicationRepository;
-//            _jobRepository = jobRepository;
-//            _userRepository = userRepository;
-//        }
+        public ApplicationsController(IApplicationRepository applicationRepository, IJobRepository jobRepository)
+        {
+            _applicationRepository = applicationRepository;
+            _jobRepository = jobRepository;
+        }
 
-//        // GET: api/applications
-//        [HttpGet]
-//        public async Task<IActionResult> GetAllApplications()
-//        {
-//            var applications = await _applicationRepository.GetAllApplicationsWithDetailsAsync();
-//            var applicationDTOs = applications.Select(a => MapToDTO(a));
-//            return Ok(applicationDTOs);
-//        }
+        // GET: api/applications
+        [HttpGet]
+        public async Task<IActionResult> GetAllApplications()
+        {
+            var applications = await _applicationRepository.GetAllApplicationsWithDetailsAsync();
+            var dtos = applications.Select(a => MapToDTO(a));
+            return Ok(dtos);
+        }
 
-//        // GET: api/applications/{id}
-//        [HttpGet("{id}")]
-//        public async Task<IActionResult> GetApplicationById(int id)
-//        {
-//            var application = await _applicationRepository.GetApplicationDetailByIdAsync(id);
-//            if (application == null)
-//                return NotFound("Application not found");
+        // GET: api/applications/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetApplicationById(int id)
+        {
+            var application = await _applicationRepository.GetApplicationDetailByIdAsync(id);
+            if (application == null)
+                return NotFound("Application not found");
 
-//            return Ok(MapToDTO(application));
-//        }
+            return Ok(MapToDTO(application));
+        }
 
-//        // POST: api/applications
-//        [HttpPost]
-//        public async Task<IActionResult> CreateApplication([FromBody] CreateApplicationDTO createApplicationDto)
-//        {
-//            if (!ModelState.IsValid)
-//                return BadRequest(ModelState);
+        // GET: api/applications/job/{jobId}
+        [HttpGet("jobs/{jobId}")]
+        public async Task<IActionResult> GetApplicationsByJob(int jobId)
+        {
+            var jobExists = await _jobRepository.GetByIdAsync(jobId);
+            if (jobExists == null) 
+                return NotFound(new { message = "Job not found!" });
 
-//            // Kiểm tra Candidate tồn tại
-//            var candidate = await _userRepository.GetUserDetailByIdAsync(createApplicationDto.UserId);
-//            if (candidate == null || candidate.Role != "Candidate")
-//            {
-//                return NotFound("Candidate not found");
-//            }
-            
-//            if (candidate == null)
-                
+            var applications = await _applicationRepository.GetByJobIdAsync(jobId);
+            var dtos = applications.Select(a => MapToDTO(a));
+            return Ok(dtos);
+        }
 
-//            // Kiểm tra Job tồn tại
-//            var job = await _jobRepository.GetJobDetailByIdAsync(createApplicationDto.JobId);
-//            if (job == null || job.DeletedAt != null)
-//                return NotFound("Job not found");
+        // GET: api/applications/user/{userId}
+        [HttpGet("candidate/{userId}")]
+        public async Task<IActionResult> GetApplicationsByUser(int userId)
+        {
+            var applications = await _applicationRepository.GetByUserIdAsync(userId);
+            var dtos = applications.Select(a => MapToDTO(a));
+            return Ok(dtos);
+        }
 
-//            // Kiểm tra đã apply chưa
-//            var existingApplication = await _context.Applications
-//                .AnyAsync(a => a.UserId == createApplicationDto.UserId 
-//                    && a.JobId == createApplicationDto.JobId 
-//                    && a.DeletedAt == null);
-            
-//            if (existingApplication)
-//                return BadRequest("Already applied for this job");
+        // POST: api/applications
+        [HttpPost]
+        public async Task<IActionResult> CreateApplication([FromBody] CreateApplicationDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-//            var application = new Application
-//            {
-//                UserId = createApplicationDto.UserId,
-//                JobId = createApplicationDto.JobId,
-//                AppliedDate = DateTime.Now,
-//                Status = 1 // Đã nộp
-//            };
+            // Kiểm tra Job tồn tại
+            var job = await _jobRepository.GetByIdAsync(dto.JobId);
+            if (job == null) 
+                return NotFound(new { message = "Job not found!" });
 
-//            _context.Applications.Add(application);
-            
-//            // Tăng ViewCount của Job
-//            job.ViewCount = (job.ViewCount ?? 0) + 1;
-            
-//            await _context.SaveChangesAsync();
+            // Job đã hết hạn chưa? (Không cho nộp Job quá hạn)
+            if (job.Deadline.HasValue && job.Deadline.Value < DateTime.UtcNow)
+                return BadRequest(new { message = "This job is already expired!" });
 
-//            var applicationDto = new ApplicationResponseDTO
-//            {
-//                ApplicationId = application.AppId,
-//                UserId = application.UserId,
-//                JobId = application.JobId,
-//                AppliedDate = application.AppliedDate,
-//                Status = application.Status,
-                
-//                Candidate = new CandidateSummaryDTO
-//                {
-//                    UserId = candidate.UserId,
-//                    FullName = candidate.User.FullName,
-//                    Avatar = candidate.User != null ? candidate.User.Avatar : null,
-//                    Email = candidate.User != null ? candidate.User.Email : null
-//                },
-                
-//                Job = new JobSummaryDTO
-//                {
-//                    JobId = job.JobId,
-//                    Title = job.Title,
-//                    CompanyName = job.Company != null ? job.Company.CompanyName : ""
-//                }
-//            };
+            // User đã nộp job này bao giờ chưa? (Chống Spam)
+            var hasApplied = await _applicationRepository.IsAppliedAsync(dto.UserId, dto.JobId);
+            if (hasApplied)
+                return Conflict(new { message = "You have already applied for this job!" });
 
-//            return CreatedAtAction(nameof(GetApplicationById), new { id = application.AppId }, applicationDto);
-//        }
+            // Tạo đơn ứng tuyển
+            var application = new Application
+            {
+                UserId = dto.UserId,
+                JobId = dto.JobId,
+                CVUrl = dto.CVUrl
+            };
 
-//        // PUT: api/applications/{id}
-//        [HttpPut("{id}")]
-//        public async Task<IActionResult> UpdateApplication(int id, [FromBody] UpdateApplicationDTO updateApplicationDto)
-//        {
-//            if (!ModelState.IsValid)
-//                return BadRequest(ModelState);
+            var createdApp = await _applicationRepository.CreateApplicationDetailAsync(application);
+            return CreatedAtAction(nameof(GetApplicationById), new { id = createdApp.AppId }, MapToDTO(createdApp));
+        }
 
-//            var existingApplication = await _context.Applications
-//                .FirstOrDefaultAsync(a => a.AppId == id && a.DeletedAt == null);
-            
-//            if (existingApplication == null)
-//                return NotFound("Application not found");
+        // PUT: api/applications/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateApplication(int id, [FromBody] UpdateApplicationDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-//            existingApplication.Status = updateApplicationDto.Status ?? existingApplication.Status;
+            var existingApplication = await _applicationRepository.GetApplicationEntityByIdAsync(id);
+            if (existingApplication == null)
+                return NotFound("Application not found");
 
-//            await _context.SaveChangesAsync();
-//            return NoContent();
-//        }
+            existingApplication.Status = dto.Status ?? existingApplication.Status;
+            existingApplication.CVUrl = dto.CVUrl ?? existingApplication.CVUrl;
 
-//        // DELETE: api/applications/{id}
-//        [HttpDelete("{id}")]
-//        public async Task<IActionResult> DeleteApplication(int id)
-//        {
-//            var application = await _context.Applications
-//                .FirstOrDefaultAsync(a => a.AppId == id && a.DeletedAt == null);
-            
-//            if (application == null)
-//                return NotFound("Application not found");
+            await _applicationRepository.UpdateAsync(existingApplication);
+            return Ok(new { message = "Update success" });
+        }
 
-//            application.DeletedAt = DateTime.Now;
-//            await _context.SaveChangesAsync();
+        // DELETE: api/applications/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> WithdrawApplication(int id)
+        {
+            var application = await _applicationRepository.GetByIdAsync(id);
+            if (application == null)
+                return NotFound(new { message = "Application not found!" });
 
-//            return NoContent();
-//        }
+            await _applicationRepository.SoftDeleteApplicationAsync(id);
 
-//        // GET: api/applications/job/{jobId}
-//        [HttpGet("job/{jobId}")]
-//        public async Task<IActionResult> GetApplicationsByJob(int jobId)
-//        {
-//            var applications = await _context.Applications
-//                .Include(a => a.Candidate!)
-//                    .ThenInclude(c => c.User)
-//                .Where(a => a.JobId == jobId && a.DeletedAt == null)
-//                .OrderByDescending(a => a.AppliedDate)
-//                .Select(a => new ApplicationResponseDTO
-//                {
-//                    ApplicationId = a.AppId,
-//                    UserId = a.UserId,
-//                    JobId = a.JobId,
-//                    AppliedDate = a.AppliedDate,
-//                    Status = a.Status,
-                    
-//                    Candidate = a.Candidate == null ? null : new CandidateSummaryDTO
-//                    {
-//                        UserId = a.Candidate.UserId,
-//                        FullName = a.Candidate.User.FullName,
-//                        Avatar = a.Candidate.User != null ? a.Candidate.User.Avatar : null,
-//                        Email = a.Candidate.User != null ? a.Candidate.User.Email : null,
-//                        CVUrl = a.Candidate.CVUrl
-//                    }
-//                })
-//                .ToListAsync();
+            return Ok(new { message = "Application withdrawn successfully!" });
+        }
 
-//            return Ok(applications);
-//        }
+        // GET: api/applications/statistics/job/{jobId}
+        [HttpGet("statistics/job/{jobId}")]
+        public async Task<IActionResult> GetApplicationStatistics(int jobId)
+        {
+            var statistics = await _applicationRepository.GetApplicationStatusStatisticsAsync(jobId);
 
-//        // GET: api/applications/candidate/{userId}
-//        [HttpGet("candidate/{userId}")]
-//        public async Task<IActionResult> GetApplicationsByCandidate(int userId)
-//        {
-//            var applications = await _context.Applications
-//                .Include(a => a.Job!)
-//                    .ThenInclude(j => j.Company)
-//                .Include(a => a.Job!)
-//                    .ThenInclude(j => j.Location)
-//                .Where(a => a.UserId == userId && a.DeletedAt == null)
-//                .OrderByDescending(a => a.AppliedDate)
-//                .Select(a => new ApplicationResponseDTO
-//                {
-//                    ApplicationId = a.AppId,
-//                    UserId = a.UserId,
-//                    JobId = a.JobId,
-//                    AppliedDate = a.AppliedDate,
-//                    Status = a.Status,
-                    
-//                    Job = a.Job == null ? null : new JobSummaryDTO
-//                    {
-//                        JobId = a.Job.JobId,
-//                        Title = a.Job.Title,
-//                        SalaryMin = a.Job.SalaryMin,
-//                        SalaryMax = a.Job.SalaryMax,
-//                        CompanyName = a.Job.Company != null ? a.Job.Company.CompanyName : "",
-//                        LocationName = a.Job.Location != null ? a.Job.Location.LocationName : "",
-//                        Deadline = a.Job.Deadline,
-//                        Status = a.Job.DeletedAt == null ? "Active" : "Closed"
-//                    }
-//                })
-//                .ToListAsync();
+            // statistics likely contains KeyValuePair<int,int> mapping Status -> Count
+            var total = statistics?.Sum(kv => kv.Value) ?? 0;
 
-//            return Ok(applications);
-//        }
+            var result = new
+            {
+                TotalApplications = total,
+                Pending = statistics?.FirstOrDefault(kv => kv.Key == 1).Value ?? 0,
+                Reviewed = statistics?.FirstOrDefault(kv => kv.Key == 2).Value ?? 0,
+                Interviewed = statistics?.FirstOrDefault(kv => kv.Key == 3).Value ?? 0,
+                Accepted = statistics?.FirstOrDefault(kv => kv.Key == 4).Value ?? 0,
+                Rejected = statistics?.FirstOrDefault(kv => kv.Key == 5).Value ?? 0
+            };
 
-//        // PUT: api/applications/{id}/status
-//        [HttpPut("{id}/status")]
-//        public async Task<IActionResult> UpdateApplicationStatus(int id, [FromBody] int status)
-//        {
-//            var application = await _context.Applications
-//                .FirstOrDefaultAsync(a => a.AppId == id && a.DeletedAt == null);
-            
-//            if (application == null)
-//                return NotFound("Application not found");
+            return Ok(result);
+        }
 
-//            application.Status = status;
-//            await _context.SaveChangesAsync();
+        private ApplicationResponseDTO MapToDTO(Application a)
+        {
+            return new ApplicationResponseDTO
+            {
+                ApplicationId = a.AppId,
+                UserId = a.UserId,
+                JobId = a.JobId,
+                AppliedDate = a.AppliedDate,
+                Status = a.Status,
+                CVUrl = a.CVUrl,
 
-//            return Ok(new { message = $"Application status updated to {status}" });
-//        }
+                Candidate = a.Candidate == null ? null : new CandidateSummaryDTO
+                {
+                    UserId = a.Candidate.UserId,
+                    FullName = a.Candidate.User?.FullName ?? "Unknown",
+                    Avatar = a.Candidate.User?.Avatar,
+                    Email = a.Candidate.User?.Email,
+                    CVUrl = a.Candidate.CVUrl
+                },
 
-//        // GET: api/applications/statistics/job/{jobId}
-//        [HttpGet("statistics/job/{jobId}")]
-//        public async Task<IActionResult> GetApplicationStatistics(int jobId)
-//        {
-//            var applications = await _context.Applications
-//                .Where(a => a.JobId == jobId && a.DeletedAt == null)
-//                .ToListAsync();
-
-//            var statistics = new
-//            {
-//                TotalApplications = applications.Count,
-//                Pending = applications.Count(a => a.Status == 1),
-//                Reviewed = applications.Count(a => a.Status == 2),
-//                Interviewed = applications.Count(a => a.Status == 3),
-//                Accepted = applications.Count(a => a.Status == 4),
-//                Rejected = applications.Count(a => a.Status == 5)
-//            };
-
-//            return Ok(statistics);
-//        }
-
-//        private bool ApplicationExists(int id)
-//        {
-//            return _context.Applications.Any(e => e.AppId == id && e.DeletedAt == null);
-//        }
-//        private ApplicationResponseDTO MapToDTO(Application a)
-//        {
-//            return new ApplicationResponseDTO
-//            {
-//                ApplicationId = a.AppId,
-//                UserId = a.UserId,
-//                JobId = a.JobId,
-//                AppliedDate = a.AppliedDate,
-//                Status = a.Status,
-
-//                Candidate = a.Candidate == null ? null : new CandidateSummaryDTO
-//                {
-//                    UserId = a.Candidate.UserId,
-//                    FullName = a.Candidate.User.FullName,
-//                    Avatar = a.Candidate.User != null ? a.Candidate.User.Avatar : null,
-//                    Email = a.Candidate.User != null ? a.Candidate.User.Email : null,
-//                    CVUrl = a.Candidate.CVUrl
-//                },
-
-//                Job = a.Job == null ? null : new JobSummaryDTO
-//                {
-//                    JobId = a.Job.JobId,
-//                    Title = a.Job.Title,
-//                    SalaryMin = a.Job.SalaryMin,
-//                    SalaryMax = a.Job.SalaryMax,
-//                    CompanyName = a.Job.Company != null ? a.Job.Company.CompanyName : "",
-//                    LocationName = a.Job.Location != null ? a.Job.Location.LocationName : "",
-//                    Deadline = a.Job.Deadline
-//                }
-//            };
-//        }
-//    }
-//}
+                Job = a.Job == null ? null : new JobSummaryDTO
+                {
+                    JobId = a.Job.JobId,
+                    Title = a.Job.Title,
+                    SalaryMin = a.Job.SalaryMin,
+                    SalaryMax = a.Job.SalaryMax,
+                    CompanyName = a.Job.Company?.CompanyName ?? "Unknown",
+                    LocationName = a.Job.Location?.LocationName ?? "Unknown",
+                    Deadline = a.Job.Deadline
+                }
+            };
+        }
+    }
+}

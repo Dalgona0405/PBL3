@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 namespace JobSeekingAPI.DTOs
 {
     // Job trả về cho Frontend
@@ -38,7 +36,7 @@ namespace JobSeekingAPI.DTOs
         public string? ExpYear { get; set; }
         public string? Level { get; set; }
         public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 20;
+        public int PageSize { get; set; } = 10;
     }
     // Summary Job - dùng cho CompanySummaryDTO
     public class JobSummaryDTO
@@ -69,6 +67,7 @@ namespace JobSeekingAPI.DTOs
         public string? Requirement { get; set; }
         public string? Benefits { get; set; }
         public string? Address { get; set; }
+        public List<int>? TagIds { get; set; }
     }
 
     public class UpdateJobDTO
@@ -85,5 +84,6 @@ namespace JobSeekingAPI.DTOs
         public string? Benefits { get; set; }
         public string? Address { get; set; }
         public int? Status { get; set; } // 1: Active, 0: Closed
+        public List<int>? TagIds { get; set; }
     }
 }

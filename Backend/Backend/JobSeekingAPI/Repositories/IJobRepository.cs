@@ -5,12 +5,13 @@ namespace JobSeekingAPI.Repositories
 {
     public interface IJobRepository : IBaseRepository<Job>
     {
-        // CRUD
+        // CRUD ĐẶC THÙ
         Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync();
         Task<Job?> GetJobDetailByIdAsync(int id);
-        Task<Job> CreateJobWithDefaultsAsync(Job job);
-        Task SoftDeleteJobAsync(int id);
         Task<Job?> GetJobEntityByIdAsync(int id);
+        Task<Job> CreateJobWithDefaultsAsync(Job job);
+        Task UpdateJobWithTagsAsync(Job job, List<int>? newTagIds);
+        Task SoftDeleteJobAsync(int id);
 
         // ===== TÌM KIẾM NÂNG CAO =====
         Task<PagedResultDTO<Job>> SearchJobsAsync(JobSearchDTO searchParams);
@@ -24,5 +25,6 @@ namespace JobSeekingAPI.Repositories
         Task<int> GetTotalJobsCountAsync();
         Task<Dictionary<string, int>> GetJobsByLevelAsync();
         Task<IEnumerable<Job>> GetRecentJobsAsync(int count);
+        Task IncrementViewCountAsync(int jobId);
     }
 }

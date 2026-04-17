@@ -32,7 +32,33 @@ namespace JobSeekingAPI.Controllers
             var job = await _jobRepository.GetJobDetailByIdAsync(id);
             if (job == null)
                 return NotFound(new { message = "Job not found" });
+            await _jobRepository.IncrementViewCountAsync(id);
             return Ok(MapToDTO(job));
+        }
+
+        //GET: api/jobs/"search"
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchJobs([FromQuery] JobSearchDTO searchParams)
+        {
+            var result = await _jobRepository.SearchJobsAsync(searchParams);
+            var mappedData = result.Data.Select(j => MapToDTO(j)).ToList();
+            return Ok(new
+            {
+                result.TotalCount,
+                result.Page,
+                result.PageSize,
+                result.TotalPages,
+                Data = mappedData
+            });
+        }
+
+        //GET: api/jobs/company/{companyId}
+        [HttpGet("company/{companyId}")]
+        public async Task<IActionResult> GetJobsByCompany(int companyId)
+        {
+            var jobs = await _jobRepository.GetJobsByCompanyAsync(companyId);
+            var jobDTOs = jobs.Select(j => MapToDTO(j));
+            return Ok(jobDTOs);
         }
 
         //POST: api/jobs
@@ -41,6 +67,11 @@ namespace JobSeekingAPI.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            if(dto.Deadline.HasValue && dto.Deadline.Value < DateTime.UtcNow)
+            {
+                return BadRequest(new { message = "Deadline cannot be in the past!" });
+            }
 
             var job = new Job
             {
@@ -55,11 +86,12 @@ namespace JobSeekingAPI.Controllers
                 Description = dto.Description,
                 Requirement = dto.Requirement,
                 Benefits = dto.Benefits,
-                Address = dto.Address
+                Address = dto.Address,
+                JobTags = dto.TagIds?.Select(tagId => new JobTag { TagId = tagId }).ToList() ?? new List<JobTag>()
             };
-
-            await _jobRepository.CreateJobWithDefaultsAsync(job);
-            return Ok(new { message = "Crate success", jobId = job.JobId });
+            
+            var createdJob = await _jobRepository.CreateJobWithDefaultsAsync(job);
+            return CreatedAtAction(nameof(GetJobById), new { id = createdJob.JobId }, MapToDTO(createdJob));
         }
 
         //PUT: api/jobs/{id}
@@ -86,9 +118,10 @@ namespace JobSeekingAPI.Controllers
             existingJob.Address = dto.Address ?? existingJob.Address;
             existingJob.Status = dto.Status ?? existingJob.Status;
 
-            await _jobRepository.UpdateAsync(existingJob);
+            await _jobRepository.UpdateJobWithTagsAsync(existingJob, dto.TagIds);
             return Ok(new { message = "Update Success" });
         }
+
         //DELETE: api/jobs/id
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteJob(int id)
@@ -99,21 +132,7 @@ namespace JobSeekingAPI.Controllers
             await _jobRepository.SoftDeleteJobAsync(id);
             return Ok(new { message = "Delete success" });
         }
-        //GET: api/jobs/"search"
-        [HttpGet("search")]
-        public async Task<IActionResult> SearchJobs([FromQuery] JobSearchDTO searchParams)
-        {
-            var result = await _jobRepository.SearchJobsAsync(searchParams);
-            var mappedData = result.Data.Select(j => MapToDTO(j)).ToList();
-            return Ok(new
-            {
-                result.TotalCount,
-                result.Page,
-                result.PageSize,
-                result.TotalPages,
-                Data = mappedData
-            });
-        }
+
         //GET: api/jobs/"recent"
         [HttpGet("recent")]
         public async Task<IActionResult> GetRecentJobs([FromQuery] int count = 8)
@@ -122,6 +141,7 @@ namespace JobSeekingAPI.Controllers
             var jobDTOs = jobs.Select(j => MapToDTO(j));
             return Ok(jobDTOs);
         }
+
         private JobResponseDTO MapToDTO(Job j)
         {
             return new JobResponseDTO
