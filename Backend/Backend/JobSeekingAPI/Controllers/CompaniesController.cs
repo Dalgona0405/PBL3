@@ -33,31 +33,30 @@ namespace JobSeekingAPI.Controllers
             var company = await _companyRepository.GetCompanyDetailByIdAsync(id);
             if (company == null)
                 return NotFound(new {message = "Company not found"});
-
             return Ok(company);
         }
 
         // POST: api/companies
         [HttpPost]
-        public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyDTO createCompanyDto)
+        public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             var company = new Company
             {
-                CompanyName = createCompanyDto.CompanyName,
-                LogoImg = createCompanyDto.LogoImg,
-                Website = createCompanyDto.Website,
-                Size = createCompanyDto.Size
+                CompanyName = dto.CompanyName,
+                LogoImg = dto.LogoImg,
+                Website = dto.Website,
+                Size = dto.Size
             };
             await _companyRepository.CreateAsync(company);
-            return Ok(new {message = "Create success", data = company });
+            return CreatedAtAction(nameof(GetCompanyById), new { id = company.CompanyId }, company);
         }
 
         // PUT: api/companies/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCompany(int id, [FromBody] UpdateCompanyDTO updateCompanyDto)
+        public async Task<IActionResult> UpdateCompany(int id, [FromBody] UpdateCompanyDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -66,10 +65,10 @@ namespace JobSeekingAPI.Controllers
             if (existingCompany == null || existingCompany.DeletedAt != null)
                 return NotFound(new { message = "Company not found" });
 
-            existingCompany.CompanyName = updateCompanyDto.CompanyName ?? existingCompany.CompanyName;
-            existingCompany.LogoImg = updateCompanyDto.LogoImg ?? existingCompany.LogoImg;
-            existingCompany.Website = updateCompanyDto.Website ?? existingCompany.Website;
-            existingCompany.Size = updateCompanyDto.Size ?? existingCompany.Size;
+            existingCompany.CompanyName = dto.CompanyName ?? existingCompany.CompanyName;
+            existingCompany.LogoImg = dto.LogoImg ?? existingCompany.LogoImg;
+            existingCompany.Website = dto.Website ?? existingCompany.Website;
+            existingCompany.Size = dto.Size ?? existingCompany.Size;
 
             await _companyRepository.UpdateAsync(existingCompany);
             return Ok(new { message = "Update success" });

@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
-using JobSeekingAPI.Services;
+using JobSeekingAPI.Repositories;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -11,403 +9,153 @@ namespace JobSeekingAPI.Controllers
     [ApiController]
     public class CandidatesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ICandidateRepository _candidateRepository;
 
-        public CandidatesController(ApplicationDbContext context)
+        public CandidatesController(ICandidateRepository candidateRepository)
         {
-            _context = context;
+            _candidateRepository = candidateRepository;
         }
 
         // GET: api/candidates
         [HttpGet]
         public async Task<IActionResult> GetAllCandidates()
         {
-            var candidates = await _context.Candidates
-                .Include(c => c.User)
-                .Include(c => c.Experiences)
-                .Include(c => c.CandidateTags)
-                    .ThenInclude(ct => ct.Tag)
-                .Where(c => c.User != null && c.User.DeletedAt == null)
-                .Select(c => new CandidateDetailDTO
-                {
-                    UserId = c.UserId,
-                    // ✅ ĐÃ SỬA: Lấy FullName từ User
-                    FullName = c.User != null ? c.User.FullName : "",
-                    Gender = c.Gender,
-                    Birthday = c.Birthday,
-                    Phone = c.Phone,
-                    Address = c.Address,
-                    CVUrl = c.CVUrl,
-                    Skills = c.CandidateTags
-                        .Where(ct => ct.Tag != null)
-                        .Select(ct => ct.Tag!.TagName)
-                        .ToList(),
-                    Experiences = c.Experiences
-                        .OrderByDescending(e => e.StartDate)
-                        .Select(e => new ExperienceDTO
-                        {
-                            ExpId = e.ExpId,
-                            JobTitle = e.JobTitle,
-                            CompanyName = e.CompanyName,
-                            StartDate = e.StartDate ?? DateTime.MinValue,
-                            EndDate = e.EndDate,
-                            Description = e.Description
-                        }).ToList()
-                })
-                .ToListAsync();
-
-            return Ok(candidates);
+            var candidates = await _candidateRepository.GetAllCandidatesWithDetailsAsync();
+            return Ok(candidates.Select(c => MapToDetailDTO(c)));
         }
 
         // GET: api/candidates/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCandidateById(int id)
         {
-            var user = await _context.Users
-                .Include(u => u.Candidate)
-                    .ThenInclude(c => c!.Experiences)
-                .Include(u => u.Candidate)
-                    .ThenInclude(c => c!.CandidateTags)
-                    .ThenInclude(ct => ct.Tag)
-                .Include(u => u.Candidate!)
-                    .ThenInclude(c => c.Applications)
-                    .ThenInclude(a => a.Job!)
-                    .ThenInclude(j => j.Company)
-                .Include(u => u.Candidate!)
-                    .ThenInclude(c => c.Applications)
-                    .ThenInclude(a => a.Job!)
-                    .ThenInclude(j => j.Location)
-                .Where(u => u.UserId == id && u.DeletedAt == null && u.Candidate != null)
-                .Select(u => new UserDetailDTO
-                {
-                    UserId = u.UserId,
-                    Email = u.Email,
-                    // ✅ ĐÃ SỬA: Lấy FullName từ User (u)
-                    FullName = u.FullName,
-                    Phone = u.Candidate.Phone,
-                    Address = u.Candidate.Address,
-                    Role = u.Role,
-                    LastLogin = u.LastLogin,
-                    DeletedAt = u.DeletedAt,
-
-                    Candidate = new CandidateDetailDTO
-                    {
-                        UserId = u.Candidate.UserId,
-                        // ✅ ĐÃ SỬA: Lấy FullName từ User (u)
-                        FullName = u.FullName,
-                        Gender = u.Candidate.Gender,
-                        Birthday = u.Candidate.Birthday,
-                        Phone = u.Candidate.Phone,
-                        Address = u.Candidate.Address,
-                        CVUrl = u.Candidate.CVUrl,
-                        Skills = u.Candidate.CandidateTags
-                            .Where(ct => ct.Tag != null)
-                            .Select(ct => ct.Tag!.TagName)
-                            .ToList(),
-                        Experiences = u.Candidate.Experiences
-                            .OrderByDescending(e => e.StartDate)
-                            .Select(e => new ExperienceDTO
-                            {
-                                ExpId = e.ExpId,
-                                JobTitle = e.JobTitle,
-                                CompanyName = e.CompanyName,
-                                StartDate = e.StartDate ?? DateTime.MinValue,
-                                EndDate = e.EndDate,
-                                Description = e.Description
-                            }).ToList()
-                    },
-
-                    Applications = u.Candidate.Applications
-                        .Where(a => a.DeletedAt == null)
-                        .OrderByDescending(a => a.AppliedDate)
-                        .Select(a => new ApplicationResponseDTO
-                        {
-                            ApplicationId = a.AppId,
-                            UserId = a.UserId,
-                            JobId = a.JobId,
-                            AppliedDate = a.AppliedDate,
-                            Status = a.Status,
-                            Job = a.Job == null ? null : new JobSummaryDTO
-                            {
-                                JobId = a.Job.JobId,
-                                Title = a.Job.Title,
-                                SalaryMin = a.Job.SalaryMin,
-                                SalaryMax = a.Job.SalaryMax,
-                                CompanyName = a.Job.Company != null ? a.Job.Company.CompanyName : "",
-                                LocationName = a.Job.Location != null ? a.Job.Location.LocationName : "",
-                                Deadline = a.Job.Deadline
-                            }
-                        }).ToList()
-                })
-                .FirstOrDefaultAsync();
-
-            if (user == null)
-                return NotFound("Candidate not found");
-
-            return Ok(user);
+            var candidate = await _candidateRepository.GetCandidateDetailByIdAsync(id);
+            if (candidate == null)
+                return NotFound(new { message = "Candidate not found" });
+            return Ok(MapToDetailDTO(candidate));
         }
 
-        // POST: api/candidates
-        [HttpPost]
-        public async Task<IActionResult> CreateCandidate([FromBody] CreateCandidateDTO createCandidateDto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.UserId == createCandidateDto.UserId && u.DeletedAt == null);
-
-            if (user == null)
-                return NotFound("User not found");
-
-            var existingCandidate = await _context.Candidates
-                .AnyAsync(c => c.UserId == createCandidateDto.UserId);
-
-            if (existingCandidate)
-                return BadRequest("Candidate already exists for this user");
-
-            // ✅ ĐÃ SỬA: Cập nhật FullName và Avatar cho User (nếu có gửi lên)
-            if (!string.IsNullOrWhiteSpace(createCandidateDto.FullName))
-            {
-                user.FullName = createCandidateDto.FullName;
-            }
-            if (!string.IsNullOrWhiteSpace(createCandidateDto.Avatar))
-            {
-                user.Avatar = createCandidateDto.Avatar;
-            }
-
-            // Tạo Candidate mới (KHÔNG CÒN FullName ở đây nữa)
-            var candidate = new Candidate
-            {
-                UserId = createCandidateDto.UserId,
-                Gender = createCandidateDto.Gender,
-                Birthday = createCandidateDto.Birthday,
-                Phone = createCandidateDto.Phone,
-                Address = createCandidateDto.Address,
-                CVUrl = createCandidateDto.CVUrl
-            };
-
-            _context.Candidates.Add(candidate);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetCandidateById), new { id = candidate.UserId }, candidate);
-        }
-
-        // PUT: api/candidates/{id}
+        // PUT: api/candidates/{id} - Cập nhật thông tin profile
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCandidate(int id, [FromBody] UpdateCandidateDTO updateCandidateDto)
+        public async Task<IActionResult> UpdateCandidateProfile(int id, [FromBody] UpdateCandidateDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var existingCandidate = await _context.Candidates
-                .Include(c => c.User)
-                .FirstOrDefaultAsync(c => c.UserId == id);
-
+            var existingCandidate = await _candidateRepository.GetCandidateEntityByIdAsync(id);
             if (existingCandidate == null)
-                return NotFound("Candidate not found");
+                return NotFound(new { message = "Candidate not found" });
 
-            // Cập nhật thông tin Candidate
-            existingCandidate.Gender = updateCandidateDto.Gender ?? existingCandidate.Gender;
-            existingCandidate.Birthday = updateCandidateDto.Birthday ?? existingCandidate.Birthday;
-            existingCandidate.Phone = updateCandidateDto.Phone ?? existingCandidate.Phone;
-            existingCandidate.Address = updateCandidateDto.Address ?? existingCandidate.Address;
-            existingCandidate.CVUrl = updateCandidateDto.CVUrl ?? existingCandidate.CVUrl;
-
-            // ✅ ĐÃ SỬA: Cập nhật FullName và Avatar vào bảng User
             if (existingCandidate.User != null)
             {
-                if (!string.IsNullOrWhiteSpace(updateCandidateDto.FullName))
-                {
-                    existingCandidate.User.FullName = updateCandidateDto.FullName;
-                }
-                if (!string.IsNullOrWhiteSpace(updateCandidateDto.Avatar))
-                {
-                    existingCandidate.User.Avatar = updateCandidateDto.Avatar;
-                }
+                existingCandidate.User.FullName = dto.FullName ?? existingCandidate.User.FullName;
+                existingCandidate.User.Avatar = dto.Avatar ?? existingCandidate.User.Avatar;
             }
 
-            await _context.SaveChangesAsync();
+            existingCandidate.Gender = dto.Gender ?? existingCandidate.Gender;
+            existingCandidate.Birthday = dto.Birthday ?? existingCandidate.Birthday;
+            existingCandidate.Phone = dto.Phone ?? existingCandidate.Phone;
+            existingCandidate.Address = dto.Address ?? existingCandidate.Address;
+            existingCandidate.CVUrl = dto.CVUrl ?? existingCandidate.CVUrl;
 
-            return NoContent();
-        }
+            await _candidateRepository.UpdateAsync(existingCandidate);
 
-        // DELETE: api/candidates/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCandidate(int id)
-        {
-            var candidate = await _context.Candidates
-                .Include(c => c.User)
-                .FirstOrDefaultAsync(c => c.UserId == id);
-
-            if (candidate == null)
-                return NotFound("Candidate not found");
-
-            if (candidate.User != null)
+            // Cập nhật riêng các kỹ năng (nếu có gửi lên)
+            if (dto.Tags != null)
             {
-                candidate.User.DeletedAt = DateTime.Now;
+                await _candidateRepository.UpdateCandidateTagsAsync(id, dto.Tags);
             }
 
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        // GET: api/candidates/{id}/applications
-        [HttpGet("{id}/applications")]
-        public async Task<IActionResult> GetCandidateApplications(int id)
-        {
-            var applications = await _context.Applications
-                .Include(a => a.Job!)
-                    .ThenInclude(j => j.Company)
-                .Include(a => a.Job!)
-                    .ThenInclude(j => j.Location)
-                .Where(a => a.UserId == id && a.DeletedAt == null)
-                .OrderByDescending(a => a.AppliedDate)
-                .Select(a => new ApplicationResponseDTO
-                {
-                    ApplicationId = a.AppId,
-                    UserId = a.UserId,
-                    JobId = a.JobId,
-                    AppliedDate = a.AppliedDate,
-                    Status = a.Status,
-                    Job = a.Job == null ? null : new JobSummaryDTO
-                    {
-                        JobId = a.Job.JobId,
-                        Title = a.Job.Title,
-                        SalaryMin = a.Job.SalaryMin,
-                        SalaryMax = a.Job.SalaryMax,
-                        CompanyName = a.Job.Company != null ? a.Job.Company.CompanyName : "",
-                        LocationName = a.Job.Location != null ? a.Job.Location.LocationName : "",
-                        Deadline = a.Job.Deadline
-                    }
-                })
-                .ToListAsync();
-
-            return Ok(applications);
+            return Ok(new { message = "Candidate profile updated successfully." });
         }
 
         // GET: api/candidates/search
         [HttpGet("search")]
-        public async Task<IActionResult> SearchCandidates(
-            [FromQuery] string? keyword,
-            [FromQuery] int? tagId,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> SearchCandidates([FromQuery] string? keyword, [FromQuery] int? tagId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var query = _context.Candidates
-                .Include(c => c.User)
-                .Include(c => c.CandidateTags)
-                    .ThenInclude(ct => ct.Tag)
-                .Include(c => c.Experiences)
-                .Where(c => c.User != null && c.User.DeletedAt == null)
-                .AsQueryable();
-
-            // Lọc theo keyword
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                keyword = keyword.ToLower();
-                query = query.Where(c =>
-                    // ✅ ĐÃ SỬA: Tìm kiếm FullName trong bảng User
-                    (c.User != null && c.User.FullName.ToLower().Contains(keyword)) ||
-                    (c.Phone != null && c.Phone.Contains(keyword)) ||
-                    c.Experiences.Any(e =>
-                        e.JobTitle.ToLower().Contains(keyword) ||
-                        e.CompanyName.ToLower().Contains(keyword)));
-            }
-
-            // Lọc theo tag
-            if (tagId.HasValue)
-            {
-                query = query.Where(c => c.CandidateTags.Any(ct => ct.TagId == tagId));
-            }
-
-            var totalCount = await query.CountAsync();
-            var candidates = await query
-                // ✅ ĐÃ SỬA: Sắp xếp theo FullName của User
-                .OrderBy(c => c.User != null ? c.User.FullName : "")
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(c => new CandidateSummaryDTO
-                {
-                    UserId = c.UserId,
-                    // ✅ ĐÃ SỬA: Lấy FullName và Avatar từ User
-                    FullName = c.User != null ? c.User.FullName : "",
-                    Avatar = c.User != null ? c.User.Avatar : null,
-                    CVUrl = c.CVUrl,
-                    Email = c.User != null ? c.User.Email : null,
-                    Skills = c.CandidateTags
-                        .Where(ct => ct.Tag != null)
-                        .Select(ct => ct.Tag!.TagName)
-                        .Take(5)
-                        .ToList()
-                })
-                .ToListAsync();
-
-            var result = new
-            {
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-                Data = candidates
-            };
-
+            var result = await _candidateRepository.SearchCandidatesAsync(keyword, tagId, page, pageSize);
             return Ok(result);
         }
 
-        // POST: api/candidates/{id}/skills
-        [HttpPost("{id}/skills")]
-        public async Task<IActionResult> AddSkillToCandidate(int id, [FromBody] AddSkillDTO addSkillDto)
+        // API VỀ EXPERIENCE
+        // GET: api/candidates/{id}/experiences
+        [HttpGet("{id}/experiences")]
+        public async Task<IActionResult> GetExperiences(int id)
         {
-            var candidate = await _context.Candidates
-                .FirstOrDefaultAsync(c => c.UserId == id);
+            var experiences = await _candidateRepository.GetExperiencesByCandidateIdAsync(id);
+            return Ok(experiences.Select(e => MapExperienceToDTO(e)));
+        }
 
-            if (candidate == null)
-                return NotFound("Candidate not found");
+        // POST: api/candidates/{id}/experiences
+        [HttpPost("{id}/experiences")]
+        public async Task<IActionResult> AddExperience(int id, [FromBody] CreateExperienceDTO dto)
+        {
+            if (id != dto.UserId) return BadRequest("User ID mismatch.");
 
-            var tag = await _context.Tags.FindAsync(addSkillDto.TagId);
-            if (tag == null)
-                return NotFound("Tag not found");
-
-            var existing = await _context.CandidateTags
-                .AnyAsync(ct => ct.UserId == id && ct.TagId == addSkillDto.TagId);
-
-            if (existing)
-                return BadRequest("Skill already added");
-
-            var candidateTag = new CandidateTag
+            var experience = new Experience
             {
                 UserId = id,
-                TagId = addSkillDto.TagId,
-                Proficiency = addSkillDto.Proficiency
+                JobTitle = dto.JobTitle,
+                CompanyName = dto.CompanyName,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                Description = dto.Description
             };
-
-            _context.CandidateTags.Add(candidateTag);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Skill added successfully" });
+            var created = await _candidateRepository.AddExperienceAsync(experience);
+            return CreatedAtAction(nameof(GetExperiences), new { id = id }, MapExperienceToDTO(created));
         }
 
-        // DELETE: api/candidates/{id}/skills/{tagId}
-        [HttpDelete("{id}/skills/{tagId}")]
-        public async Task<IActionResult> RemoveSkillFromCandidate(int id, int tagId)
+        // CÁC API VỀ SKILLS
+        // GET: api/candidates/{id}/skills
+        [HttpGet("{id}/skills")]
+        public async Task<IActionResult> GetCandidateSkills(int id)
         {
-            var candidateTag = await _context.CandidateTags
-                .FirstOrDefaultAsync(ct => ct.UserId == id && ct.TagId == tagId);
-
-            if (candidateTag == null)
-                return NotFound("Skill not found");
-
-            _context.CandidateTags.Remove(candidateTag);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            var skills = await _candidateRepository.GetTagsByCandidateIdAsync(id);
+            var dtos = skills.Select(s => new {
+                s.TagId,
+                TagName = s.Tag?.TagName,
+                s.Proficiency
+            });
+            return Ok(dtos);
         }
 
-        private bool CandidateExists(int id)
+        // PUT: api/candidates/{id}/skills - Cập nhật toàn bộ skill
+        [HttpPut("{id}/skills")]
+        public async Task<IActionResult> UpdateCandidateSkills(int id, [FromBody] List<CandidateTagDTO> dtos)
         {
-            return _context.Candidates.Any(e => e.UserId == id);
+            await _candidateRepository.UpdateCandidateTagsAsync(id, dtos);
+            return Ok(new { message = "Skills updated successfully." });
+        }
+
+
+        // === Private Mapping Methods ===
+        private CandidateDetailDTO MapToDetailDTO(Candidate c)
+        {
+            return new CandidateDetailDTO
+            {
+                UserId = c.UserId,
+                FullName = c.User?.FullName ?? "",
+                Gender = c.Gender,
+                Birthday = c.Birthday,
+                Phone = c.Phone,
+                Address = c.Address,
+                CVUrl = c.CVUrl,
+                Skills = c.CandidateTags.Select(ct => ct.Tag?.TagName ?? "").ToList(),
+                Experiences = c.Experiences.Select(e => MapExperienceToDTO(e)).ToList()
+            };
+        }
+
+        private ExperienceDTO MapExperienceToDTO(Experience e)
+        {
+            return new ExperienceDTO
+            {
+                ExpId = e.ExpId,
+                UserId = e.UserId,
+                JobTitle = e.JobTitle,
+                CompanyName = e.CompanyName,
+                StartDate = e.StartDate ?? DateTime.MinValue,
+                EndDate = e.EndDate,
+                Description = e.Description
+            };
         }
     }
 }

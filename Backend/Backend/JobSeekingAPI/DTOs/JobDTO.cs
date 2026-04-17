@@ -48,6 +48,7 @@ namespace JobSeekingAPI.DTOs
         public string? ExpYear { get; set; }
         public string? Level { get; set; }
         public string CompanyName { get; set; } = string.Empty;
+        public string? LogoImg { get; set; }
         public string LocationName { get; set; } = string.Empty;
         public DateTime PostedDate { get; set; }
         public DateTime? Deadline { get; set; }

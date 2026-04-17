@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
+using JobSeekingAPI.Repositories;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -10,26 +9,18 @@ namespace JobSeekingAPI.Controllers
     [ApiController]
     public class LocationsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ILocationRepository _locationRepository;
 
-        public LocationsController(ApplicationDbContext context)
+        public LocationsController(ILocationRepository locationRepository)
         {
-            _context = context;
+            _locationRepository = locationRepository;
         }
 
         // GET: api/locations
         [HttpGet]
         public async Task<IActionResult> GetAllLocations()
         {
-            var locations = await _context.Locations
-                .Select(l => new LocationSummaryDTO
-                {
-                    LocationId = l.LocationId,
-                    LocationName = l.LocationName,
-                    JobCount = l.Jobs.Count(j => j.DeletedAt == null)
-                })
-                .OrderBy(l => l.LocationName)
-                .ToListAsync();
+            var locations = await _locationRepository.GetAllLocationsSummaryAsync();
             
             return Ok(locations);
         }
@@ -38,118 +29,76 @@ namespace JobSeekingAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetLocationById(int id)
         {
-            var location = await _context.Locations
-                .Include(l => l.Jobs.Where(j => j.DeletedAt == null))
-                    .ThenInclude(j => j.Company)
-                .Where(l => l.LocationId == id)
-                .Select(l => new LocationDetailDTO
-                {
-                    LocationId = l.LocationId,
-                    LocationName = l.LocationName,
-                    JobCount = l.Jobs.Count,
-                    Jobs = l.Jobs
-                        .OrderByDescending(j => j.PostedDate)
-                        .Take(20)
-                        .Select(j => new JobSummaryDTO
-                        {
-                            JobId = j.JobId,
-                            Title = j.Title,
-                            SalaryMin = j.SalaryMin,
-                            SalaryMax = j.SalaryMax,
-                            ExpYear = j.ExpYear,
-                            Level = j.Level,
-                            CompanyName = j.Company != null ? j.Company.CompanyName : "",
-                            PostedDate = j.PostedDate,
-                            Deadline = j.Deadline
-                        }).ToList()
-                })
-                .FirstOrDefaultAsync();
-
+            var location = await _locationRepository.GetLocationDetailByIdAsync(id);
             if (location == null)
-                return NotFound("Location not found");
-
+                return NotFound(new { message = "Location not found" });
             return Ok(location);
         }
 
         // POST: api/locations
         [HttpPost]
-        public async Task<IActionResult> CreateLocation([FromBody] CreateLocationDTO createLocationDto)
+        public async Task<IActionResult> CreateLocation([FromBody] CreateLocationDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            // Kiểm tra tên địa điểm đã tồn tại
-            var existingLocation = await _context.Locations
-                .AnyAsync(l => l.LocationName.ToLower() == createLocationDto.LocationName.ToLower());
+            var existingLocation = await _locationRepository.
             
             if (existingLocation)
                 return BadRequest("Location already exists");
 
             var location = new Location
             {
-                LocationName = createLocationDto.LocationName
+                LocationName = dto.LocationName
             };
 
-            _context.Locations.Add(location);
-            await _context.SaveChangesAsync();
+            var createdLocation = await _locationRepository.CreateAsync(location);
 
-            var locationDto = new LocationSummaryDTO
+            return CreatedAtAction(nameof(GetLocationById), new { id = createdLocation.LocationId }, new LocationSummaryDTO
             {
-                LocationId = location.LocationId,
-                LocationName = location.LocationName
-            };
-
-            return CreatedAtAction(nameof(GetLocationById), new { id = location.LocationId }, locationDto);
+                LocationId = createdLocation.LocationId,
+                LocationName = createdLocation.LocationName,
+                JobCount = 0
+            });
         }
 
         // PUT: api/locations/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateLocation(int id, [FromBody] UpdateLocationDTO updateLocationDto)
+        public async Task<IActionResult> UpdateLocation(int id, [FromBody] UpdateLocationDTO dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var existingLocation = await _context.Locations.FindAsync(id);
-            if (existingLocation == null)
-                return NotFound("Location not found");
+            var location = await _locationRepository.GetLocationEntityByIdAsync(id);
+            if (location == null)
+                return NotFound(new { message = "Location not found!" });
 
-            // Kiểm tra tên mới không trùng
-            if (!string.IsNullOrWhiteSpace(updateLocationDto.LocationName))
-            {
-                var duplicateLocation = await _context.Locations
-                    .AnyAsync(l => l.LocationName.ToLower() == updateLocationDto.LocationName.ToLower() 
-                        && l.LocationId != id);
-                
-                if (duplicateLocation)
-                    return BadRequest("Location name already exists");
+            location.LocationName = dto.LocationName ?? location.LocationName;
 
-                existingLocation.LocationName = updateLocationDto.LocationName;
-            }
+            await _locationRepository.UpdateAsync(location);
 
-            await _context.SaveChangesAsync();
-            return NoContent();
+            return Ok(new { message = "Location updated successfully!" });
         }
 
         // DELETE: api/locations/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteLocation(int id)
         {
-            var location = await _context.Locations
-                .Include(l => l.Jobs)
-                .FirstOrDefaultAsync(l => l.LocationId == id);
-            
+            var location = await _locationRepository.GetLocationEntityByIdAsync(id);
             if (location == null)
-                return NotFound("Location not found");
+                return NotFound(new { message = "Location not found!" });
 
-            // Kiểm tra có job đang sử dụng không
-            var hasJobs = location.Jobs.Any(j => j.DeletedAt == null);
-            if (hasJobs)
-                return BadRequest("Cannot delete location that is being used by active jobs");
+            // Check xem Location này có đang chứa Job nào không (Dùng hàm GetAll để đếm tạm, 
+            // hoặc lý tưởng nhất là viết thêm hàm đếm trong Repo)
+            var detail = await _locationRepository.GetLocationDetailByIdAsync(id);
+            if (detail != null && detail.JobCount > 0)
+            {
+                return BadRequest(new { message = "Cannot delete location with active jobs!" });
+            }
 
-            _context.Locations.Remove(location);
-            await _context.SaveChangesAsync();
+            // Xóa cứng vì Location thường không xài Soft Delete
+            await _locationRepository.DeleteAsync(id);
 
-            return NoContent();
+            return Ok(new { message = "Location deleted successfully!" });
         }
 
         // GET: api/locations/search
@@ -256,11 +205,6 @@ namespace JobSeekingAPI.Controllers
             };
 
             return Ok(result);
-        }
-
-        private bool LocationExists(int id)
-        {
-            return _context.Locations.Any(e => e.LocationId == id);
         }
     }
 }

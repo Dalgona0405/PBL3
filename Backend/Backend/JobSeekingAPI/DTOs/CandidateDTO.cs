@@ -23,6 +23,7 @@ namespace JobSeekingAPI.DTOs
         public string? Address { get; set; }
         public string? CVUrl { get; set; }
         public string? Avatar { get; set; }
+        public List<CandidateTagDTO>? Tags { get; set; }
     }
 
     public class CandidateDetailDTO

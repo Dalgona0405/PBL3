@@ -14,6 +14,7 @@ namespace JobSeekingAPI.Repositories
         public async Task<IEnumerable<CompanySummaryDTO>> GetAllCompaniesSummaryAsync()
         {
             return await _context.Companies
+                .AsNoTracking()
                 .Include(c => c.Jobs.Where(j => j.DeletedAt == null))
                     .ThenInclude(j => j.Location)
                 .Where(c => c.DeletedAt == null)
@@ -42,6 +43,7 @@ namespace JobSeekingAPI.Repositories
         public async Task<CompanyDetailDTO?> GetCompanyDetailByIdAsync(int id)
         {
             return await _context.Companies
+                .AsNoTracking()
                 .Include(c => c.Jobs.Where(j => j.DeletedAt == null))
                     .ThenInclude(j => j.Location)
                 .Include(c => c.Jobs)
@@ -115,7 +117,9 @@ namespace JobSeekingAPI.Repositories
 
         public async Task<PagedResultDTO<CompanySummaryDTO>> SearchCompaniesAsync(string? keyword, int page, int pageSize)
         {
-            var query = _context.Companies.Where(c => c.DeletedAt == null).AsQueryable();
+            var query = _context.Companies
+                .AsNoTracking()
+                .Where(c => c.DeletedAt == null);
 
             if (!string.IsNullOrWhiteSpace(keyword))
             {
@@ -150,7 +154,8 @@ namespace JobSeekingAPI.Repositories
 
         public async Task<Company?> GetCompanyEntityByIdAsync(int id)
         {
-            return await _context.Companies.FirstOrDefaultAsync(c => c.CompanyId == id && c.DeletedAt == null);
+            return await _context.Companies
+                .FirstOrDefaultAsync(c => c.CompanyId == id && c.DeletedAt == null);
         }
 
         public async Task<string> SoftDeleteCompanyAsync(int id)
@@ -174,7 +179,7 @@ namespace JobSeekingAPI.Repositories
                     recruiter.User.DeletedAt = DateTime.UtcNow;
             }
             await _context.SaveChangesAsync();
-            return "Sucess";
+            return "Delete sucess";
         }
     }
 }
