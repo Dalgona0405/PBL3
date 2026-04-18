@@ -42,10 +42,10 @@ namespace JobSeekingAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var existingLocation = await _locationRepository.
+            //var existingLocation = await _locationRepository.
             
-            if (existingLocation)
-                return BadRequest("Location already exists");
+            //if (existingLocation)
+            //    return BadRequest("Location already exists");
 
             var location = new Location
             {
@@ -102,109 +102,109 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/locations/search
-        [HttpGet("search")]
-        public async Task<IActionResult> SearchLocations([FromQuery] string keyword)
-        {
-            if (string.IsNullOrWhiteSpace(keyword))
-                return BadRequest("Keyword is required");
+        //[HttpGet("search")]
+        //public async Task<IActionResult> SearchLocations([FromQuery] string keyword)
+        //{
+        //    if (string.IsNullOrWhiteSpace(keyword))
+        //        return BadRequest("Keyword is required");
 
-            keyword = keyword.ToLower();
-            var locations = await _context.Locations
-                .Where(l => l.LocationName.ToLower().Contains(keyword))
-                .Select(l => new LocationSummaryDTO
-                {
-                    LocationId = l.LocationId,
-                    LocationName = l.LocationName,
-                    JobCount = l.Jobs.Count(j => j.DeletedAt == null)
-                })
-                .OrderBy(l => l.LocationName)
-                .ToListAsync();
+        //    keyword = keyword.ToLower();
+        //    var locations = await _context.Locations
+        //        .Where(l => l.LocationName.ToLower().Contains(keyword))
+        //        .Select(l => new LocationSummaryDTO
+        //        {
+        //            LocationId = l.LocationId,
+        //            LocationName = l.LocationName,
+        //            JobCount = l.Jobs.Count(j => j.DeletedAt == null)
+        //        })
+        //        .OrderBy(l => l.LocationName)
+        //        .ToListAsync();
 
-            return Ok(locations);
-        }
+        //    return Ok(locations);
+        //}
 
         // GET: api/locations/popular
-        [HttpGet("popular")]
-        public async Task<IActionResult> GetPopularLocations([FromQuery] int limit = 10)
-        {
-            var popularLocations = await _context.Locations
-                .Select(l => new LocationSummaryDTO
-                {
-                    LocationId = l.LocationId,
-                    LocationName = l.LocationName,
-                    JobCount = l.Jobs.Count(j => j.DeletedAt == null)
-                })
-                .Where(l => l.JobCount > 0)
-                .OrderByDescending(l => l.JobCount)
-                .Take(limit)
-                .ToListAsync();
+        //[HttpGet("popular")]
+        //public async Task<IActionResult> GetPopularLocations([FromQuery] int limit = 10)
+        //{
+        //    var popularLocations = await _context.Locations
+        //        .Select(l => new LocationSummaryDTO
+        //        {
+        //            LocationId = l.LocationId,
+        //            LocationName = l.LocationName,
+        //            JobCount = l.Jobs.Count(j => j.DeletedAt == null)
+        //        })
+        //        .Where(l => l.JobCount > 0)
+        //        .OrderByDescending(l => l.JobCount)
+        //        .Take(limit)
+        //        .ToListAsync();
 
-            return Ok(popularLocations);
-        }
+        //    return Ok(popularLocations);
+        //}
 
-        // GET: api/locations/{id}/jobs
-        [HttpGet("{id}/jobs")]
-        public async Task<IActionResult> GetJobsByLocation(int id, 
-            [FromQuery] int page = 1, 
-            [FromQuery] int pageSize = 20)
-        {
-            var location = await _context.Locations.FindAsync(id);
-            if (location == null)
-                return NotFound("Location not found");
+        //// GET: api/locations/{id}/jobs
+        //[HttpGet("{id}/jobs")]
+        //public async Task<IActionResult> GetJobsByLocation(int id, 
+        //    [FromQuery] int page = 1, 
+        //    [FromQuery] int pageSize = 20)
+        //{
+        //    var location = await _context.Locations.FindAsync(id);
+        //    if (location == null)
+        //        return NotFound("Location not found");
 
-            var query = _context.Jobs
-                .Include(j => j.Company)
-                .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-                .Where(j => j.LocationId == id && j.DeletedAt == null);
+        //    var query = _context.Jobs
+        //        .Include(j => j.Company)
+        //        .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
+        //        .Where(j => j.LocationId == id && j.DeletedAt == null);
 
-            var totalCount = await query.CountAsync();
-            var jobs = await query
-                .OrderByDescending(j => j.PostedDate)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(j => new JobResponseDTO
-                {
-                    JobId = j.JobId,
-                    Title = j.Title,
-                    SalaryMin = j.SalaryMin,
-                    SalaryMax = j.SalaryMax,
-                    ExpYear = j.ExpYear,
-                    Level = j.Level,
-                    PostedDate = j.PostedDate,
-                    Deadline = j.Deadline,
-                    Description = j.Description,
-                    Requirement = j.Requirement,
-                    Benefits = j.Benefits,
-                    Address = j.Address,
-                    ViewCount = j.ViewCount ?? 0,
-                    Company = j.Company == null ? null : new CompanySummaryDTO
-                    {
-                        CompanyId = j.Company.CompanyId,
-                        CompanyName = j.Company.CompanyName,
-                        LogoImg = j.Company.LogoImg
-                    },
-                    Tags = j.JobTags == null ? new List<TagSummaryDTO>() : j.JobTags
-                        .Where(jt => jt.Tag != null)
-                        .Select(jt => new TagSummaryDTO
-                        {
-                            TagId = jt.Tag!.TagId,
-                            TagName = jt.Tag.TagName
-                        }).ToList()
-                })
-                .ToListAsync();
+        //    var totalCount = await query.CountAsync();
+        //    var jobs = await query
+        //        .OrderByDescending(j => j.PostedDate)
+        //        .Skip((page - 1) * pageSize)
+        //        .Take(pageSize)
+        //        .Select(j => new JobResponseDTO
+        //        {
+        //            JobId = j.JobId,
+        //            Title = j.Title,
+        //            SalaryMin = j.SalaryMin,
+        //            SalaryMax = j.SalaryMax,
+        //            ExpYear = j.ExpYear,
+        //            Level = j.Level,
+        //            PostedDate = j.PostedDate,
+        //            Deadline = j.Deadline,
+        //            Description = j.Description,
+        //            Requirement = j.Requirement,
+        //            Benefits = j.Benefits,
+        //            Address = j.Address,
+        //            ViewCount = j.ViewCount ?? 0,
+        //            Company = j.Company == null ? null : new CompanySummaryDTO
+        //            {
+        //                CompanyId = j.Company.CompanyId,
+        //                CompanyName = j.Company.CompanyName,
+        //                LogoImg = j.Company.LogoImg
+        //            },
+        //            Tags = j.JobTags == null ? new List<TagSummaryDTO>() : j.JobTags
+        //                .Where(jt => jt.Tag != null)
+        //                .Select(jt => new TagSummaryDTO
+        //                {
+        //                    TagId = jt.Tag!.TagId,
+        //                    TagName = jt.Tag.TagName
+        //                }).ToList()
+        //        })
+        //        .ToListAsync();
 
-            var result = new
-            {
-                LocationId = id,
-                LocationName = location.LocationName,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-                Data = jobs
-            };
+        //    var result = new
+        //    {
+        //        LocationId = id,
+        //        LocationName = location.LocationName,
+        //        TotalCount = totalCount,
+        //        Page = page,
+        //        PageSize = pageSize,
+        //        TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+        //        Data = jobs
+        //    };
 
-            return Ok(result);
-        }
+        //    return Ok(result);
+        //}
     }
 }

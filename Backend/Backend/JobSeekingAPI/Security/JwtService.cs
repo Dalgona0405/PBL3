@@ -1,4 +1,3 @@
-// --- START OF FILE JwtService.cs ---
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
