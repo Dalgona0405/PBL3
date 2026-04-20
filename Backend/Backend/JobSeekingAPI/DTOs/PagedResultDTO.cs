@@ -1,6 +1,9 @@
-// Đang dùng trong JobRepository.cs nhưng chưa có file DTO
+using System;
+using System.Collections.Generic;
+
 namespace JobSeekingAPI.DTOs
 {
+    // DTO bọc ngoài để làm chức năng phân trang (Next/Prev Page)
     public class PagedResultDTO<T>
     {
         public int TotalCount { get; set; }
@@ -9,6 +12,6 @@ namespace JobSeekingAPI.DTOs
         public int TotalPages { get; set; }
         public bool HasPrevious => Page > 1;
         public bool HasNext => Page < TotalPages;
-        public List<T> Data { get; set; } = new();
+        public List<T> Items { get; set; } = new();
     }
 }

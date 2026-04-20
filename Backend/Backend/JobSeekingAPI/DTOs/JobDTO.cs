@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
+
 namespace JobSeekingAPI.DTOs
 {
-    // Job trả về cho Frontend
+    // Chi tiết Job (Khi click vào xem 1 Job cụ thể)
     public class JobResponseDTO
     {
         public int JobId { get; set; }
@@ -23,9 +26,10 @@ namespace JobSeekingAPI.DTOs
         public LocationSummaryDTO? Location { get; set; } = null!;
         public List<TagSummaryDTO> Tags { get; set; } = new();
         public int ApplicationCount { get; set; }
+        public int? Status { get; set; }
     }
 
-    // DTO tìm kiếm - nhận từ query
+    // DTO tìm kiếm - Gói các thanh filter lại
     public class JobSearchDTO
     {
         public string? Keyword { get; set; }
@@ -38,7 +42,8 @@ namespace JobSeekingAPI.DTOs
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 10;
     }
-    // Summary Job - dùng cho CompanySummaryDTO
+
+    // Summary Job - Dùng cho Card hiển thị danh sách
     public class JobSummaryDTO
     {
         public int JobId { get; set; }
@@ -54,6 +59,7 @@ namespace JobSeekingAPI.DTOs
         public DateTime? Deadline { get; set; }
         public string? Status { get; set; }
     }
+
     public class CreateJobDTO
     {
         public int CompanyId { get; set; }

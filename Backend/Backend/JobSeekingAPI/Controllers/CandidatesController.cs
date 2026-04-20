@@ -16,7 +16,7 @@ namespace JobSeekingAPI.Controllers
             _candidateRepository = candidateRepository;
         }
 
-        // GET: api/candidates
+        // GET: api/candidates => Cân nhắc 
         [HttpGet]
         public async Task<IActionResult> GetAllCandidates()
         {
@@ -24,7 +24,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(candidates.Select(c => MapToDetailDTO(c)));
         }
 
-        // GET: api/candidates/{id}
+        // GET: api/candidates/me => Lấy thông tin của candidate đang đăng nhập
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCandidateById(int id)
         {
@@ -34,7 +34,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(MapToDetailDTO(candidate));
         }
 
-        // PUT: api/candidates/{id} - Cập nhật thông tin profile
+        // PUT: api/candidates/me - Cập nhật thông tin profile
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCandidateProfile(int id, [FromBody] UpdateCandidateDTO dto)
         {
@@ -77,7 +77,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // API VỀ EXPERIENCE
-        // GET: api/candidates/{id}/experiences
+        // GET: api/candidates/{id}/experiences => Cân nhắc
         [HttpGet("{id}/experiences")]
         public async Task<IActionResult> GetExperiences(int id)
         {
@@ -105,7 +105,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // CÁC API VỀ SKILLS
-        // GET: api/candidates/{id}/skills
+        // GET: api/candidates/{id}/skills => Cân nhắc
         [HttpGet("{id}/skills")]
         public async Task<IActionResult> GetCandidateSkills(int id)
         {

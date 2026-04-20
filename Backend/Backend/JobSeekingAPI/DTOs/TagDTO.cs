@@ -1,11 +1,11 @@
-using System;
 using System.Collections.Generic;
+
 namespace JobSeekingAPI.DTOs
 {
     public class CreateTagDTO
     {
         public string TagName { get; set; } = string.Empty;
-        public string? Type { get; set; }
+        public string? Type { get; set; } 
     }
 
     public class UpdateTagDTO

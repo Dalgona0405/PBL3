@@ -43,10 +43,11 @@ namespace JobSeekingAPI.Repositories
                 .FirstOrDefaultAsync(a => a.AppId == id && a.DeletedAt == null);
         }
 
+        // Status: 1 = Pending, 2 = Interview, 3 = Accepted, 4 = Rejected
         public async Task<Application> CreateApplicationDetailAsync(Application application)
         {
             application.AppliedDate = DateTime.UtcNow;
-            application.Status = 0; //0: Pending (chờ duyệt)
+            application.Status = 1;
 
             return await base.CreateAsync(application);
         }

@@ -9,29 +9,31 @@ namespace JobSeekingAPI.Controllers
     [ApiController]
     public class ApplicationsController : ControllerBase
     {
-        private readonly IApplicationRepository _applicationRepository;
-        private readonly IJobRepository _jobRepository;
+        private readonly IApplicationRepository _appRepo;
+        private readonly IJobRepository _jobRepo;
+        private readonly ICandidateRepository _candidateRepo;
 
-        public ApplicationsController(IApplicationRepository applicationRepository, IJobRepository jobRepository)
+        public ApplicationsController(IApplicationRepository appRepo, IJobRepository jobRepo, ICandidateRepository candidateRepo)
         {
-            _applicationRepository = applicationRepository;
-            _jobRepository = jobRepository;
+            _appRepo = appRepo;
+            _jobRepo = jobRepo;
+            _candidateRepo = candidateRepo;
         }
 
-        // GET: api/applications
+        // GET: api/applications => Cân nhắc
         [HttpGet]
         public async Task<IActionResult> GetAllApplications()
         {
-            var applications = await _applicationRepository.GetAllApplicationsWithDetailsAsync();
+            var applications = await _appRepo.GetAllApplicationsWithDetailsAsync();
             var dtos = applications.Select(a => MapToDTO(a));
             return Ok(dtos);
         }
 
-        // GET: api/applications/{id}
+        // GET: api/applications/{id} => Cân nhắc
         [HttpGet("{id}")]
         public async Task<IActionResult> GetApplicationById(int id)
         {
-            var application = await _applicationRepository.GetApplicationDetailByIdAsync(id);
+            var application = await _appRepo.GetApplicationDetailByIdAsync(id);
             if (application == null)
                 return NotFound("Application not found");
 
@@ -42,20 +44,20 @@ namespace JobSeekingAPI.Controllers
         [HttpGet("jobs/{jobId}")]
         public async Task<IActionResult> GetApplicationsByJob(int jobId)
         {
-            var jobExists = await _jobRepository.GetByIdAsync(jobId);
+            var jobExists = await _jobRepo.GetByIdAsync(jobId);
             if (jobExists == null) 
                 return NotFound(new { message = "Job not found!" });
 
-            var applications = await _applicationRepository.GetByJobIdAsync(jobId);
+            var applications = await _appRepo.GetByJobIdAsync(jobId);
             var dtos = applications.Select(a => MapToDTO(a));
             return Ok(dtos);
         }
 
-        // GET: api/applications/user/{userId}
+        // GET: api/applications/me
         [HttpGet("candidate/{userId}")]
         public async Task<IActionResult> GetApplicationsByUser(int userId)
         {
-            var applications = await _applicationRepository.GetByUserIdAsync(userId);
+            var applications = await _appRepo.GetByUserIdAsync(userId);
             var dtos = applications.Select(a => MapToDTO(a));
             return Ok(dtos);
         }
@@ -67,29 +69,43 @@ namespace JobSeekingAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            // Kiểm tra Candidate tồn tại
+            var candidate = await _candidateRepo.GetByIdAsync(dto.UserId);
+            if (candidate == null) 
+                return NotFound(new { message = "Candidate not found!" });
+
             // Kiểm tra Job tồn tại
-            var job = await _jobRepository.GetByIdAsync(dto.JobId);
+            var job = await _jobRepo.GetByIdAsync(dto.JobId);
             if (job == null) 
                 return NotFound(new { message = "Job not found!" });
 
-            // Job đã hết hạn chưa? (Không cho nộp Job quá hạn)
+            // Kiểm tra Job đã hết hạn (Không cho nộp Job quá hạn)
             if (job.Deadline.HasValue && job.Deadline.Value < DateTime.UtcNow)
                 return BadRequest(new { message = "This job is already expired!" });
 
             // User đã nộp job này bao giờ chưa? (Chống Spam)
-            var hasApplied = await _applicationRepository.IsAppliedAsync(dto.UserId, dto.JobId);
+            var hasApplied = await _appRepo.IsAppliedAsync(dto.UserId, dto.JobId);
             if (hasApplied)
                 return Conflict(new { message = "You have already applied for this job!" });
+
+            // Xử lý cho CvUrl: Nếu không gửi CV mới thì lấy CV mặc định
+            string finalCvUrl = dto.CVUrl ?? "";
+            if (string.IsNullOrWhiteSpace(finalCvUrl))
+            {
+                finalCvUrl = candidate.CVUrl ?? "";
+                if (string.IsNullOrWhiteSpace(finalCvUrl))
+                    return BadRequest(new { message = "Please provide a CV to apply" });
+            }
 
             // Tạo đơn ứng tuyển
             var application = new Application
             {
                 UserId = dto.UserId,
                 JobId = dto.JobId,
-                CVUrl = dto.CVUrl
+                CVUrl = finalCvUrl,
             };
 
-            var createdApp = await _applicationRepository.CreateApplicationDetailAsync(application);
+            var createdApp = await _appRepo.CreateApplicationDetailAsync(application);
             return CreatedAtAction(nameof(GetApplicationById), new { id = createdApp.AppId }, MapToDTO(createdApp));
         }
 
@@ -100,14 +116,14 @@ namespace JobSeekingAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var existingApplication = await _applicationRepository.GetApplicationEntityByIdAsync(id);
-            if (existingApplication == null)
+            var existApplication = await _appRepo.GetApplicationEntityByIdAsync(id);
+            if (existApplication == null)
                 return NotFound("Application not found");
 
-            existingApplication.Status = dto.Status ?? existingApplication.Status;
-            existingApplication.CVUrl = dto.CVUrl ?? existingApplication.CVUrl;
+            existApplication.Status = dto.Status ?? existApplication.Status;
+            existApplication.CVUrl = dto.CVUrl ?? existApplication.CVUrl;
 
-            await _applicationRepository.UpdateAsync(existingApplication);
+            await _appRepo.UpdateAsync(existApplication);
             return Ok(new { message = "Update success" });
         }
 
@@ -115,11 +131,11 @@ namespace JobSeekingAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> WithdrawApplication(int id)
         {
-            var application = await _applicationRepository.GetByIdAsync(id);
+            var application = await _appRepo.GetByIdAsync(id);
             if (application == null)
                 return NotFound(new { message = "Application not found!" });
 
-            await _applicationRepository.SoftDeleteApplicationAsync(id);
+            await _appRepo.SoftDeleteApplicationAsync(id);
 
             return Ok(new { message = "Application withdrawn successfully!" });
         }
@@ -128,7 +144,7 @@ namespace JobSeekingAPI.Controllers
         [HttpGet("statistics/job/{jobId}")]
         public async Task<IActionResult> GetApplicationStatistics(int jobId)
         {
-            var statistics = await _applicationRepository.GetApplicationStatusStatisticsAsync(jobId);
+            var statistics = await _appRepo.GetApplicationStatusStatisticsAsync(jobId);
 
             // statistics likely contains KeyValuePair<int,int> mapping Status -> Count
             var total = statistics?.Sum(kv => kv.Value) ?? 0;
@@ -137,10 +153,9 @@ namespace JobSeekingAPI.Controllers
             {
                 TotalApplications = total,
                 Pending = statistics?.FirstOrDefault(kv => kv.Key == 1).Value ?? 0,
-                Reviewed = statistics?.FirstOrDefault(kv => kv.Key == 2).Value ?? 0,
-                Interviewed = statistics?.FirstOrDefault(kv => kv.Key == 3).Value ?? 0,
-                Accepted = statistics?.FirstOrDefault(kv => kv.Key == 4).Value ?? 0,
-                Rejected = statistics?.FirstOrDefault(kv => kv.Key == 5).Value ?? 0
+                Interviewed = statistics?.FirstOrDefault(kv => kv.Key == 2).Value ?? 0,
+                Accepted = statistics?.FirstOrDefault(kv => kv.Key == 3).Value ?? 0,
+                Rejected = statistics?.FirstOrDefault(kv => kv.Key == 4).Value ?? 0
             };
 
             return Ok(result);

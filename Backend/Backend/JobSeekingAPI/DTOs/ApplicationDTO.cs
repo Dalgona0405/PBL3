@@ -2,6 +2,7 @@ using System;
 
 namespace JobSeekingAPI.DTOs
 {
+    // Xem chi tiết Đơn ứng tuyển
     public class ApplicationResponseDTO
     {
         public int ApplicationId { get; set; }
@@ -16,13 +17,16 @@ namespace JobSeekingAPI.DTOs
         public JobSummaryDTO? Job { get; set; }
     }
 
+    // Người dùng gửi lên khi bấm Ứng tuyển
     public class CreateApplicationDTO
     {
         public int UserId { get; set; }
         public int JobId { get; set; }
+        // CVUrl là nullable. Nếu để trống, Backend sẽ tự động lấy CV mặc định của Candidate.
         public string? CVUrl { get; set; }
     }
 
+    // NTD khi muốn đổi trạng thái đơn (Ví dụ: Từ Pending sang Interviewed)
     public class UpdateApplicationDTO
     {
         public int? Status { get; set; }

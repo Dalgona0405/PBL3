@@ -28,7 +28,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(recruiters);
         }
 
-        // GET: api/recruiters/{id}
+        // GET: api/recruiters/me => Lấy thông tin recruiter hiện tại (dựa trên UserId trong token)
         [HttpGet("{id}")]
         public async Task<IActionResult> GetRecruiterById(int id)
         {
@@ -125,8 +125,8 @@ namespace JobSeekingAPI.Controllers
         //    return CreatedAtAction(nameof(GetRecruiterById), new { id = recruiter.UserId }, recruiterDto);
         //}
 
-        // PUT: api/recruiters/{id}/profile
-        [HttpPut("{id}/profile")]
+        // PUT: api/recruiters/me 
+        [HttpPut("{id}")]
         public async Task<IActionResult> UpdateRecruiter(int id, [FromBody] UpdateRecruiterDTO dto)
         {
             if (!ModelState.IsValid)

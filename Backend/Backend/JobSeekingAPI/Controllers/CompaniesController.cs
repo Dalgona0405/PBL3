@@ -99,16 +99,16 @@ namespace JobSeekingAPI.Controllers
             return Ok(result);
         }
 
-        // GET: api/companies/{id}/jobs
-        [HttpGet("{id}/jobs")]
-        public async Task<IActionResult> GetCompanyJobs(int id)
-        {
-            var company = await _companyRepository.GetCompanyEntityByIdAsync(id);
-            if (company == null)
-                return NotFound(new { message = "Company not found" });
+        // GET: api/companies/{id}/jobs => đã có ở JobController, nếu muốn lấy thông tin công ty kèm theo danh sách việc làm thì có thể gọi api này ở JobController
+        //[HttpGet("{id}/jobs")]
+        //public async Task<IActionResult> GetCompanyJobs(int id)
+        //{
+        //    var company = await _companyRepository.GetCompanyEntityByIdAsync(id);
+        //    if (company == null)
+        //        return NotFound(new { message = "Company not found" });
 
-            var jobs = await _jobRepository.GetJobsByCompanyAsync(id);
-            return Ok(jobs);
-        }
+        //    var jobs = await _jobRepository.GetJobsByCompanyAsync(id);
+        //    return Ok(jobs);
+        //}
     }
 }

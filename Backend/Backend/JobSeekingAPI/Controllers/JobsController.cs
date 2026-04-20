@@ -41,7 +41,7 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> SearchJobs([FromQuery] JobSearchDTO searchParams)
         {
             var result = await _jobRepository.SearchJobsAsync(searchParams);
-            var mappedData = result.Data.Select(j => MapToDTO(j)).ToList();
+            var mappedData = result.Items.Select(j => MapToDTO(j)).ToList();
             return Ok(new
             {
                 result.TotalCount,
@@ -133,7 +133,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(new { message = "Delete success" });
         }
 
-        //GET: api/jobs/"recent"
+        //GET: api/jobs/"recent" => Cân nhắc vì GetAllJobs đã có sắp xếp theo PostedDate desc rồi, nếu muốn lấy recent thì chỉ cần gọi GetAllJobs và lấy 8 phần tử đầu tiên là được, nhưng nếu muốn có endpoint riêng để tối ưu query thì cũng được
         [HttpGet("recent")]
         public async Task<IActionResult> GetRecentJobs([FromQuery] int count = 8)
         {

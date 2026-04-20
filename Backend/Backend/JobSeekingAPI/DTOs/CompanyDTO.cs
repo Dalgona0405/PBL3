@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
+
 namespace JobSeekingAPI.DTOs
-{   
+{
     public class CreateCompanyDTO
     {
         public string CompanyName { get; set; } = string.Empty;
@@ -18,6 +19,7 @@ namespace JobSeekingAPI.DTOs
         public string? Size { get; set; }
     }
 
+    // Dùng cho màn hình danh sách các Công ty
     public class CompanySummaryDTO
     {
         public int CompanyId { get; set; }
@@ -26,14 +28,13 @@ namespace JobSeekingAPI.DTOs
         public string? Website { get; set; }
         public string? Size { get; set; }
         public int JobCount { get; set; }
-        public List<JobSummaryDTO> Job1 { get; set; } = new();
-        public List<JobResponseDTO> Job2 { get; set; } = new();
+        public List<JobSummaryDTO> RecentJobs { get; set; } = new();
     }
 
+    // Dùng cho màn hình Chi tiết Công ty
     public class CompanyDetailDTO : CompanySummaryDTO
     {
-        public List<JobSummaryDTO> Jobs { get; set; } = new();
+        public List<JobResponseDTO> ActiveJobs { get; set; } = new();
         public List<RecruiterSummaryDTO> Recruiters { get; set; } = new();
-        public List<CandidateSummaryDTO> Candidates { get; set; } = new();
     }
 }
