@@ -19,13 +19,13 @@ namespace JobSeekingAPI.Controllers
             _companyRepository = companyRepository;
         }
 
-        // GET: api/recruiters
+        // GET: api/recruiters => Cân nhắc bỏ
         [HttpGet]
         public async Task<IActionResult> GetAllRecruiters()
         {
             var recruiters = await _recruiterRepository.GetAllRecruitersWithDetailsAsync();
             var dtos = recruiters.Select(r => MapToDTO(r));
-            return Ok(recruiters);
+            return Ok(dtos);
         }
 
         // GET: api/recruiters/me => Lấy thông tin recruiter hiện tại (dựa trên UserId trong token)
@@ -125,7 +125,7 @@ namespace JobSeekingAPI.Controllers
         //    return CreatedAtAction(nameof(GetRecruiterById), new { id = recruiter.UserId }, recruiterDto);
         //}
 
-        // PUT: api/recruiters/me 
+        // PUT: api/recruiters/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateRecruiter(int id, [FromBody] UpdateRecruiterDTO dto)
         {

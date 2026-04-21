@@ -26,7 +26,7 @@ namespace JobSeekingAPI.Repositories
                     Website = c.Website,
                     Size = c.Size,
                     JobCount = c.Jobs.Count,
-                    Job1 = c.Jobs.OrderByDescending(j => j.PostedDate).Take(5)
+                    RecentJobs = c.Jobs.OrderByDescending(j => j.PostedDate).Take(5)
                         .Select(j => new JobSummaryDTO
                         {
                             JobId = j.JobId,
@@ -59,7 +59,7 @@ namespace JobSeekingAPI.Repositories
                     LogoImg = c.LogoImg,
                     Website = c.Website,
                     Size = c.Size,
-                    Job2 = c.Jobs
+                    ActiveJobs = c.Jobs
                         .OrderByDescending(j => j.PostedDate)
                         .Select(j => new JobResponseDTO
                         {
@@ -148,7 +148,7 @@ namespace JobSeekingAPI.Repositories
                 Page = page,
                 PageSize = pageSize,
                 TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-                Data = companies
+                Items = companies
             };
         }
 

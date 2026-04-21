@@ -26,10 +26,13 @@ namespace JobSeekingAPI.DTOs
         public string? CVUrl { get; set; }
     }
 
-    // NTD khi muốn đổi trạng thái đơn (Ví dụ: Từ Pending sang Interviewed)
     public class UpdateApplicationDTO
     {
-        public int? Status { get; set; }
         public string? CVUrl { get; set; }
+    }
+
+    public class UpdateApplicationStatusDTO
+    {
+        public int Status { get; set; } = 0;
     }
 }

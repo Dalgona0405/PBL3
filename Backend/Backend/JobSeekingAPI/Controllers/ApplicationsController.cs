@@ -20,7 +20,7 @@ namespace JobSeekingAPI.Controllers
             _candidateRepo = candidateRepo;
         }
 
-        // GET: api/applications => Cân nhắc
+        // GET: api/applications => Cân nhắc phân trang
         [HttpGet]
         public async Task<IActionResult> GetAllApplications()
         {
@@ -29,7 +29,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(dtos);
         }
 
-        // GET: api/applications/{id} => Cân nhắc
+        // GET: api/applications/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetApplicationById(int id)
         {
@@ -54,6 +54,16 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/applications/me
+        [HttpGet("candidate/me")]
+        public async Task<IActionResult> GetMyApplications()
+        {
+            int userId = GetUserIdFromToken();
+            var applications = await _appRepo.GetByUserIdAsync(userId);
+            var dtos = applications.Select(a => MapToDTO(a));
+            return Ok(dtos);
+        }
+
+        // GET: api/applications/candidate/{userId}
         [HttpGet("candidate/{userId}")]
         public async Task<IActionResult> GetApplicationsByUser(int userId)
         {
@@ -109,7 +119,7 @@ namespace JobSeekingAPI.Controllers
             return CreatedAtAction(nameof(GetApplicationById), new { id = createdApp.AppId }, MapToDTO(createdApp));
         }
 
-        // PUT: api/applications/{id}
+        // PUT: api/applications/candidate/me/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateApplication(int id, [FromBody] UpdateApplicationDTO dto)
         {
@@ -120,11 +130,24 @@ namespace JobSeekingAPI.Controllers
             if (existApplication == null)
                 return NotFound("Application not found");
 
-            existApplication.Status = dto.Status ?? existApplication.Status;
             existApplication.CVUrl = dto.CVUrl ?? existApplication.CVUrl;
 
             await _appRepo.UpdateAsync(existApplication);
             return Ok(new { message = "Update success" });
+        }
+
+        // PUT: api/applications/{id}/status
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateApplicationStatus(int id, [FromBody] UpdateApplicationStatusDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            var existApplication = await _appRepo.GetApplicationEntityByIdAsync(id);
+            if (existApplication == null)
+                return NotFound("Application not found");
+            existApplication.Status = dto.Status;
+            await _appRepo.UpdateAsync(existApplication);
+            return Ok(new { message = "Status updated successfully!" });
         }
 
         // DELETE: api/applications/{id}

@@ -16,7 +16,7 @@ namespace JobSeekingAPI.Controllers
             _jobRepository = jobRepository;
         }
 
-        // GET: api/jobs
+        // GET: api/jobs => Cân nhắc bỏ vì có thể dùng GET api/jobs/search với searchParams rỗng để thay thế
         [HttpGet]
         public async Task<IActionResult> GetAllJobs()
         {
@@ -50,6 +50,15 @@ namespace JobSeekingAPI.Controllers
                 result.TotalPages,
                 Data = mappedData
             });
+        }
+
+        //GET: api/jobs/"recent" => Cân nhắc vì GetAllJobs đã có sắp xếp theo PostedDate desc rồi, nếu muốn lấy recent thì chỉ cần gọi GetAllJobs và lấy 8 phần tử đầu tiên là được, nhưng nếu muốn có endpoint riêng để tối ưu query thì cũng được
+        [HttpGet("recent")]
+        public async Task<IActionResult> GetRecentJobs([FromQuery] int count = 8)
+        {
+            var jobs = await _jobRepository.GetRecentJobsAsync(count);
+            var jobDTOs = jobs.Select(j => MapToDTO(j));
+            return Ok(jobDTOs);
         }
 
         //GET: api/jobs/company/{companyId}
@@ -122,6 +131,18 @@ namespace JobSeekingAPI.Controllers
             return Ok(new { message = "Update Success" });
         }
 
+        //PATCH: api/jobs/{id}/status
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateJobStatus(int id, [FromBody] JobUpdateStatusDTO dto)
+        {
+            var existingJob = await _jobRepository.GetJobEntityByIdAsync(id);
+            if (existingJob == null)
+                return NotFound(new { message = "Job not found" });
+            existingJob.Status = dto.Status;
+            await _jobRepository.UpdateAsync(existingJob);
+            return Ok(new { message = "Status update success" });
+        }
+
         //DELETE: api/jobs/id
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteJob(int id)
@@ -131,15 +152,6 @@ namespace JobSeekingAPI.Controllers
                 return NotFound(new { message = "Job not found" });
             await _jobRepository.SoftDeleteJobAsync(id);
             return Ok(new { message = "Delete success" });
-        }
-
-        //GET: api/jobs/"recent" => Cân nhắc vì GetAllJobs đã có sắp xếp theo PostedDate desc rồi, nếu muốn lấy recent thì chỉ cần gọi GetAllJobs và lấy 8 phần tử đầu tiên là được, nhưng nếu muốn có endpoint riêng để tối ưu query thì cũng được
-        [HttpGet("recent")]
-        public async Task<IActionResult> GetRecentJobs([FromQuery] int count = 8)
-        {
-            var jobs = await _jobRepository.GetRecentJobsAsync(count);
-            var jobDTOs = jobs.Select(j => MapToDTO(j));
-            return Ok(jobDTOs);
         }
 
         private JobResponseDTO MapToDTO(Job j)

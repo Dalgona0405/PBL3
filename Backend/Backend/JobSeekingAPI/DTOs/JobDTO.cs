@@ -93,4 +93,9 @@ namespace JobSeekingAPI.DTOs
         public int? Status { get; set; } // 1: Active, 0: Closed
         public List<int>? TagIds { get; set; }
     }
+
+    public class JobUpdateStatusDTO
+    {
+        public int Status { get; set; } // 1: Active, 0: Closed
+    }
 }

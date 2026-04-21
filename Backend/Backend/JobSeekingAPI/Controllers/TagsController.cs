@@ -66,7 +66,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(popularTags);
         }
 
-        // GET: api/tags/suggest?keyword=react&limit=5
+        // GET: api/tags/suggest?keyword=react&limit=5 => trùng với GET: api/tags/search?keyword=react nhưng có thêm tham số limit để giới hạn số lượng kết quả trả về
         [HttpGet("suggest")]
         public async Task<IActionResult> SuggestTags([FromQuery] string keyword, [FromQuery] int limit = 5)
         {
