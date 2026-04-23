@@ -28,9 +28,10 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> Login([FromBody ] LoginDTO dto)
         {
             var user = await _userRepo.GetByEmailAsync(dto.Email);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
                 return Unauthorized(new { message = "Invalid email or password" });
             var token = _jwtService.GenerateToken(user);
             return Ok(new { token });
+        }
     }
 }
