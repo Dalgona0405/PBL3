@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -17,15 +18,16 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/locations
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllLocations()
         {
             var locations = await _locationRepository.GetAllLocationsSummaryAsync();
-
             return Ok(locations);
         }
 
         // GET: api/locations/{id}
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetLocationById(int id)
         {
@@ -35,17 +37,12 @@ namespace JobSeekingAPI.Controllers
             return Ok(location);
         }
 
-        // POST: api/locations
+        // POST: api/locations[Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateLocation([FromBody] CreateLocationDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-
-            //var existingLocation = await _locationRepository.
-
-            //if (existingLocation)
-            //    return BadRequest("Location already exists");
 
             var location = new Location
             {
@@ -62,7 +59,7 @@ namespace JobSeekingAPI.Controllers
             });
         }
 
-        // PUT: api/locations/{id}
+        // PUT: api/locations/{id}[Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateLocation(int id, [FromBody] UpdateLocationDTO dto)
         {
@@ -80,6 +77,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // DELETE: api/locations/{id}
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteLocation(int id)
         {
@@ -87,124 +85,58 @@ namespace JobSeekingAPI.Controllers
             if (location == null)
                 return NotFound(new { message = "Location not found!" });
 
-            // Check xem Location này có đang chứa Job nào không (Dùng hàm GetAll để đếm tạm, 
-            // hoặc lý tưởng nhất là viết thêm hàm đếm trong Repo)
             var detail = await _locationRepository.GetLocationDetailByIdAsync(id);
             if (detail != null && detail.JobCount > 0)
             {
                 return BadRequest(new { message = "Cannot delete location with active jobs!" });
             }
 
-            // Xóa cứng vì Location thường không xài Soft Delete
             await _locationRepository.DeleteAsync(id);
 
             return Ok(new { message = "Location deleted successfully!" });
         }
 
         // GET: api/locations/search
-       [HttpGet("search")]
+        [AllowAnonymous]
+        [HttpGet("search")]
         public async Task<IActionResult> SearchLocations([FromQuery] string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword))
-                return BadRequest("Keyword is required");
+                return BadRequest(new { message = "Keyword is required" });
 
-            keyword = keyword.ToLower();
-            var locations = await _context.Locations
-                .Where(l => l.LocationName.ToLower().Contains(keyword))
-                .Select(l => new LocationSummaryDTO
-                {
-                    LocationId = l.LocationId,
-                    LocationName = l.LocationName,
-                    JobCount = l.Jobs.Count(j => j.DeletedAt == null)
-                })
-                .OrderBy(l => l.LocationName)
-                .ToListAsync();
-
+            var locations = await _locationRepository.SearchLocationsAsync(keyword);
             return Ok(locations);
         }
 
         // GET: api/locations/popular
-       [HttpGet("popular")]
+        [AllowAnonymous]
+        [HttpGet("popular")]
         public async Task<IActionResult> GetPopularLocations([FromQuery] int limit = 10)
         {
-            var popularLocations = await _context.Locations
-                .Select(l => new LocationSummaryDTO
-                {
-                    LocationId = l.LocationId,
-                    LocationName = l.LocationName,
-                    JobCount = l.Jobs.Count(j => j.DeletedAt == null)
-                })
-                .Where(l => l.JobCount > 0)
-                .OrderByDescending(l => l.JobCount)
-                .Take(limit)
-                .ToListAsync();
-
+            var popularLocations = await _locationRepository.GetPopularLocationsAsync(limit);
             return Ok(popularLocations);
         }
 
         // GET: api/locations/{id}/jobs
+        [AllowAnonymous]
         [HttpGet("{id}/jobs")]
-        public async Task<IActionResult> GetJobsByLocation(int id,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetJobsByLocation(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var location = await _context.Locations.FindAsync(id);
+            var location = await _locationRepository.GetLocationEntityByIdAsync(id);
             if (location == null)
-                return NotFound("Location not found");
+                return NotFound(new { message = "Location not found" });
 
-            var query = _context.Jobs
-                .Include(j => j.Company)
-                .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-                .Where(j => j.LocationId == id && j.DeletedAt == null);
-
-            var totalCount = await query.CountAsync();
-            var jobs = await query
-                .OrderByDescending(j => j.PostedDate)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(j => new JobResponseDTO
-                {
-                    JobId = j.JobId,
-                    Title = j.Title,
-                    SalaryMin = j.SalaryMin,
-                    SalaryMax = j.SalaryMax,
-                    ExpYear = j.ExpYear,
-                    Level = j.Level,
-                    PostedDate = j.PostedDate,
-                    Deadline = j.Deadline,
-                    Description = j.Description,
-                    Requirement = j.Requirement,
-                    Benefits = j.Benefits,
-                    Address = j.Address,
-                    ViewCount = j.ViewCount ?? 0,
-                    Company = j.Company == null ? null : new CompanySummaryDTO
-                    {
-                        CompanyId = j.Company.CompanyId,
-                        CompanyName = j.Company.CompanyName,
-                        LogoImg = j.Company.LogoImg
-                    },
-                    Tags = j.JobTags == null ? new List<TagSummaryDTO>() : j.JobTags
-                        .Where(jt => jt.Tag != null)
-                        .Select(jt => new TagSummaryDTO
-                        {
-                            TagId = jt.Tag!.TagId,
-                            TagName = jt.Tag.TagName
-                        }).ToList()
-                })
-                .ToListAsync();
-
-            var result = new
+            var result = await _locationRepository.GetJobsByLocationAsync(id, page, pageSize);
+            return Ok(new
             {
                 LocationId = id,
                 LocationName = location.LocationName,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-                Data = jobs
-            };
-
-            return Ok(result);
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize,
+                TotalPages = result.TotalPages,
+                Data = result.Items
+            });
         }
     }
 }

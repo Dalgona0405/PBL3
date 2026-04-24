@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace JobSeekingAPI.DTOs
 {
     // Chi tiết Job (Khi click vào xem 1 Job cụ thể)
-    public class JobResponseDTO
+    public class JobDetailDTO
     {
         public int JobId { get; set; }
         public int CompanyId { get; set; }

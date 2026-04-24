@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using JobSeekingAPI.Repositories;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
+using Microsoft.AspNetCore.Authorization;
+using JobSeekingAPI.Helpers;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -9,34 +11,53 @@ namespace JobSeekingAPI.Controllers
     [ApiController]
     public class CompaniesController : ControllerBase
     {
-        private readonly ICompanyRepository _companyRepository;
+        private readonly ICompanyRepository _companyRepo;
         private readonly IJobRepository _jobRepository;
 
-        public CompaniesController(ICompanyRepository companyRepository, IJobRepository jobRepository) 
+        public CompaniesController(ICompanyRepository companyRepo, IJobRepository jobRepository) 
         {
-            _companyRepository = companyRepository;
+            _companyRepo = companyRepo;
             _jobRepository = jobRepository;
         }
 
         // GET: api/companies
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllCompanies()
         {
-            var companies = await _companyRepository.GetAllCompaniesSummaryAsync();
+            var companies = await _companyRepo.GetAllCompaniesSummaryAsync();
             return Ok(companies);
         }
 
         // GET: api/companies/{id}
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCompanyById(int id)
         {
-            var company = await _companyRepository.GetCompanyDetailByIdAsync(id);
+            var company = await _companyRepo.GetCompanyDetailByIdAsync(id);
             if (company == null)
                 return NotFound(new {message = "Company not found"});
             return Ok(company);
         }
 
+        // GET: api/companies/recruiters/{recruiterId}
+        [Authorize(Roles = "Admin, Recruiter")]
+        [HttpGet("recruiters/{recruiterId}")]
+        public async Task<IActionResult> GetCompanyIdByRecruiterId(int recruiterId)
+        {
+            var userId = User.GetUserIdFromToken();
+            if (User.IsInRole("Recruiter") && userId != recruiterId)
+                return Forbid();
+
+            var companyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(recruiterId);
+            if (companyId == null)
+                return NotFound(new { message = "Company not found for the given recruiter" });
+
+            return Ok(new { CompanyId = companyId });
+        }
+
         // POST: api/companies
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyDTO dto)
         {
@@ -50,18 +71,25 @@ namespace JobSeekingAPI.Controllers
                 Website = dto.Website,
                 Size = dto.Size
             };
-            await _companyRepository.CreateAsync(company);
+            await _companyRepo.CreateAsync(company);
             return CreatedAtAction(nameof(GetCompanyById), new { id = company.CompanyId }, company);
         }
 
         // PUT: api/companies/{id}
+        [Authorize(Roles = "Admin, Recruiter")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCompany(int id, [FromBody] UpdateCompanyDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+            var userId = User.GetUserIdFromToken();
+            var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
+            if (recruiterCompanyId == null || recruiterCompanyId != id)
+            {
+                return Forbid();
+            }
 
-            var existingCompany = await _companyRepository.GetCompanyEntityByIdAsync(id);
+            var existingCompany = await _companyRepo.GetCompanyEntityByIdAsync(id);
             if (existingCompany == null || existingCompany.DeletedAt != null)
                 return NotFound(new { message = "Company not found" });
 
@@ -70,15 +98,16 @@ namespace JobSeekingAPI.Controllers
             existingCompany.Website = dto.Website ?? existingCompany.Website;
             existingCompany.Size = dto.Size ?? existingCompany.Size;
 
-            await _companyRepository.UpdateAsync(existingCompany);
+            await _companyRepo.UpdateAsync(existingCompany);
             return Ok(new { message = "Update success" });
         }
 
         // DELETE: api/companies/{id}
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCompany(int id)
         {
-            var result = await _companyRepository.SoftDeleteCompanyAsync(id);
+            var result = await _companyRepo.SoftDeleteCompanyAsync(id);
             if (result == "Company not found")
                 return NotFound(new { message = "Company not found" });
 
@@ -89,13 +118,14 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/companies/search
+        [AllowAnonymous]
         [HttpGet("search")]
         public async Task<IActionResult> SearchCompanies(
             [FromQuery] string? keyword,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            var result = await _companyRepository.SearchCompaniesAsync(keyword, page, pageSize);
+            var result = await _companyRepo.SearchCompaniesAsync(keyword, page, pageSize);
             return Ok(result);
         }
 

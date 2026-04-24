@@ -11,20 +11,20 @@ namespace JobSeekingAPI.Repositories
         }
 
         // CRUD ĐẶC THÙ
-        public async Task<IEnumerable<Application>> GetAllApplicationsWithDetailsAsync()
-        {
-            return await _context.Applications
-                .AsNoTracking()
-                .Include(a => a.Candidate!)
-                    .ThenInclude(c => c.User)
-                .Include(a => a.Job!)
-                    .ThenInclude(j => j.Company)
-                .Include(a => a.Job!)
-                    .ThenInclude(j => j.Location)
-                .Where(a => a.DeletedAt == null)
-                .OrderByDescending(a => a.AppliedDate)
-                .ToListAsync();
-        }
+        //public async Task<IEnumerable<Application>> GetAllApplicationsWithDetailsAsync()
+        //{
+        //    return await _context.Applications
+        //        .AsNoTracking()
+        //        .Include(a => a.Candidate!)
+        //            .ThenInclude(c => c.User)
+        //        .Include(a => a.Job!)
+        //            .ThenInclude(j => j.Company)
+        //        .Include(a => a.Job!)
+        //            .ThenInclude(j => j.Location)
+        //        .Where(a => a.DeletedAt == null)
+        //        .OrderByDescending(a => a.AppliedDate)
+        //        .ToListAsync();
+        //}
 
         public async Task<Application?> GetApplicationDetailByIdAsync(int id)
         {

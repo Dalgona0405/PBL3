@@ -2,7 +2,7 @@ using System;
 
 namespace JobSeekingAPI.DTOs
 {
-    public class ExperienceDTO
+    public class ExperienceDetailDTO
     {
         public int ExpId { get; set; }
         public int UserId { get; set; }
@@ -28,6 +28,7 @@ namespace JobSeekingAPI.DTOs
 
     public class UpdateExperienceDTO
     {
+        public int UserId { get; set; }
         public string? JobTitle { get; set; }
         public string? CompanyName { get; set; }
         public DateTime? StartDate { get; set; }

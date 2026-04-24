@@ -40,7 +40,7 @@ namespace JobSeekingAPI.DTOs
         public string? Address { get; set; }
         public string? CVUrl { get; set; }
         public List<string> Skills { get; set; } = new();
-        public List<ExperienceDTO> Experiences { get; set; } = new();
+        public List<ExperienceDetailDTO> Experiences { get; set; } = new();
     }
 
     // Hiển thị dạng danh sách (Card Ứng viên)

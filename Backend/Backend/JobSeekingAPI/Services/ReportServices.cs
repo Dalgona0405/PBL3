@@ -145,7 +145,7 @@ namespace JobSeekingAPI.Services
 
         public async Task<DashboardSummaryDTO> GetDashboardSummaryAsync()
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             
             // Tính toán trước các thông số để code sạch sẽ hơn
             var totalJobs = await _context.Jobs.CountAsync(j => j.DeletedAt == null);

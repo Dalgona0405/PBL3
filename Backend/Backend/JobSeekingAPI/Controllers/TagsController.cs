@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -17,6 +18,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/tags
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllTags()
         {
@@ -59,6 +61,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/tags/popular?count=10
+        [AllowAnonymous]
         [HttpGet("popular")]
         public async Task<IActionResult> GetPopularTags([FromQuery] int count = 10)
         {
@@ -67,6 +70,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/tags/suggest?keyword=react&limit=5 => trùng với GET: api/tags/search?keyword=react nhưng có thêm tham số limit để giới hạn số lượng kết quả trả về
+        [AllowAnonymous]
         [HttpGet("suggest")]
         public async Task<IActionResult> SuggestTags([FromQuery] string keyword, [FromQuery] int limit = 5)
         {
@@ -78,6 +82,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // POST: api/tags
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateTag([FromBody] CreateTagDTO dto)
         {
@@ -108,6 +113,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/tags/{id}
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTag(int id, [FromBody] UpdateTagDTO dto)
         {
@@ -137,6 +143,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // DELETE: api/tags/{id}
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTag(int id)
         {
@@ -154,6 +161,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/tags/search
+        [AllowAnonymous]
         [HttpGet("search")]
         public async Task<IActionResult> SearchTags([FromQuery] string keyword)
         {
@@ -165,6 +173,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/tags/type/{type}
+        [AllowAnonymous]
         [HttpGet("type/{type}")]
         public async Task<IActionResult> GetTagsByType(string type)
         {

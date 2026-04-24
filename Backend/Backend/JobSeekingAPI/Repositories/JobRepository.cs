@@ -12,17 +12,17 @@ namespace JobSeekingAPI.Repositories
         }
 
         // CRUD ĐẶC THÙ
-        public async Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync()
-        {
-            return await _context.Jobs
-                .AsNoTracking()
-                .Include(j => j.Company)
-                .Include(j => j.Location)
-                .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-                .Where(j => j.DeletedAt == null)
-                .OrderByDescending(j => j.PostedDate) //việc mới lên đầu
-                .ToListAsync();
-        }
+        //public async Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync()
+        //{
+        //    return await _context.Jobs
+        //        .AsNoTracking()
+        //        .Include(j => j.Company)
+        //        .Include(j => j.Location)
+        //        .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
+        //        .Where(j => j.DeletedAt == null)
+        //        .OrderByDescending(j => j.PostedDate) //việc mới lên đầu
+        //        .ToListAsync();
+        //}
         
         public async Task<Job?> GetJobDetailByIdAsync(int id)
         {
@@ -46,7 +46,7 @@ namespace JobSeekingAPI.Repositories
 
         public async Task<Job> CreateJobWithDefaultsAsync(Job job)
         {
-            job.PostedDate = DateTime.Now;
+            job.PostedDate = DateTime.UtcNow;
             job.Status = 1; //1: Active
             job.ViewCount = 0;
             return await base.CreateAsync(job);
@@ -76,7 +76,7 @@ namespace JobSeekingAPI.Repositories
             var job = await _context.Jobs.FindAsync(id);
             if (job != null)
             {
-                job.DeletedAt = DateTime.Now;
+                job.DeletedAt = DateTime.UtcNow;
                 job.Status = 0; //0: Inactive
                 await _context.SaveChangesAsync();
             }
@@ -162,7 +162,7 @@ namespace JobSeekingAPI.Repositories
                 Page = pageNumber,
                 PageSize = pageSize,
                 TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-                Data = items
+                Items = items
             };
         }
         

@@ -61,7 +61,7 @@ namespace JobSeekingAPI.Repositories
                     Size = c.Size,
                     ActiveJobs = c.Jobs
                         .OrderByDescending(j => j.PostedDate)
-                        .Select(j => new JobResponseDTO
+                        .Select(j => new JobDetailDTO
                         {
                             JobId = j.JobId,
                             Title = j.Title,
@@ -180,6 +180,13 @@ namespace JobSeekingAPI.Repositories
             }
             await _context.SaveChangesAsync();
             return "Delete sucess";
+        }
+        public async Task<int?> GetCompanyIdByRecruiterIdAsync(int recruiterId)
+        {
+            var recruiter = await _context.Recruiters
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.UserId == recruiterId && r.User != null && r.User.DeletedAt == null);
+            return recruiter?.CompanyId;
         }
     }
 }

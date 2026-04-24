@@ -10,5 +10,6 @@ namespace JobSeekingAPI.Repositories
         Task<PagedResultDTO<CompanySummaryDTO>> SearchCompaniesAsync(string? keyword, int page, int pageSize);
         Task<Company?> GetCompanyEntityByIdAsync(int id);
         Task<string> SoftDeleteCompanyAsync(int id);
+        Task<int?> GetCompanyIdByRecruiterIdAsync(int recruiterId);
     }
 }

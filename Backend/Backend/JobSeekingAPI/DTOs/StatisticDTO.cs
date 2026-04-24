@@ -67,6 +67,6 @@ namespace JobSeekingAPI.DTOs
         public List<SimpleStatDTO> DeptStats { get; set; } = new();
         public List<SimpleStatDTO> TopSkills { get; set; } = new();
 
-        public DateTime LastUpdated { get; set; } = DateTime.Now;
+        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
     }
 }

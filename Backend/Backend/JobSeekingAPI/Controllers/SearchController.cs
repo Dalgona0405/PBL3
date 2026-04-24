@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -17,6 +18,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/search/advanced
+        [AllowAnonymous]
         [HttpGet("advanced")]
         public async Task<IActionResult> AdvancedSearch(
             [FromQuery] string? keyword,
@@ -30,7 +32,7 @@ namespace JobSeekingAPI.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            var query = _context.Jobs
+            var baseQuery = _context.Jobs
                 .Include(j => j.Company)
                 .Include(j => j.Location)
                 .Include(j => j.JobTags)
@@ -41,114 +43,180 @@ namespace JobSeekingAPI.Controllers
             // Keyword
             if (!string.IsNullOrWhiteSpace(keyword))
             {
-                keyword = keyword.ToLower();
-                query = query.Where(j =>
-                    j.Title.ToLower().Contains(keyword) ||
-                    (j.Description != null && j.Description.ToLower().Contains(keyword)) ||
-                    (j.Requirement != null && j.Requirement.ToLower().Contains(keyword)));
+                var kw = keyword.ToLower();
+                baseQuery = baseQuery.Where(j =>
+                    j.Title.ToLower().Contains(kw) ||
+                    (j.Description != null && j.Description.ToLower().Contains(kw)) ||
+                    (j.Requirement != null && j.Requirement.ToLower().Contains(kw)));
             }
 
             // Location
             if (locationId.HasValue)
-                query = query.Where(j => j.LocationId == locationId);
+                baseQuery = baseQuery.Where(j => j.LocationId == locationId);
 
             // Multiple Tags
             if (tagIds != null && tagIds.Length > 0)
             {
-                query = query.Where(j =>
+                baseQuery = baseQuery.Where(j =>
                     j.JobTags.Any(jt => tagIds.Contains(jt.TagId)));
             }
 
             // Salary range
             if (minSalary.HasValue)
-                query = query.Where(j => j.SalaryMax >= minSalary || j.SalaryMin >= minSalary);
+                baseQuery = baseQuery.Where(j => j.SalaryMax >= minSalary || j.SalaryMin >= minSalary);
 
             if (maxSalary.HasValue)
-                query = query.Where(j => j.SalaryMin <= maxSalary || j.SalaryMax <= maxSalary);
-
-            // Experience
-            if (expYear.HasValue)
-            {
-                query = query.Where(j =>
-                    j.ExpYear == null ||
-                    (int.TryParse(j.ExpYear, out var ey) && ey <= expYear.Value));
-            }
+                baseQuery = baseQuery.Where(j => j.SalaryMin <= maxSalary || j.SalaryMax <= maxSalary);
 
             // Level
             if (!string.IsNullOrWhiteSpace(level))
-                query = query.Where(j => j.Level == level);
+                baseQuery = baseQuery.Where(j => j.Level == level);
 
-            var totalCount = await query.CountAsync();
-            var jobs = await query
-                .OrderByDescending(j => j.PostedDate)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(j => new JobResponseDTO
-                {
-                    JobId = j.JobId,
-                    Title = j.Title,
-                    SalaryMin = j.SalaryMin,
-                    SalaryMax = j.SalaryMax,
-                    Level = j.Level,
-                    ExpYear = j.ExpYear,
-                    PostedDate = j.PostedDate,
-                    Deadline = j.Deadline,
-
-                    // ✅ FIX: Kiểm tra null Company
-                    Company = j.Company == null ? null : new CompanySummaryDTO
-                    {
-                        CompanyId = j.Company.CompanyId,
-                        CompanyName = j.Company.CompanyName,
-                        LogoImg = j.Company.LogoImg
-                    },
-
-                    // ✅ FIX: Kiểm tra null Location
-                    Location = j.Location == null ? null : new LocationSummaryDTO
-                    {
-                        LocationId = j.Location.LocationId,
-                        LocationName = j.Location.LocationName
-                    },
-
-                    // ✅ FIX: Dùng ?. và ?? cho Tag
-                    Tags = j.JobTags
-                        .Where(jt => jt.Tag != null)
-                        .Select(jt => new TagSummaryDTO
-                        {
-                            TagId = jt.Tag!.TagId,
-                            TagName = jt.Tag!.TagName
-                        }).ToList(),
-
-                    Address = j.Address,
-                    Benefits = j.Benefits,
-                    Description = j.Description,
-                    Requirement = j.Requirement,
-                    ViewCount = j.ViewCount ?? 0,
-                    ApplicationCount = j.Applications.Count(a => a.DeletedAt == null)
-                })
-                .ToListAsync();
-
-            return Ok(new
+            // NOTE: EF Core cannot translate int.TryParse (or out var declarations) into SQL.
+            // If expYear filtering is required, we must evaluate that predicate on the client.
+            if (expYear.HasValue)
             {
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-                Data = jobs
-            });
+                var exp = expYear.Value;
+
+                // Materialize remaining server-side filters, include Applications because we'll compute ApplicationCount in-memory
+                var materialized = await baseQuery
+                    .Include(j => j.Applications)
+                    .ToListAsync();
+
+                // Apply expYear filter on client side using int.TryParse (safe because we're in-memory)
+                var filtered = materialized
+                    .Where(j => j.ExpYear == null || (int.TryParse(j.ExpYear, out var ey) && ey <= exp))
+                    .ToList();
+
+                var totalCount = filtered.Count;
+
+                var jobs = filtered
+                    .OrderByDescending(j => j.PostedDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(j => new JobDetailDTO
+                    {
+                        JobId = j.JobId,
+                        Title = j.Title,
+                        SalaryMin = j.SalaryMin,
+                        SalaryMax = j.SalaryMax,
+                        Level = j.Level,
+                        ExpYear = j.ExpYear,
+                        PostedDate = j.PostedDate,
+                        Deadline = j.Deadline,
+
+                        Company = j.Company == null ? null : new CompanySummaryDTO
+                        {
+                            CompanyId = j.Company.CompanyId,
+                            CompanyName = j.Company.CompanyName,
+                            LogoImg = j.Company.LogoImg
+                        },
+
+                        Location = j.Location == null ? null : new LocationSummaryDTO
+                        {
+                            LocationId = j.Location.LocationId,
+                            LocationName = j.Location.LocationName
+                        },
+
+                        Tags = j.JobTags
+                            .Where(jt => jt.Tag != null)
+                            .Select(jt => new TagSummaryDTO
+                            {
+                                TagId = jt.Tag!.TagId,
+                                TagName = jt.Tag!.TagName
+                            }).ToList(),
+
+                        Address = j.Address,
+                        Benefits = j.Benefits,
+                        Description = j.Description,
+                        Requirement = j.Requirement,
+                        ViewCount = j.ViewCount ?? 0,
+                        ApplicationCount = j.Applications?.Count(a => a.DeletedAt == null) ?? 0
+                    })
+                    .ToList();
+
+                return Ok(new
+                {
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                    Data = jobs
+                });
+            }
+            else
+            {
+                // No client-side parsing required; keep everything server-side for performance.
+                var totalCount = await baseQuery.CountAsync();
+                var jobs = await baseQuery
+                    .OrderByDescending(j => j.PostedDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(j => new JobDetailDTO
+                    {
+                        JobId = j.JobId,
+                        Title = j.Title,
+                        SalaryMin = j.SalaryMin,
+                        SalaryMax = j.SalaryMax,
+                        Level = j.Level,
+                        ExpYear = j.ExpYear,
+                        PostedDate = j.PostedDate,
+                        Deadline = j.Deadline,
+
+                        Company = j.Company == null ? null : new CompanySummaryDTO
+                        {
+                            CompanyId = j.Company.CompanyId,
+                            CompanyName = j.Company.CompanyName,
+                            LogoImg = j.Company.LogoImg
+                        },
+
+                        Location = j.Location == null ? null : new LocationSummaryDTO
+                        {
+                            LocationId = j.Location.LocationId,
+                            LocationName = j.Location.LocationName
+                        },
+
+                        Tags = j.JobTags
+                            .Where(jt => jt.Tag != null)
+                            .Select(jt => new TagSummaryDTO
+                            {
+                                TagId = jt.Tag!.TagId,
+                                TagName = jt.Tag!.TagName
+                            }).ToList(),
+
+                        Address = j.Address,
+                        Benefits = j.Benefits,
+                        Description = j.Description,
+                        Requirement = j.Requirement,
+                        ViewCount = j.ViewCount ?? 0,
+                        ApplicationCount = j.Applications.Count(a => a.DeletedAt == null)
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                    Data = jobs
+                });
+            }
         }
 
         // GET: api/search/suggestions
+        [AllowAnonymous]
         [HttpGet("suggestions")]
         public async Task<IActionResult> GetSearchSuggestions([FromQuery] string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword) || keyword.Length < 2)
                 return Ok(new { suggestions = new List<string>() });
 
-            keyword = keyword.ToLower();
+            var kw = keyword.ToLower();
 
             // Lấy gợi ý từ Job Titles
             var jobTitles = await _context.Jobs
-                .Where(j => j.DeletedAt == null && j.Title.ToLower().Contains(keyword))
+                .Where(j => j.DeletedAt == null && j.Title.ToLower().Contains(kw))
                 .Select(j => j.Title)
                 .Distinct()
                 .Take(5)

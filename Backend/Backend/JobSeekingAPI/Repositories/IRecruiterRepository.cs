@@ -6,7 +6,7 @@ namespace JobSeekingAPI.Repositories
     public interface IRecruiterRepository : IBaseRepository<Recruiter>
     {
         // CRUD ĐẶC THÙ
-        Task<IEnumerable<Recruiter>> GetAllRecruitersWithDetailsAsync();
+        //Task<IEnumerable<Recruiter>> GetAllRecruitersWithDetailsAsync();
         Task<Recruiter?> GetRecruiterDetailByIdAsync(int id);
         Task<Recruiter?> GetRecruiterEntityByIdAsync(int id);
 

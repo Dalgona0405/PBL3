@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
+using JobSeekingAPI.Helpers;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -12,24 +14,27 @@ namespace JobSeekingAPI.Controllers
         private readonly IApplicationRepository _appRepo;
         private readonly IJobRepository _jobRepo;
         private readonly ICandidateRepository _candidateRepo;
-
-        public ApplicationsController(IApplicationRepository appRepo, IJobRepository jobRepo, ICandidateRepository candidateRepo)
+        private readonly ICompanyRepository _companyRepo;
+        public ApplicationsController(IApplicationRepository appRepo, IJobRepository jobRepo, ICandidateRepository candidateRepo, ICompanyRepository companyRepo)
         {
             _appRepo = appRepo;
             _jobRepo = jobRepo;
             _candidateRepo = candidateRepo;
+            _companyRepo = companyRepo;
         }
 
         // GET: api/applications => Cân nhắc phân trang
-        [HttpGet]
-        public async Task<IActionResult> GetAllApplications()
-        {
-            var applications = await _appRepo.GetAllApplicationsWithDetailsAsync();
-            var dtos = applications.Select(a => MapToDTO(a));
-            return Ok(dtos);
-        }
+        //[Authorize(Roles = "Admin")]
+        //[HttpGet]
+        //public async Task<IActionResult> GetAllApplications()
+        //{
+        //    var applications = await _appRepo.GetAllApplicationsWithDetailsAsync();
+        //    var dtos = applications.Select(a => MapToDTO(a));
+        //    return Ok(dtos);
+        //}
 
         // GET: api/applications/{id}
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetApplicationById(int id)
         {
@@ -41,29 +46,38 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/applications/job/{jobId}
+        [Authorize(Roles = "Admin, Recruiter")]
         [HttpGet("jobs/{jobId}")]
         public async Task<IActionResult> GetApplicationsByJob(int jobId)
         {
+            var userId = User.GetUserIdFromToken();
+            var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
             var jobExists = await _jobRepo.GetByIdAsync(jobId);
+
             if (jobExists == null) 
                 return NotFound(new { message = "Job not found!" });
-
+            if (recruiterCompanyId == null || recruiterCompanyId != jobExists.CompanyId)
+            {
+                return Forbid();
+            }
             var applications = await _appRepo.GetByJobIdAsync(jobId);
             var dtos = applications.Select(a => MapToDTO(a));
             return Ok(dtos);
         }
 
         // GET: api/applications/me
+        [Authorize(Roles = "Candidate")]
         [HttpGet("candidate/me")]
         public async Task<IActionResult> GetMyApplications()
         {
-            int userId = GetUserIdFromToken();
+            int userId = User.GetUserIdFromToken();
             var applications = await _appRepo.GetByUserIdAsync(userId);
             var dtos = applications.Select(a => MapToDTO(a));
             return Ok(dtos);
         }
 
         // GET: api/applications/candidate/{userId}
+        [Authorize(Roles = "Admin")]
         [HttpGet("candidate/{userId}")]
         public async Task<IActionResult> GetApplicationsByUser(int userId)
         {
@@ -73,6 +87,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // POST: api/applications
+        [Authorize(Roles = "Candidate")]
         [HttpPost]
         public async Task<IActionResult> CreateApplication([FromBody] CreateApplicationDTO dto)
         {
@@ -120,15 +135,19 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/applications/candidate/me/{id}
+        [Authorize(Roles = "Candidate")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateApplication(int id, [FromBody] UpdateApplicationDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-
+            var userId = User.GetUserIdFromToken();
             var existApplication = await _appRepo.GetApplicationEntityByIdAsync(id);
             if (existApplication == null)
                 return NotFound("Application not found");
+
+            if (existApplication.UserId != userId)
+                return Forbid();
 
             existApplication.CVUrl = dto.CVUrl ?? existApplication.CVUrl;
 
@@ -136,27 +155,46 @@ namespace JobSeekingAPI.Controllers
             return Ok(new { message = "Update success" });
         }
 
-        // PUT: api/applications/{id}/status
-        [HttpPut("{id}/status")]
+        // PATCH: api/applications/{id}/status
+        [Authorize(Roles = "Admin, Recruiter")]
+        [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateApplicationStatus(int id, [FromBody] UpdateApplicationStatusDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
             var existApplication = await _appRepo.GetApplicationEntityByIdAsync(id);
             if (existApplication == null)
-                return NotFound("Application not found");
+                return NotFound(new { message = "Application not found!" });
+
+            var userId = User.GetUserIdFromToken();
+            var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
+
+            var jobExists = await _jobRepo.GetByIdAsync(existApplication.JobId);
+            if (jobExists == null)
+                return NotFound(new { message = "Job not found!" });
+
+            if (recruiterCompanyId == null || recruiterCompanyId != jobExists.CompanyId)
+            {
+                return Forbid();
+            }
+
             existApplication.Status = dto.Status;
             await _appRepo.UpdateAsync(existApplication);
             return Ok(new { message = "Status updated successfully!" });
         }
 
         // DELETE: api/applications/{id}
+        [Authorize(Roles = "Candidate")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> WithdrawApplication(int id)
         {
+            var userId = User.GetUserIdFromToken();
             var application = await _appRepo.GetByIdAsync(id);
             if (application == null)
                 return NotFound(new { message = "Application not found!" });
+            if (application.UserId != userId)
+                return Forbid();
 
             await _appRepo.SoftDeleteApplicationAsync(id);
 
@@ -164,6 +202,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/applications/statistics/job/{jobId}
+        [Authorize(Roles = "Admin")]
         [HttpGet("statistics/job/{jobId}")]
         public async Task<IActionResult> GetApplicationStatistics(int jobId)
         {
@@ -184,9 +223,9 @@ namespace JobSeekingAPI.Controllers
             return Ok(result);
         }
 
-        private ApplicationResponseDTO MapToDTO(Application a)
+        private ApplicationDetailDTO MapToDTO(Application a)
         {
-            return new ApplicationResponseDTO
+            return new ApplicationDetailDTO
             {
                 ApplicationId = a.AppId,
                 UserId = a.UserId,

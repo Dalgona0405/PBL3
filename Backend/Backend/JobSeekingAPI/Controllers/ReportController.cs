@@ -252,7 +252,7 @@ namespace JobSeekingAPI.Controllers
                         ? Math.Round((double)(await applicationsTask)?.Total / (await totalJobsTask) * 100, 2) 
                         : 0,
                     
-                    LastUpdated = DateTime.Now
+                    LastUpdated = DateTime.UtcNow
                 };
 
                 return Ok(stats);
@@ -276,7 +276,7 @@ namespace JobSeekingAPI.Controllers
         {
             try
             {
-                var endDate = DateTime.Now;
+                var endDate = DateTime.UtcNow;
                 var startDate = period.ToLower() switch
                 {
                     "day" => endDate.AddDays(-30),

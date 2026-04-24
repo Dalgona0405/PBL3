@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -20,15 +20,17 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/recruiters => Cân nhắc bỏ
-        [HttpGet]
-        public async Task<IActionResult> GetAllRecruiters()
-        {
-            var recruiters = await _recruiterRepository.GetAllRecruitersWithDetailsAsync();
-            var dtos = recruiters.Select(r => MapToDTO(r));
-            return Ok(dtos);
-        }
+        //[Authorize(Roles = "Admin")]
+        //[HttpGet]
+        //public async Task<IActionResult> GetAllRecruiters()
+        //{
+        //    var recruiters = await _recruiterRepository.GetAllRecruitersWithDetailsAsync();
+        //    var dtos = recruiters.Select(r => MapToDTO(r));
+        //    return Ok(dtos);
+        //}
 
-        // GET: api/recruiters/me => Lấy thông tin recruiter hiện tại (dựa trên UserId trong token)
+        // GET: api/recruiters/{id}
+        [Authorize(Roles = "Admin, Recruiter")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetRecruiterById(int id)
         {
@@ -39,6 +41,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/recruiters/company/{companyId}
+        [Authorize(Roles = "Admin, Recruiter")]
         [HttpGet("company/{companyId}")]
         public async Task<IActionResult> GetRecruitersByCompany(int companyId)
         {
@@ -57,75 +60,8 @@ namespace JobSeekingAPI.Controllers
             return Ok(dtos);
         }
 
-        // POST: api/recruiters
-        //[HttpPost]
-        //public async Task<IActionResult> CreateRecruiter([FromBody] CreateRecruiterDTO createRecruiterDto)
-        //{
-        //    if (!ModelState.IsValid)
-        //        return BadRequest(ModelState);
-
-        //    var user = await _context.Users
-        //        .FirstOrDefaultAsync(u => u.UserId == createRecruiterDto.UserId && u.DeletedAt == null);
-
-        //    if (user == null)
-        //        return NotFound("User not found");
-
-        //    var company = await _context.Companies
-        //        .FirstOrDefaultAsync(c => c.CompanyId == createRecruiterDto.CompanyId && c.DeletedAt == null);
-
-        //    if (company == null)
-        //        return NotFound("Company not found");
-
-        //    var existingRecruiter = await _context.Recruiters
-        //        .AnyAsync(r => r.UserId == createRecruiterDto.UserId);
-
-        //    if (existingRecruiter)
-        //        return BadRequest("Recruiter already exists for this user");
-
-        //    user.Role = "Recruiter";
-
-        //    // ✅ ĐÃ SỬA: Cập nhật FullName và Avatar cho User
-        //    if (!string.IsNullOrWhiteSpace(createRecruiterDto.FullName))
-        //    {
-        //        user.FullName = createRecruiterDto.FullName;
-        //    }
-        //    if (!string.IsNullOrWhiteSpace(createRecruiterDto.Avatar))
-        //    {
-        //        user.Avatar = createRecruiterDto.Avatar;
-        //    }
-
-        //    // Tạo Recruiter mới (Chỉ chứa thông tin công việc)
-        //    var recruiter = new Recruiter
-        //    {
-        //        UserId = createRecruiterDto.UserId,
-        //        CompanyId = createRecruiterDto.CompanyId,
-        //        Position = createRecruiterDto.Position
-        //    };
-
-        //    _context.Recruiters.Add(recruiter);
-        //    await _context.SaveChangesAsync();
-
-        //    var recruiterDto = new RecruiterDetailDTO
-        //    {
-        //        UserId = recruiter.UserId,
-        //        Position = recruiter.Position,
-        //        // ✅ ĐÃ SỬA: Lấy lại từ user
-        //        FullName = user.FullName,
-        //        Avatar = user.Avatar,
-        //        Email = user.Email,
-        //        Company = new CompanySummaryDTO
-        //        {
-        //            CompanyId = company.CompanyId,
-        //            CompanyName = company.CompanyName,
-        //            LogoImg = company.LogoImg,
-        //            Website = company.Website
-        //        }
-        //    };
-
-        //    return CreatedAtAction(nameof(GetRecruiterById), new { id = recruiter.UserId }, recruiterDto);
-        //}
-
         // PUT: api/recruiters/{id}
+        [Authorize(Roles = "Recruiter")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateRecruiter(int id, [FromBody] UpdateRecruiterDTO dto)
         {
@@ -155,87 +91,6 @@ namespace JobSeekingAPI.Controllers
             await _recruiterRepository.UpdateAsync(existingRecruiter);
             return Ok(new { message = "Update success" });
         }
-
-        // DELETE: api/recruiters/{id}
-        //[HttpDelete("{id}")]
-        //public async Task<IActionResult> DeleteRecruiter(int id)
-        //{
-        //    var recruiter = await _context.Recruiters
-        //        .Include(r => r.User)
-        //        .FirstOrDefaultAsync(r => r.UserId == id);
-
-        //    if (recruiter == null)
-        //        return NotFound("Recruiter not found");
-
-        //    if (recruiter.User != null)
-        //    {
-        //        recruiter.User.DeletedAt = DateTime.Now;
-        //    }
-
-        //    _context.Recruiters.Remove(recruiter);
-        //    await _context.SaveChangesAsync();
-
-        //    return NoContent();
-        //}
-
-        // GET: api/recruiters/{id}/jobs
-        //[HttpGet("{id}/jobs")]
-        //public async Task<IActionResult> GetRecruiterJobs(int id)
-        //{
-        //    var recruiter = await _context.Recruiters
-        //        .Include(r => r.Company)
-        //        .FirstOrDefaultAsync(r => r.UserId == id);
-
-        //    if (recruiter == null)
-        //        return NotFound("Recruiter not found");
-
-        //    var jobs = await _context.Jobs
-        //        .Include(j => j.Location)
-        //        .Include(j => j.Company)
-        //        .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-        //        .Where(j => j.CompanyId == recruiter.CompanyId && j.DeletedAt == null)
-        //        .OrderByDescending(j => j.PostedDate)
-        //        .Select(j => new JobResponseDTO
-        //        {
-        //            JobId = j.JobId,
-        //            Title = j.Title,
-        //            SalaryMin = j.SalaryMin,
-        //            SalaryMax = j.SalaryMax,
-        //            ExpYear = j.ExpYear,
-        //            Level = j.Level,
-        //            PostedDate = j.PostedDate,
-        //            Deadline = j.Deadline,
-        //            Description = j.Description,
-        //            Requirement = j.Requirement,
-        //            Benefits = j.Benefits,
-        //            Address = j.Address,
-        //            ViewCount = j.ViewCount ?? 0,
-        //            Company = j.Company == null ? null : new CompanySummaryDTO
-        //            {
-        //                CompanyId = j.Company.CompanyId,
-        //                CompanyName = j.Company.CompanyName,
-        //                LogoImg = j.Company.LogoImg,
-        //                Website = j.Company.Website
-        //            },
-        //            Location = j.Location == null ? null : new LocationSummaryDTO
-        //            {
-        //                LocationId = j.Location.LocationId,
-        //                LocationName = j.Location.LocationName
-        //            },
-        //            Tags = j.JobTags
-        //                .Where(jt => jt.Tag != null)
-        //                .Select(jt => new TagSummaryDTO
-        //                {
-        //                    TagId = jt.Tag!.TagId,
-        //                    TagName = jt.Tag!.TagName,
-        //                    Type = jt.Tag!.Type
-        //                }).ToList(),
-        //            ApplicationCount = j.Applications.Count(a => a.DeletedAt == null)
-        //        })
-        //        .ToListAsync();
-
-        //    return Ok(jobs);
-        //}
 
         private RecruiterDetailDTO MapToDTO(Recruiter r)
         {

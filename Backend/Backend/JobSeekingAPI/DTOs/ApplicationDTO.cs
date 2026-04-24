@@ -3,7 +3,7 @@ using System;
 namespace JobSeekingAPI.DTOs
 {
     // Xem chi tiết Đơn ứng tuyển
-    public class ApplicationResponseDTO
+    public class ApplicationDetailDTO
     {
         public int ApplicationId { get; set; }
         public int UserId { get; set; }

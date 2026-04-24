@@ -2,11 +2,7 @@
 using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using JobSeekingAPI.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -23,14 +19,73 @@ namespace JobSeekingAPI.Controllers
             _jwtService = jwtService;
         }
 
-        // POST: api/auth/login
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody ] LoginDTO dto)
+        // POST: api/users/register
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] CreateUserDTO userDto)
         {
-            var user = await _userRepo.GetByEmailAsync(dto.Email);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                return Unauthorized(new { message = "Invalid email or password" });
-            var token = _jwtService.GenerateToken(user);
-            return Ok(new { token });
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            // Kiểm tra email đã tồn tại chưa
+            var emailExists = await _userRepo.IsEmailExistsAsync(userDto.Email);
+            if (emailExists)
+                return Conflict(new { message = "Email already exists." });
+
+            var newUser = await _userRepo.RegisterUserAsync(userDto);
+
+            // Không trả về mật khẩu
+            var result = new
+            {
+                newUser.UserId,
+                newUser.Email,
+                newUser.FullName,
+                newUser.Role
+            };
+
+            return CreatedAtAction(nameof(Register), new { id = newUser.UserId }, result);
+        }
+
+        // POST: api/users/login
+        [AllowAnonymous]
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDTO loginDto, [FromServices] JwtService jwtService)
+        {
+            // Bước 1: Tìm user bằng email
+            var user = await _userRepo.GetByEmailAsync(loginDto.Email);
+            if (user == null)
+            {
+                return Unauthorized(new { message = "Invalid email or password." });
+            }
+
+            // Bước 2: Kiểm tra mật khẩu đã mã hóa
+            // Dùng BCrypt.Verify để so sánh mật khẩu người dùng nhập với chuỗi hash trong DB
+            if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
+            {
+                return Unauthorized(new { message = "Invalid email or password." });
+            }
+
+            // Bước 3: Cập nhật LastLogin
+            user.LastLogin = DateTime.UtcNow;
+            await _userRepo.UpdateAsync(user);
+
+            // Bước 4: Tạo JWT Token
+            var token = jwtService.GenerateToken(user); // Truyền cả object user vào để lấy thêm thông tin
+
+            // Bước 5: Trả về kết quả
+            return Ok(new
+            {
+                message = "Login successful",
+                token,
+                user = new
+                {
+                    id = user.UserId,
+                    email = user.Email,
+                    role = user.Role,
+                    name = user.FullName,
+                    avatar = user.Avatar
+                }
+            });
+        }
     }
 }

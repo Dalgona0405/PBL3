@@ -13,7 +13,7 @@ namespace JobSeekingAPI.Repositories
         Task<User> RegisterUserAsync(CreateUserDTO userDto);
 
         // CRUD
-        Task<IEnumerable<User>> GetAllUsersWithDetailsAsync();
+        Task<PagedResultDTO<UserListDTO>> GetAllUsersWithDetailsAsync(int page, int pageSize);
         Task<User?> GetUserDetailByIdAsync(int id);
         Task SoftDeleteUserAsync(int id);
 

@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using JobSeekingAPI.Data;
-using JobSeekingAPI.Models;
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace JobSeekingAPI.Repositories
 {
@@ -45,9 +45,7 @@ namespace JobSeekingAPI.Repositories
             {
                 var candidate = new Candidate
                 {
-                    UserId = user.UserId,
-                    Phone = userDto.Phone,
-                    Address = userDto.Address
+                    UserId = user.UserId
                 };
                 _context.Candidates.Add(candidate);
             }
@@ -61,15 +59,46 @@ namespace JobSeekingAPI.Repositories
                         CompanyName = "Default Company Name" 
                     }
                 };
+                _context.Recruiters.Add(rectuiter);
             }
 
             await _context.SaveChangesAsync();
             return user;
         }
 
-        public async Task<IEnumerable<User>> GetAllUsersWithDetailsAsync()
+        public async Task<PagedResultDTO<UserListDTO>> GetAllUsersWithDetailsAsync(int page, int pageSize)
         {
-            return await _context.Users.Include(u => u.Candidate).Include(u => u.Recruiter).Where(u => u.DeletedAt == null).ToListAsync();
+            var query = _context.Users
+                .AsNoTracking()
+                .Include(u => u.Candidate)
+                .Include(u => u.Recruiter)
+                .Where(u => u.DeletedAt == null);
+
+            var totalCount = await query.CountAsync();
+
+            var users = await query
+                .OrderBy(u => u.FullName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new UserListDTO
+                {
+                    UserId = u.UserId,
+                    Email = u.Email,
+                    FullName = u.FullName,
+                    Avatar = u.Avatar,
+                    Role = u.Role,
+                    CompanyName = u.Recruiter != null && u.Recruiter.Company != null ? u.Recruiter.Company.CompanyName : null
+                })
+                .ToListAsync();
+
+            return new PagedResultDTO<UserListDTO>
+            {
+                Items = users,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            };
         }
 
         public async Task<User?> GetUserDetailByIdAsync(int id)
@@ -82,7 +111,7 @@ namespace JobSeekingAPI.Repositories
             var user = await _context.Users.FindAsync(id);
             if (user != null)
             {
-                user.DeletedAt = DateTime.Now;
+                user.DeletedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
             }
         }

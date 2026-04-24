@@ -36,28 +36,11 @@ namespace JobSeekingAPI.DTOs
         public int TagId { get; set; }
     }
 
-    public class BulkJobTagDTO
-    {
-        public int JobId { get; set; }
-        public List<int> TagIds { get; set; } = new();
-    }
-
     public class CandidateTagDTO
     {
         public int UserId { get; set; }
         public int TagId { get; set; }
         public string? Proficiency { get; set; }
-    }
-
-    public class UpdateCandidateTagDTO
-    {
-        public string? Proficiency { get; set; }
-    }
-
-    public class BulkCandidateTagDTO
-    {
-        public int UserId { get; set; }
-        public List<CandidateTagItemDTO> Tags { get; set; } = new();
     }
 
     public class CandidateTagItemDTO

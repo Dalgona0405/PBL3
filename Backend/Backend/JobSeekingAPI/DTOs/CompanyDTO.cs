@@ -34,7 +34,7 @@ namespace JobSeekingAPI.DTOs
     // Dùng cho màn hình Chi tiết Công ty
     public class CompanyDetailDTO : CompanySummaryDTO
     {
-        public List<JobResponseDTO> ActiveJobs { get; set; } = new();
+        public List<JobDetailDTO> ActiveJobs { get; set; } = new();
         public List<RecruiterSummaryDTO> Recruiters { get; set; } = new();
     }
 }

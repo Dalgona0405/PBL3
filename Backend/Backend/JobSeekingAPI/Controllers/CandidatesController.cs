@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
+using Microsoft.AspNetCore.Authorization;
+using JobSeekingAPI.Helpers;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -9,52 +11,57 @@ namespace JobSeekingAPI.Controllers
     [ApiController]
     public class CandidatesController : ControllerBase
     {
-        private readonly ICandidateRepository _candidateRepository;
+        private readonly ICandidateRepository _candidateRepo;
+        private readonly IExperienceRepository _experienceRepo;
 
-        public CandidatesController(ICandidateRepository candidateRepository)
+        public CandidatesController(ICandidateRepository candidateRepo, IExperienceRepository experienceRepo)
         {
-            _candidateRepository = candidateRepository;
+            _candidateRepo = candidateRepo;
+            _experienceRepo = experienceRepo;
         }
 
         // GET: api/candidates => Cân nhắc bỏ hoặc giới hạn quyền truy cập (chỉ admin). Nếu giữ thì phân trang
-        [HttpGet]
-        public async Task<IActionResult> GetAllCandidates()
-        {
-            var candidates = await _candidateRepository.GetAllCandidatesWithDetailsAsync();
-            return Ok(candidates.Select(c => MapToDetailDTO(c)));
-        }
+        //[Authorize(Roles = "Admin")]
+        //[HttpGet]
+        //public async Task<IActionResult> GetAllCandidates()
+        //{
+        //    var candidates = await _candidateRepo.GetAllCandidatesWithDetailsAsync();
+        //    return Ok(candidates.Select(c => MapToDetailDTO(c)));
+        //}
 
         // GET: api/candidates/{id}
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCandidateById(int id)
         {
-            var candidate = await _candidateRepository.GetCandidateDetailByIdAsync(id);
+            var candidate = await _candidateRepo.GetCandidateDetailByIdAsync(id);
             if (candidate == null)
                 return NotFound(new { message = "Candidate not found" });
             return Ok(MapToDetailDTO(candidate));
         }
 
         // GET: api/candidates/me => Cân nhắc, nếu giữ thì cần xác thực người dùng và lấy ID từ token
+        [Authorize(Roles = "Candidate")]
         [HttpGet("me")]
         public async Task<IActionResult> GetMyProfile()
         {
-            // Giả sử chúng ta có một phương thức để lấy UserId từ token
-            int userId = GetUserIdFromToken();
-            var candidate = await _candidateRepository.GetCandidateDetailByIdAsync(userId);
+            int userId = User.GetUserIdFromToken();
+            var candidate = await _candidateRepo.GetCandidateDetailByIdAsync(userId);
             if (candidate == null)
                 return NotFound(new { message = "Candidate not found" });
             return Ok(MapToDetailDTO(candidate));
         }
 
-        // PUT: api/candidates/me - Cập nhật thông tin profile của chính ứng viên. Cần xác thực người dùng và lấy ID từ token
+        // PUT: api/candidates/me
+        [Authorize(Roles = "Candidate")]
         [HttpPut("me")]
         public async Task<IActionResult> UpdateCandidateProfile([FromBody] UpdateCandidateDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            int userId = GetUserIdFromToken();
-            var existingCandidate = await _candidateRepository.GetCandidateEntityByIdAsync(userId);
+            int userId = User.GetUserIdFromToken();
+            var existingCandidate = await _candidateRepo.GetCandidateEntityByIdAsync(userId);
             if (existingCandidate == null)
                 return NotFound(new { message = "Candidate not found" });
 
@@ -70,92 +77,98 @@ namespace JobSeekingAPI.Controllers
             existingCandidate.Address = dto.Address ?? existingCandidate.Address;
             existingCandidate.CVUrl = dto.CVUrl ?? existingCandidate.CVUrl;
 
-            await _candidateRepository.UpdateAsync(existingCandidate);
+            await _candidateRepo.UpdateAsync(existingCandidate);
 
             // Cập nhật riêng các kỹ năng (nếu có gửi lên)
             if (dto.Tags != null)
             {
-                await _candidateRepository.UpdateCandidateTagsAsync(userId, dto.Tags);
+                await _candidateRepo.UpdateCandidateTagsAsync(userId, dto.Tags);
             }
 
             return Ok(new { message = "Candidate profile updated successfully." });
         }
 
         // GET: api/candidates/search
+        [Authorize(Roles = "Admin, Recruiter")]
         [HttpGet("search")]
         public async Task<IActionResult> SearchCandidates([FromQuery] string? keyword, [FromQuery] int? tagId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var result = await _candidateRepository.SearchCandidatesAsync(keyword, tagId, page, pageSize);
+            var result = await _candidateRepo.SearchCandidatesAsync(keyword, tagId, page, pageSize);
             return Ok(result);
         }
 
         // API VỀ EXPERIENCE
         // GET: api/candidates/{id}/experiences
+        [Authorize(Roles = "Admin, Recruiter, Candidate")]
         [HttpGet("{id}/experiences")]
         public async Task<IActionResult> GetExperiences(int id)
         {
-            var experiences = await _candidateRepository.GetExperiencesByCandidateIdAsync(id);
+            var experiences = await _experienceRepo.GetExperiencesByCandidateIdAsync(id);
             return Ok(experiences.Select(e => MapExperienceToDTO(e)));
         }
 
-        // POST: api/candidates/{id}/experiences
-        [HttpPost("{id}/experiences")]
-        public async Task<IActionResult> AddExperience(int id, [FromBody] CreateExperienceDTO dto)
+        // POST: /api/candidates/me/experiences
+        [Authorize(Roles = "Candidate")]
+        [HttpPost("me/experiences")]
+        public async Task<IActionResult> AddExperience([FromBody] CreateExperienceDTO dto)
         {
-            if (id != dto.UserId) return BadRequest("User ID mismatch.");
+            int userId = User.GetUserIdFromToken();
+            if (userId != dto.UserId) return BadRequest("User ID mismatch.");
+            var candidate = await _candidateRepo.GetCandidateEntityByIdAsync(userId);
 
             var experience = new Experience
             {
-                UserId = id,
+                UserId = userId,
                 JobTitle = dto.JobTitle,
                 CompanyName = dto.CompanyName,
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
                 Description = dto.Description
             };
-            var created = await _candidateRepository.AddExperienceAsync(experience);
-            return CreatedAtAction(nameof(GetExperiences), new { id = id }, MapExperienceToDTO(created));
+            var created = await _experienceRepo.AddExperienceAsync(experience);
+            return CreatedAtAction(nameof(GetExperiences), new { id = userId } , MapExperienceToDTO(created));
         }
 
-        // PUT: api/candidates/{id}/experiences/{expId}
-        [HttpPut("{id}/experiences/{expId}")]
-        public async Task<IActionResult> UpdateExperience(int id, int expId, [FromBody] UpdateExperienceDTO dto)
+        // PUT: api/candidates/me/experiences/{expId}
+        [Authorize(Roles = "Candidate")]
+        [HttpPut("me/experiences/{expId}")]
+        public async Task<IActionResult> UpdateExperience(int expId, [FromBody] UpdateExperienceDTO dto)
         {
-            int userId = GetUserIdFromToken();
-            if (id != userId) 
+            int userId = User.GetUserIdFromToken();
+            if (userId != dto.UserId) 
                 return BadRequest("User ID mismatch.");
-            var existing = await _candidateRepository.GetExperienceByIdAsync(expId);
-            if (existing == null || existing.UserId != id)
+            var existing = await _experienceRepo.GetExperienceByIdAsync(expId);
+            if (existing == null || existing.UserId != userId)
                 return NotFound(new { message = "Experience not found" });
             existing.JobTitle = dto.JobTitle ?? existing.JobTitle;
             existing.CompanyName = dto.CompanyName ?? existing.CompanyName;
             existing.StartDate = dto.StartDate ?? existing.StartDate;
             existing.EndDate = dto.EndDate ?? existing.EndDate;
             existing.Description = dto.Description ?? existing.Description;
-            await _candidateRepository.UpdateExperienceAsync(existing);
+            await _experienceRepo.UpdateExperienceAsync(existing);
             return Ok(MapExperienceToDTO(existing));
         }
 
-        // DELETE: api/candidates/{id}/experiences/{expId}
-        [HttpDelete("{id}/experiences/{expId}")]
-        public async Task<IActionResult> DeleteExperience(int id, int expId)
+        // DELETE: api/candidates/me/experiences/{expId}
+        [Authorize(Roles = "Candidate")]
+        [HttpDelete("me/experiences/{expId}")]
+        public async Task<IActionResult> DeleteExperience(int expId)
         {
-            int userId = GetUserIdFromToken();
-            if (id != userId) 
-                return BadRequest("User ID mismatch.");
-            var existing = await _candidateRepository.GetExperienceByIdAsync(expId);
-            if (existing == null || existing.UserId != id)
+            int userId = User.GetUserIdFromToken();
+            var existing = await _experienceRepo.GetExperienceByIdAsync(expId);
+            if (existing == null || existing.UserId != userId)
                 return NotFound(new { message = "Experience not found" });
-            await _candidateRepository.DeleteExperienceAsync(expId);
+            await _experienceRepo.DeleteExperienceAsync(expId);
             return NoContent();
         }
 
         // CÁC API VỀ SKILLS
         // GET: api/candidates/{id}/skills => Cân nhắc
+        [Authorize(Roles = "Admin, Candidate, Recruiter")]
         [HttpGet("{id}/skills")]
         public async Task<IActionResult> GetCandidateSkills(int id)
         {
-            var skills = await _candidateRepository.GetTagsByCandidateIdAsync(id);
+            var skills = await _candidateRepo.GetTagsByCandidateIdAsync(id);
             var dtos = skills.Select(s => new {
                 s.TagId,
                 TagName = s.Tag?.TagName,
@@ -165,11 +178,12 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/candidates/me/skills - Cập nhật toàn bộ skill của chính ứng viên
+        [Authorize(Roles = "Candidate")]
         [HttpPut("me/skills")]
         public async Task<IActionResult> UpdateCandidateSkills([FromBody] List<CandidateTagDTO> dtos)
         {
-            int userId = GetUserIdFromToken();
-            await _candidateRepository.UpdateCandidateTagsAsync(userId, dtos);
+            int userId = User.GetUserIdFromToken();
+            await _candidateRepo.UpdateCandidateTagsAsync(userId, dtos);
             return Ok(new { message = "Skills updated successfully." });
         }
 
@@ -191,9 +205,9 @@ namespace JobSeekingAPI.Controllers
             };
         }
 
-        private ExperienceDTO MapExperienceToDTO(Experience e)
+        private ExperienceDetailDTO MapExperienceToDTO(Experience e)
         {
-            return new ExperienceDTO
+            return new ExperienceDetailDTO
             {
                 ExpId = e.ExpId,
                 UserId = e.UserId,

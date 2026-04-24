@@ -35,7 +35,7 @@ namespace JobSeekingAPI.DTOs
         public CandidateDetailDTO? Candidate { get; set; }
         public RecruiterDetailDTO? Recruiter { get; set; }
 
-        public List<ApplicationResponseDTO>? Applications { get; set; }
+        public List<ApplicationDetailDTO>? Applications { get; set; }
     }
 
     // Danh sách User (Dùng cho trang Quản trị Admin)

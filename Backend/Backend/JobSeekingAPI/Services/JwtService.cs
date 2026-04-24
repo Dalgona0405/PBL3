@@ -8,26 +8,31 @@ namespace JobSeekingAPI.Services
 {
     public class JwtService
     {
-        // Nên đưa key này vào file appsettings.json để bảo mật hơn
-        private readonly string _secretKey = "THIS_IS_A_VERY_SECRET_KEY_FOR_JOB_SEEKING_API_2026_SUPER_SAFE_AND_EXTRA_LONG";
+        private readonly IConfiguration _configuration;
+
+        public JwtService(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
 
         public string GenerateToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_secretKey);
+            var keyString = _configuration["Jwt:SecretKey"];
+            var key = Encoding.ASCII.GetBytes(keyString);
 
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()), // Subject = UserId
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role),
-                new Claim("fullName", user.FullName) // Thêm các thông tin cần thiết khác
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role ?? "Candidate"),
+                new Claim("fullName", user.FullName ?? "")
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddDays(7), // Token hết hạn sau 7 ngày
+                Expires = DateTime.UtcNow.AddDays(7),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 

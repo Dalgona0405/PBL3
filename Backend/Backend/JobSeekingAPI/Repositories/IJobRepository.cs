@@ -6,7 +6,7 @@ namespace JobSeekingAPI.Repositories
     public interface IJobRepository : IBaseRepository<Job>
     {
         // CRUD ĐẶC THÙ
-        Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync();
+        //Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync();
         Task<Job?> GetJobDetailByIdAsync(int id);
         Task<Job?> GetJobEntityByIdAsync(int id);
         Task<Job> CreateJobWithDefaultsAsync(Job job);
