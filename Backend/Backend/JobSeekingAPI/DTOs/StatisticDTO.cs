@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace JobSeekingAPI.DTOs
 {
+    // ==========================================
+    // CÁC CLASS CƠ BẢN DÙNG CHUNG
+    // ==========================================
+    
     // 1. Dùng cho biểu đồ Tròn (Pie) hoặc Cột (Bar)
     public class SimpleStatDTO
     {
@@ -46,27 +50,53 @@ namespace JobSeekingAPI.DTOs
         }
     }
 
-    // 4. Tổng hợp Dashboard (Hợp nhất các thuộc tính bạn đang gọi)
-    public class DashboardSummaryDTO
+    // ==========================================
+    // CÁC CLASS NHÓM DỮ LIỆU ĐỂ TÁCH BIỆT RÕ RÀNG
+    // ==========================================
+
+    // 1. Nhóm Thống Kê Tổng Quan (Overview)
+    public class DashboardOverviewStatsDTO
     {
-        // Các trường số lượng tổng quát (ReportService đang gọi)
         public int TotalJobs { get; set; }
         public int TotalCandidates { get; set; }
         public int TotalCompanies { get; set; }
         public int TotalRecruiters { get; set; }
-        // Các Class thống kê chi tiết
-        public ApplicationStatsDTO Applications { get; set; } = new();
-        public JobStatusStatsDTO JobsByStatus { get; set; } = new();
+
+        // Tống số thống kê dạng đang tuyển dụng
+        public int TotalActiveHiringCompanies { get; set; } 
+        public int TotalActiveIndustries { get; set; } 
         public double ApplicationRate { get; set; }
-        
-        // Các danh sách phục vụ vẽ BIỂU ĐỒ (Dự báo, xu hướng)
+    }
+
+    // 2. Nhóm Dành Riêng Cho Biểu Đồ (Charts)
+    public class DashboardChartsDTO
+    {
+        public List<SimpleStatDTO> SalaryRanges { get; set; } = new();
         public List<SimpleStatDTO> JobByDept { get; set; } = new();
         public List<TrendStatDTO> HiringTrends { get; set; } = new();
+        
+        // Các danh sách phục vụ vẽ BIỂU ĐỒ bổ sung (Dự báo, xu hướng, kỹ năng)
         public List<SimpleStatDTO> SkillDistribution { get; set; } = new();
         public List<TrendStatDTO> GrowthTrends { get; set; } = new();
         public List<SimpleStatDTO> DeptStats { get; set; } = new();
         public List<SimpleStatDTO> TopSkills { get; set; } = new();
+    }
 
-        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    // 3. Nhóm Forms & Trạng thái (Status, Applications...)
+    public class DashboardFormsAndStatusDTO
+    {
+        public ApplicationStatsDTO Applications { get; set; } = new(); 
+        public JobStatusStatsDTO JobsByStatus { get; set; } = new();
+    }
+
+    // ==========================================
+    // CLASS CHÍNH TRẢ VỀ API (Gói 3 nhóm trên lại)
+    // ==========================================
+    public class DashboardSummaryDTO
+    {
+        public DashboardOverviewStatsDTO Overview { get; set; } = new();
+        public DashboardChartsDTO Charts { get; set; } = new();
+        public DashboardFormsAndStatusDTO FormsAndStatus { get; set; } = new();
+        public DateTime LastUpdated { get; set; } = DateTime.Now;
     }
 }

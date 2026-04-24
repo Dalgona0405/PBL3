@@ -4,18 +4,18 @@ using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
 using Microsoft.AspNetCore.Authorization;
 
-namespace JobSeekingAPI.Controllers
-{
-    [Route("api/[controller]")]
-    [ApiController]
-    public class SearchController : ControllerBase
-    {
-        private readonly ApplicationDbContext _context;
+// namespace JobSeekingAPI.Controllers
+// {
+//     [Route("api/[controller]")]
+//     [ApiController]
+//     public class SearchController : ControllerBase
+//     {
+//         private readonly ApplicationDbContext _context;
 
-        public SearchController(ApplicationDbContext context)
-        {
-            _context = context;
-        }
+//         public SearchController(ApplicationDbContext context)
+//         {
+//             _context = context;
+//         }
 
         // GET: api/search/advanced
         [AllowAnonymous]
@@ -222,30 +222,30 @@ namespace JobSeekingAPI.Controllers
                 .Take(5)
                 .ToListAsync();
 
-            // Lấy gợi ý từ Company Names
-            var companyNames = await _context.Companies
-                .Where(c => c.DeletedAt == null && c.CompanyName.ToLower().Contains(keyword))
-                .Select(c => c.CompanyName)
-                .Distinct()
-                .Take(5)
-                .ToListAsync();
+//             // Lấy gợi ý từ Company Names
+//             var companyNames = await _context.Companies
+//                 .Where(c => c.DeletedAt == null && c.CompanyName.ToLower().Contains(keyword))
+//                 .Select(c => c.CompanyName)
+//                 .Distinct()
+//                 .Take(5)
+//                 .ToListAsync();
 
-            // Lấy gợi ý từ Skills (Tags)
-            var skills = await _context.Tags
-                .Where(t => t.TagName.ToLower().Contains(keyword))
-                .Select(t => t.TagName)
-                .Distinct()
-                .Take(5)
-                .ToListAsync();
+//             // Lấy gợi ý từ Skills (Tags)
+//             var skills = await _context.Tags
+//                 .Where(t => t.TagName.ToLower().Contains(keyword))
+//                 .Select(t => t.TagName)
+//                 .Distinct()
+//                 .Take(5)
+//                 .ToListAsync();
 
-            var suggestions = jobTitles
-                .Concat(companyNames)
-                .Concat(skills)
-                .Distinct()
-                .Take(10)
-                .ToList();
+//             var suggestions = jobTitles
+//                 .Concat(companyNames)
+//                 .Concat(skills)
+//                 .Distinct()
+//                 .Take(10)
+//                 .ToList();
 
-            return Ok(new { suggestions });
-        }
-    }
-}
+//             return Ok(new { suggestions });
+//         }
+//     }
+// }

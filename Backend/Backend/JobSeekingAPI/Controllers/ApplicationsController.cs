@@ -42,8 +42,8 @@ namespace JobSeekingAPI.Controllers
             if (application == null)
                 return NotFound("Application not found");
 
-            return Ok(MapToDTO(application));
-        }
+//             return Ok(MapToDTO(application));
+//         }
 
         // GET: api/applications/job/{jobId}
         [Authorize(Roles = "Admin, Recruiter")]
@@ -94,45 +94,45 @@ namespace JobSeekingAPI.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            // Kiểm tra Candidate tồn tại
-            var candidate = await _candidateRepo.GetByIdAsync(dto.UserId);
-            if (candidate == null) 
-                return NotFound(new { message = "Candidate not found!" });
+//             // Kiểm tra Candidate tồn tại
+//             var candidate = await _candidateRepo.GetByIdAsync(dto.UserId);
+//             if (candidate == null) 
+//                 return NotFound(new { message = "Candidate not found!" });
 
-            // Kiểm tra Job tồn tại
-            var job = await _jobRepo.GetByIdAsync(dto.JobId);
-            if (job == null) 
-                return NotFound(new { message = "Job not found!" });
+//             // Kiểm tra Job tồn tại
+//             var job = await _jobRepo.GetByIdAsync(dto.JobId);
+//             if (job == null) 
+//                 return NotFound(new { message = "Job not found!" });
 
-            // Kiểm tra Job đã hết hạn (Không cho nộp Job quá hạn)
-            if (job.Deadline.HasValue && job.Deadline.Value < DateTime.UtcNow)
-                return BadRequest(new { message = "This job is already expired!" });
+//             // Kiểm tra Job đã hết hạn (Không cho nộp Job quá hạn)
+//             if (job.Deadline.HasValue && job.Deadline.Value < DateTime.UtcNow)
+//                 return BadRequest(new { message = "This job is already expired!" });
 
-            // User đã nộp job này bao giờ chưa? (Chống Spam)
-            var hasApplied = await _appRepo.IsAppliedAsync(dto.UserId, dto.JobId);
-            if (hasApplied)
-                return Conflict(new { message = "You have already applied for this job!" });
+//             // User đã nộp job này bao giờ chưa? (Chống Spam)
+//             var hasApplied = await _appRepo.IsAppliedAsync(dto.UserId, dto.JobId);
+//             if (hasApplied)
+//                 return Conflict(new { message = "You have already applied for this job!" });
 
-            // Xử lý cho CvUrl: Nếu không gửi CV mới thì lấy CV mặc định
-            string finalCvUrl = dto.CVUrl ?? "";
-            if (string.IsNullOrWhiteSpace(finalCvUrl))
-            {
-                finalCvUrl = candidate.CVUrl ?? "";
-                if (string.IsNullOrWhiteSpace(finalCvUrl))
-                    return BadRequest(new { message = "Please provide a CV to apply" });
-            }
+//             // Xử lý cho CvUrl: Nếu không gửi CV mới thì lấy CV mặc định
+//             string finalCvUrl = dto.CVUrl ?? "";
+//             if (string.IsNullOrWhiteSpace(finalCvUrl))
+//             {
+//                 finalCvUrl = candidate.CVUrl ?? "";
+//                 if (string.IsNullOrWhiteSpace(finalCvUrl))
+//                     return BadRequest(new { message = "Please provide a CV to apply" });
+//             }
 
-            // Tạo đơn ứng tuyển
-            var application = new Application
-            {
-                UserId = dto.UserId,
-                JobId = dto.JobId,
-                CVUrl = finalCvUrl,
-            };
+//             // Tạo đơn ứng tuyển
+//             var application = new Application
+//             {
+//                 UserId = dto.UserId,
+//                 JobId = dto.JobId,
+//                 CVUrl = finalCvUrl,
+//             };
 
-            var createdApp = await _appRepo.CreateApplicationDetailAsync(application);
-            return CreatedAtAction(nameof(GetApplicationById), new { id = createdApp.AppId }, MapToDTO(createdApp));
-        }
+//             var createdApp = await _appRepo.CreateApplicationDetailAsync(application);
+//             return CreatedAtAction(nameof(GetApplicationById), new { id = createdApp.AppId }, MapToDTO(createdApp));
+//         }
 
         // PUT: api/applications/candidate/me/{id}
         [Authorize(Roles = "Candidate")]
@@ -151,9 +151,9 @@ namespace JobSeekingAPI.Controllers
 
             existApplication.CVUrl = dto.CVUrl ?? existApplication.CVUrl;
 
-            await _appRepo.UpdateAsync(existApplication);
-            return Ok(new { message = "Update success" });
-        }
+//             await _appRepo.UpdateAsync(existApplication);
+//             return Ok(new { message = "Update success" });
+//         }
 
         // PATCH: api/applications/{id}/status
         [Authorize(Roles = "Admin, Recruiter")]
@@ -196,10 +196,10 @@ namespace JobSeekingAPI.Controllers
             if (application.UserId != userId)
                 return Forbid();
 
-            await _appRepo.SoftDeleteApplicationAsync(id);
+//             await _appRepo.SoftDeleteApplicationAsync(id);
 
-            return Ok(new { message = "Application withdrawn successfully!" });
-        }
+//             return Ok(new { message = "Application withdrawn successfully!" });
+//         }
 
         // GET: api/applications/statistics/job/{jobId}
         [Authorize(Roles = "Admin")]
@@ -208,20 +208,20 @@ namespace JobSeekingAPI.Controllers
         {
             var statistics = await _appRepo.GetApplicationStatusStatisticsAsync(jobId);
 
-            // statistics likely contains KeyValuePair<int,int> mapping Status -> Count
-            var total = statistics?.Sum(kv => kv.Value) ?? 0;
+//             // statistics likely contains KeyValuePair<int,int> mapping Status -> Count
+//             var total = statistics?.Sum(kv => kv.Value) ?? 0;
 
-            var result = new
-            {
-                TotalApplications = total,
-                Pending = statistics?.FirstOrDefault(kv => kv.Key == 1).Value ?? 0,
-                Interviewed = statistics?.FirstOrDefault(kv => kv.Key == 2).Value ?? 0,
-                Accepted = statistics?.FirstOrDefault(kv => kv.Key == 3).Value ?? 0,
-                Rejected = statistics?.FirstOrDefault(kv => kv.Key == 4).Value ?? 0
-            };
+//             var result = new
+//             {
+//                 TotalApplications = total,
+//                 Pending = statistics?.FirstOrDefault(kv => kv.Key == 1).Value ?? 0,
+//                 Interviewed = statistics?.FirstOrDefault(kv => kv.Key == 2).Value ?? 0,
+//                 Accepted = statistics?.FirstOrDefault(kv => kv.Key == 3).Value ?? 0,
+//                 Rejected = statistics?.FirstOrDefault(kv => kv.Key == 4).Value ?? 0
+//             };
 
-            return Ok(result);
-        }
+//             return Ok(result);
+//         }
 
         private ApplicationDetailDTO MapToDTO(Application a)
         {
@@ -234,26 +234,26 @@ namespace JobSeekingAPI.Controllers
                 Status = a.Status,
                 CVUrl = a.CVUrl,
 
-                Candidate = a.Candidate == null ? null : new CandidateSummaryDTO
-                {
-                    UserId = a.Candidate.UserId,
-                    FullName = a.Candidate.User?.FullName ?? "Unknown",
-                    Avatar = a.Candidate.User?.Avatar,
-                    Email = a.Candidate.User?.Email,
-                    CVUrl = a.Candidate.CVUrl
-                },
+//                 Candidate = a.Candidate == null ? null : new CandidateSummaryDTO
+//                 {
+//                     UserId = a.Candidate.UserId,
+//                     FullName = a.Candidate.User?.FullName ?? "Unknown",
+//                     Avatar = a.Candidate.User?.Avatar,
+//                     Email = a.Candidate.User?.Email,
+//                     CVUrl = a.Candidate.CVUrl
+//                 },
 
-                Job = a.Job == null ? null : new JobSummaryDTO
-                {
-                    JobId = a.Job.JobId,
-                    Title = a.Job.Title,
-                    SalaryMin = a.Job.SalaryMin,
-                    SalaryMax = a.Job.SalaryMax,
-                    CompanyName = a.Job.Company?.CompanyName ?? "Unknown",
-                    LocationName = a.Job.Location?.LocationName ?? "Unknown",
-                    Deadline = a.Job.Deadline
-                }
-            };
-        }
-    }
-}
+//                 Job = a.Job == null ? null : new JobSummaryDTO
+//                 {
+//                     JobId = a.Job.JobId,
+//                     Title = a.Job.Title,
+//                     SalaryMin = a.Job.SalaryMin,
+//                     SalaryMax = a.Job.SalaryMax,
+//                     CompanyName = a.Job.Company?.CompanyName ?? "Unknown",
+//                     LocationName = a.Job.Location?.LocationName ?? "Unknown",
+//                     Deadline = a.Job.Deadline
+//                 }
+//             };
+//         }
+//     }
+// }

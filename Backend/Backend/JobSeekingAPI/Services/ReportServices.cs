@@ -153,24 +153,35 @@ namespace JobSeekingAPI.Services
             var totalCompanies = await _context.Companies.CountAsync(c => c.DeletedAt == null);
             var totalRecruiters = await _context.Recruiters.CountAsync();
 
+            // Trả về đúng cấu trúc 3 phần đã định nghĩa
             return new DashboardSummaryDTO
             {
-                TotalJobs = totalJobs,
-                TotalCandidates = totalCandidates,
-                TotalCompanies = totalCompanies,
-                TotalRecruiters = totalRecruiters,
-                Applications = new ApplicationStatsDTO(
-                    await _context.Applications.CountAsync(a => a.DeletedAt == null),
-                    await _context.Applications.CountAsync(a => a.AppliedDate >= now.AddDays(-7)),
-                    await _context.Applications.CountAsync(a => a.AppliedDate >= now.AddMonths(-1)),
-                    await _context.Applications.CountAsync(a => a.AppliedDate.Year == now.Year)
-                ),
-                JobsByStatus = new JobStatusStatsDTO(
-                    await _context.Jobs.CountAsync(j => j.DeletedAt == null && j.Status == 1),
-                    await _context.Jobs.CountAsync(j => j.DeletedAt == null && j.Deadline < now),
-                    totalJobs
-                ),
-                ApplicationRate = totalJobs > 0 ? Math.Round((double)totalCandidates / totalJobs, 2) : 0,
+                Overview = new DashboardOverviewStatsDTO
+                {
+                    TotalJobs = totalJobs,
+                    TotalCandidates = totalCandidates,
+                    TotalCompanies = totalCompanies,
+                    TotalRecruiters = totalRecruiters,
+                    ApplicationRate = totalJobs > 0 ? Math.Round((double)totalCandidates / totalJobs, 2) : 0
+                    // Lưu ý: Các trường TotalActiveHiringCompanies và TotalActiveIndustries
+                    // tạm thời sẽ bằng 0 ở đây nếu ReportService không đếm. Bạn có thể thêm logic đếm 
+                    // tương tự bên StatisticsService nếu muốn nó hiển thị ở API này.
+                },
+                FormsAndStatus = new DashboardFormsAndStatusDTO
+                {
+                    Applications = new ApplicationStatsDTO(
+                        await _context.Applications.CountAsync(a => a.DeletedAt == null),
+                        await _context.Applications.CountAsync(a => a.AppliedDate >= now.AddDays(-7)),
+                        await _context.Applications.CountAsync(a => a.AppliedDate >= now.AddMonths(-1)),
+                        await _context.Applications.CountAsync(a => a.AppliedDate.Year == now.Year)
+                    ),
+                    JobsByStatus = new JobStatusStatsDTO(
+                        await _context.Jobs.CountAsync(j => j.DeletedAt == null && j.Status == 1),
+                        await _context.Jobs.CountAsync(j => j.DeletedAt == null && j.Deadline < now),
+                        totalJobs
+                    )
+                },
+                Charts = new DashboardChartsDTO(), // Khởi tạo rỗng vì hàm này chưa gọi các biểu đồ
                 LastUpdated = now
             };
         }

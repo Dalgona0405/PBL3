@@ -4,18 +4,18 @@ using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
 using Microsoft.AspNetCore.Authorization;
 
-namespace JobSeekingAPI.Controllers
-{
-    [Route("api/[controller]")]
-    [ApiController]
-    public class LocationsController : ControllerBase
-    {
-        private readonly ILocationRepository _locationRepository;
+// namespace JobSeekingAPI.Controllers
+// {
+//     [Route("api/[controller]")]
+//     [ApiController]
+//     public class LocationsController : ControllerBase
+//     {
+//         private readonly ILocationRepository _locationRepository;
 
-        public LocationsController(ILocationRepository locationRepository)
-        {
-            _locationRepository = locationRepository;
-        }
+//         public LocationsController(ILocationRepository locationRepository)
+//         {
+//             _locationRepository = locationRepository;
+//         }
 
         // GET: api/locations
         [AllowAnonymous]
@@ -49,15 +49,15 @@ namespace JobSeekingAPI.Controllers
                 LocationName = dto.LocationName
             };
 
-            var createdLocation = await _locationRepository.CreateAsync(location);
+//             var createdLocation = await _locationRepository.CreateAsync(location);
 
-            return CreatedAtAction(nameof(GetLocationById), new { id = createdLocation.LocationId }, new LocationSummaryDTO
-            {
-                LocationId = createdLocation.LocationId,
-                LocationName = createdLocation.LocationName,
-                JobCount = 0
-            });
-        }
+//             return CreatedAtAction(nameof(GetLocationById), new { id = createdLocation.LocationId }, new LocationSummaryDTO
+//             {
+//                 LocationId = createdLocation.LocationId,
+//                 LocationName = createdLocation.LocationName,
+//                 JobCount = 0
+//             });
+//         }
 
         // PUT: api/locations/{id}[Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
@@ -65,16 +65,16 @@ namespace JobSeekingAPI.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var location = await _locationRepository.GetLocationEntityByIdAsync(id);
-            if (location == null)
-                return NotFound(new { message = "Location not found!" });
+//             var location = await _locationRepository.GetLocationEntityByIdAsync(id);
+//             if (location == null)
+//                 return NotFound(new { message = "Location not found!" });
 
-            location.LocationName = dto.LocationName ?? location.LocationName;
+//             location.LocationName = dto.LocationName ?? location.LocationName;
 
-            await _locationRepository.UpdateAsync(location);
+//             await _locationRepository.UpdateAsync(location);
 
-            return Ok(new { message = "Location updated successfully!" });
-        }
+//             return Ok(new { message = "Location updated successfully!" });
+//         }
 
         // DELETE: api/locations/{id}
         [Authorize(Roles = "Admin")]
@@ -93,8 +93,8 @@ namespace JobSeekingAPI.Controllers
 
             await _locationRepository.DeleteAsync(id);
 
-            return Ok(new { message = "Location deleted successfully!" });
-        }
+//             return Ok(new { message = "Location deleted successfully!" });
+//         }
 
         // GET: api/locations/search
         [AllowAnonymous]

@@ -5,18 +5,18 @@ using JobSeekingAPI.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace JobSeekingAPI.Controllers
-{
-    [Route("api/[controller]")]
-    [ApiController]
-    public class UsersController : ControllerBase
-    {
-        private readonly IUserRepository _userRepository;
+// namespace JobSeekingAPI.Controllers
+// {
+//     [Route("api/[controller]")]
+//     [ApiController]
+//     public class UsersController : ControllerBase
+//     {
+//         private readonly IUserRepository _userRepository;
 
-        public UsersController(IUserRepository userRepository)
-        {
-            _userRepository = userRepository;
-        }
+//         public UsersController(IUserRepository userRepository)
+//         {
+//             _userRepository = userRepository;
+//         }
 
         // GET: api/users
         [Authorize(Roles = "Admin")]
@@ -64,14 +64,14 @@ namespace JobSeekingAPI.Controllers
             if (id != User.GetUserIdFromToken()) 
                 return Forbid();
 
-            var existingUser = await _userRepository.GetUserDetailByIdAsync(id);
-            if (existingUser == null)
-                return NotFound("User not found");
+//             var existingUser = await _userRepository.GetUserDetailByIdAsync(id);
+//             if (existingUser == null)
+//                 return NotFound("User not found");
 
-            if (!string.IsNullOrWhiteSpace(updateUserDto.NewPassword))
-            {
-                existingUser.Password = BCrypt.Net.BCrypt.HashPassword(updateUserDto.NewPassword);
-            }
+//             if (!string.IsNullOrWhiteSpace(updateUserDto.NewPassword))
+//             {
+//                 existingUser.Password = BCrypt.Net.BCrypt.HashPassword(updateUserDto.NewPassword);
+//             }
 
             // Update Candidate if exists
             if (existingUser.Candidate != null)
@@ -87,9 +87,9 @@ namespace JobSeekingAPI.Controllers
                 // Code sẽ thêm sau
             }
 
-            await _userRepository.UpdateAsync(existingUser);
-            return Ok(new { message = "User updated successfully" });
-        }
+//             await _userRepository.UpdateAsync(existingUser);
+//             return Ok(new { message = "User updated successfully" });
+//         }
 
         // DELETE: api/users/{id}
         [Authorize(Roles = "Admin")]
@@ -98,14 +98,14 @@ namespace JobSeekingAPI.Controllers
         {
             var user = await _userRepository.GetUserDetailByIdAsync(id);
 
-            if (user == null)
-                return NotFound("User not found");
+//             if (user == null)
+//                 return NotFound("User not found");
 
-            user.DeletedAt = DateTime.UtcNow;
-            await _userRepository.UpdateAsync(user);
+//             user.DeletedAt = DateTime.UtcNow;
+//             await _userRepository.UpdateAsync(user);
 
-            return Ok(new { message = "User deleted successfully" });
-        }
+//             return Ok(new { message = "User deleted successfully" });
+//         }
 
         // GET: api/users/search
         [Authorize(Roles = "Admin")]
@@ -129,10 +129,10 @@ namespace JobSeekingAPI.Controllers
                     (u.Candidate != null && u.Candidate.Phone != null && u.Candidate.Phone.Contains(keyword)));
             }
 
-            if (!string.IsNullOrWhiteSpace(role))
-            {
-                query = query.Where(u => u.Role == role);
-            }
+//             if (!string.IsNullOrWhiteSpace(role))
+//             {
+//                 query = query.Where(u => u.Role == role);
+//             }
 
             var totalCount = query.Count();
             var users = query
@@ -163,8 +163,8 @@ namespace JobSeekingAPI.Controllers
                 Data = users
             };
 
-            return Ok(result);
-        }
+//             return Ok(result);
+//         }
 
         // GET: api/users/profile
         [HttpGet("profile")]
@@ -184,19 +184,19 @@ namespace JobSeekingAPI.Controllers
             if(id != User.GetUserIdFromToken())
                 return Forbid();
 
-            var user = await _userRepository.GetByIdAsync(id);
+//             var user = await _userRepository.GetByIdAsync(id);
 
-            if (user == null)
-                return NotFound("User not found");
+//             if (user == null)
+//                 return NotFound("User not found");
 
-            if (!BCrypt.Net.BCrypt.Verify(changePasswordDto.CurrentPassword, user.Password))
-                return BadRequest(new { message = "Current password is incorrect" });
+//             if (!BCrypt.Net.BCrypt.Verify(changePasswordDto.CurrentPassword, user.Password))
+//                 return BadRequest(new { message = "Current password is incorrect" });
 
-            user.Password = BCrypt.Net.BCrypt.HashPassword(changePasswordDto.NewPassword);
-            await _userRepository.UpdateAsync(user);
+//             user.Password = BCrypt.Net.BCrypt.HashPassword(changePasswordDto.NewPassword);
+//             await _userRepository.UpdateAsync(user);
 
-            return Ok(new { message = "Password changed successfully" });
-        }
+//             return Ok(new { message = "Password changed successfully" });
+//         }
 
         private UserDetailDTO MapToDTO(User user)
         {
