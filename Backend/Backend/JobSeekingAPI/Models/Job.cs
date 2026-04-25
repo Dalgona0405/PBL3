@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
+
 using System.ComponentModel.DataAnnotations;  
-using JobSeekingAPI.Models;
 
 namespace JobSeekingAPI.Models
 {
@@ -31,7 +29,7 @@ namespace JobSeekingAPI.Models
         
         public DateTime? DeletedAt { get; set; }
         public int? ViewCount { get; set; } = 0;
-        public int Status { get; set; } = 1;      // ✅ Thêm Status
+        public int Status { get; set; } = 1;
         
         // Navigation properties - CHỈ KHAI BÁO 1 LẦN
         public Company? Company { get; set; }

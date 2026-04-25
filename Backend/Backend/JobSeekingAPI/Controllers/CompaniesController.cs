@@ -14,7 +14,7 @@ namespace JobSeekingAPI.Controllers
         private readonly ICompanyRepository _companyRepo;
         private readonly IJobRepository _jobRepository;
 
-        public CompaniesController(ICompanyRepository companyRepo, IJobRepository jobRepository) 
+        public CompaniesController(ICompanyRepository companyRepo, IJobRepository jobRepository)
         {
             _companyRepo = companyRepo;
             _jobRepository = jobRepository;
@@ -36,7 +36,7 @@ namespace JobSeekingAPI.Controllers
         {
             var company = await _companyRepo.GetCompanyDetailByIdAsync(id);
             if (company == null)
-                return NotFound(new {message = "Company not found"});
+                return NotFound(new { message = "Company not found" });
             return Ok(company);
         }
 
@@ -61,9 +61,6 @@ namespace JobSeekingAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyDTO dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var company = new Company
             {
                 CompanyName = dto.CompanyName,
@@ -80,8 +77,6 @@ namespace JobSeekingAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCompany(int id, [FromBody] UpdateCompanyDTO dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
             var userId = User.GetUserIdFromToken();
             var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
             if (recruiterCompanyId == null || recruiterCompanyId != id)
@@ -112,7 +107,7 @@ namespace JobSeekingAPI.Controllers
                 return NotFound(new { message = "Company not found" });
 
             if (result == "Has active jobs")
-                return BadRequest(new {message = "Cannot delete company with active jobs" });
+                return BadRequest(new { message = "Cannot delete company with active jobs" });
 
             return Ok(new { message = "Detele success" });
         }

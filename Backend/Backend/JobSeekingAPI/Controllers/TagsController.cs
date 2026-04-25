@@ -86,9 +86,6 @@ namespace JobSeekingAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateTag([FromBody] CreateTagDTO dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             // Kiểm tra tag đã tồn tại
             var existingTag = await _tagRepository.IsTagNameExistsAsync(dto.TagName);
             if (existingTag)
@@ -117,9 +114,6 @@ namespace JobSeekingAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTag(int id, [FromBody] UpdateTagDTO dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var existingTag = await _tagRepository.GetTagEntityByIdAsync(id);
             if (existingTag == null)
                 return NotFound("Tag not found");

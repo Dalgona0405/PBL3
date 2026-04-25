@@ -46,7 +46,7 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> GetRecruitersByCompany(int companyId)
         {
             var companyExists = await _companyRepository.GetByIdAsync(companyId);
-            if (companyExists == null) 
+            if (companyExists == null)
                 return NotFound(new { message = "Company not found!" });
 
             var recruiters = await _recruiterRepository.GetRecruitersByCompanyAsync(companyId);
@@ -65,9 +65,6 @@ namespace JobSeekingAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateRecruiter(int id, [FromBody] UpdateRecruiterDTO dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             var existingRecruiter = await _recruiterRepository.GetRecruiterEntityByIdAsync(id);
             if (existingRecruiter == null)
                 return NotFound("Recruiter not found");

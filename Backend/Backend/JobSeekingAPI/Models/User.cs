@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace JobSeekingAPI.Models
@@ -17,7 +15,7 @@ namespace JobSeekingAPI.Models
         public string Role { get; set; } = string.Empty;      // Candidate, Recruiter, Admin
         
         public string FullName { get; set; } = string.Empty;
-        public string? Avatar { get; set; } // Nếu muốn lưu avatar ở đây, nhưng hiện tại đã có ở Candidate và Recruiter
+        public string? Avatar { get; set; }
         
         public DateTime? DeletedAt { get; set; }              // Soft delete
         public DateTime? LastLogin { get; set; }              // Thêm LastLogin

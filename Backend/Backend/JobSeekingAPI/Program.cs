@@ -45,16 +45,21 @@ builder.Services.AddCors(options =>
 });
 
 // JWT Authentication
-var jwtKey = builder.Configuration["Jwt:SecretKey"];
+var jwtKey = builder.Configuration.GetValue<string>("Jwt:SecretKey")
+             ?? builder.Configuration.GetValue<string>("Logging:Jwt:SecretKey");
+
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException("Configuration value 'Jwt:SecretKey' is missing. Set it in appsettings or env variable.");
+
+var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options => {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
+        options.TokenValidationParameters = new TokenValidationParameters {
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            IssuerSigningKey = signingKey,
             RoleClaimType = ClaimTypes.Role
         };
     });

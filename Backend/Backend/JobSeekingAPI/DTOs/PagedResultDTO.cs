@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace JobSeekingAPI.DTOs
 {
     // DTO bọc ngoài để làm chức năng phân trang (Next/Prev Page)

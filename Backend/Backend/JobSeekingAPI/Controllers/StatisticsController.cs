@@ -20,7 +20,7 @@ namespace JobSeekingAPI.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetDashboard()
         {
-            try 
+            try
             {
                 var data = await _statsService.GetDashboardStatsAsync();
                 return Ok(data); // Hàm này sẽ tự động map ra 3 nhóm JSON bạn vừa chia

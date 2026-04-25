@@ -1,5 +1,3 @@
-using System;
-
 namespace JobSeekingAPI.DTOs
 {
     // Xem chi tiết Đơn ứng tuyển

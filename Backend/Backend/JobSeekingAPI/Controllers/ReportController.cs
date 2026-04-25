@@ -31,25 +31,25 @@ namespace JobSeekingAPI.Controllers
         {
             try
             {
-                // var totalJobs = await _context.Jobs
-                //     .CountAsync(j => j.DeletedAt == null);
+                //var totalJobs = await _context.Jobs
+                //    .CountAsync(j => j.DeletedAt == null);
 
-                // if (totalJobs == 0)
-                // {
-                //     return Ok(new List<MarketTrendDTO>());
-                // }
+                //if (totalJobs == 0)
+                //{
+                //    return Ok(new List<MarketTrendDTO>());
+                //}
 
-                // var trends = await _context.Tags
-                //     .Where(t => t.JobTags.Any(jt => jt.Job != null && jt.Job.DeletedAt == null))
-                //     .Select(t => new MarketTrendDTO
-                //     (
-                //         t.TagName,
-                //         t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
-                //         Math.Round((double)t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null) / totalJobs * 100, 2)
-                //     ))
-                //     .OrderByDescending(x => x.JobCount)
-                //     .Take(limit)
-                //     .ToListAsync();
+                //var trends = await _context.Tags
+                //    .Where(t => t.JobTags.Any(jt => jt.Job != null && jt.Job.DeletedAt == null))
+                //    .Select(t => new MarketTrendDTO
+                //    (
+                //        t.TagName,
+                //        t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
+                //        Math.Round((double)t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null) / totalJobs * 100, 2)
+                //    ))
+                //    .OrderByDescending(x => x.JobCount)
+                //    .Take(limit)
+                //    .ToListAsync();
                 var trends = await _reportService.GetMarketTrendAsync(limit);
                 return Ok(trends);
             }
@@ -132,8 +132,8 @@ namespace JobSeekingAPI.Controllers
 
                 // Lấy tất cả các cặp Job-Tag để tính edges
                 var jobTagLookup = await _context.JobTags
-                    .Where(jt => jt.Job != null 
-                        && jt.Job.DeletedAt == null 
+                    .Where(jt => jt.Job != null
+                        && jt.Job.DeletedAt == null
                         && popularTagIds.Contains(jt.TagId))
                     .GroupBy(jt => jt.JobId)
                     .Select(g => g.Select(x => x.TagId).ToList())
@@ -141,18 +141,18 @@ namespace JobSeekingAPI.Controllers
 
                 // Tạo Dictionary để đếm cặp hiệu quả hơn
                 var edgeCounts = new Dictionary<(int, int), int>();
-                
+
                 foreach (var tagIds in jobTagLookup)
                 {
                     var sortedTags = tagIds.Where(id => popularTagIds.Contains(id)).Distinct().ToList();
-                    
+
                     for (int i = 0; i < sortedTags.Count; i++)
                     {
                         for (int j = i + 1; j < sortedTags.Count; j++)
                         {
-                            var key = (Math.Min(sortedTags[i], sortedTags[j]), 
+                            var key = (Math.Min(sortedTags[i], sortedTags[j]),
                                       Math.Max(sortedTags[i], sortedTags[j]));
-                            
+
                             edgeCounts.TryAdd(key, 0);
                             edgeCounts[key]++;
                         }
@@ -202,7 +202,7 @@ namespace JobSeekingAPI.Controllers
                 var totalCandidatesTask = _context.Candidates.CountAsync(c => c.User != null && c.User.DeletedAt == null);
                 var totalCompaniesTask = _context.Companies.CountAsync(c => c.DeletedAt == null);
                 var totalRecruitersTask = _context.Recruiters.CountAsync(r => r.User != null && r.User.DeletedAt == null);
-                
+
                 var applicationsTask = _context.Applications
                     .Where(a => a.DeletedAt == null)
                     .GroupBy(a => 1)
@@ -224,13 +224,13 @@ namespace JobSeekingAPI.Controllers
                         Expired = g.Count(j => j.Deadline < today),
                         Total = g.Count()
                     })
-                    .FirstOrDefaultAsync(); 
+                    .FirstOrDefaultAsync();
 
                 // Chờ tất cả tasks hoàn thành
                 await Task.WhenAll(
-                    totalJobsTask, 
-                    totalCandidatesTask, 
-                    totalCompaniesTask, 
+                    totalJobsTask,
+                    totalCandidatesTask,
+                    totalCompaniesTask,
                     totalRecruitersTask,
                     applicationsTask,
                     jobsByStatusTask
@@ -242,16 +242,16 @@ namespace JobSeekingAPI.Controllers
                     TotalCandidates = await totalCandidatesTask,
                     TotalCompanies = await totalCompaniesTask,
                     TotalRecruiters = await totalRecruitersTask,
-                    
+
                     Applications = await applicationsTask ?? new { Total = 0, ThisWeek = 0, ThisMonth = 0, ThisYear = 0 },
-                    
+
                     JobsByStatus = await jobsByStatusTask ?? new { Active = 0, Expired = 0, Total = 0 },
-                    
+
                     // Tính tỷ lệ
-                    ApplicationRate = await totalJobsTask > 0 
-                        ? Math.Round((double)(await applicationsTask)?.Total / (await totalJobsTask) * 100, 2) 
+                    ApplicationRate = await totalJobsTask > 0
+                        ? Math.Round((double)(await applicationsTask)?.Total / (await totalJobsTask) * 100, 2)
                         : 0,
-                    
+
                     LastUpdated = DateTime.UtcNow
                 };
 
@@ -339,7 +339,7 @@ namespace JobSeekingAPI.Controllers
                             Accepted = g.Count(a => a.Status == 4),
                             Rejected = g.Count(a => a.Status == 5)
                         }
-                    })  
+                    })
                     .OrderBy(x => x.Period)
                     .ToList();
 

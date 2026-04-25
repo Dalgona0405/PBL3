@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace JobSeekingAPI.DTOs
 {
     // Khởi tạo Candidate (Không chứa FullName/Avatar vì nó nằm ở Users)

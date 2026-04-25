@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace JobSeekingAPI.DTOs
 {
     public class CreateTagDTO

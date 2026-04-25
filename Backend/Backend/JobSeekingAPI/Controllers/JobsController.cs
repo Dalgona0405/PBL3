@@ -84,9 +84,6 @@ namespace JobSeekingAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateJob([FromBody] CreateJobDTO dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             if (dto.Deadline.HasValue && dto.Deadline.Value < DateTime.UtcNow)
             {
                 return BadRequest(new { message = "Deadline cannot be in the past!" });
@@ -108,7 +105,7 @@ namespace JobSeekingAPI.Controllers
                 Address = dto.Address,
                 JobTags = dto.TagIds?.Select(tagId => new JobTag { TagId = tagId }).ToList() ?? new List<JobTag>()
             };
-            
+
             var createdJob = await _jobRepository.CreateJobWithDefaultsAsync(job);
             return CreatedAtAction(nameof(GetJobById), new { id = createdJob.JobId }, MapToDTO(createdJob));
         }
@@ -118,8 +115,6 @@ namespace JobSeekingAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateJob(int id, [FromBody] UpdateJobDTO dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
             var existingJob = await _jobRepository.GetJobEntityByIdAsync(id);
             if (existingJob == null) return NotFound(new { message = "Job not found" });
 
@@ -156,7 +151,7 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> UpdateJobStatus(int id, [FromBody] JobUpdateStatusDTO dto)
         {
             var existingJob = await _jobRepository.GetJobEntityByIdAsync(id);
-            if (existingJob == null) 
+            if (existingJob == null)
                 return NotFound(new { message = "Job not found" });
             var userId = User.GetUserIdFromToken();
             if (User.IsInRole("Recruiter"))

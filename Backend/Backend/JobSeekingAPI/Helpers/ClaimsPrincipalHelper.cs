@@ -12,7 +12,7 @@ namespace JobSeekingAPI.Helpers
             {
                 return userId;
             }
-            throw new UnauthorizedAccessException("Không tìm thấy UserId trong Token hợp lệ.");
+            throw new UnauthorizedAccessException("Cannot find valid UserId in token.");
         }
     }
 }

@@ -1,5 +1,3 @@
-using System;
-
 namespace JobSeekingAPI.DTOs
 {
     public class ExperienceDetailDTO

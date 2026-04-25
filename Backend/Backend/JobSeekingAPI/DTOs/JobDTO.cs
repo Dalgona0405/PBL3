@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace JobSeekingAPI.DTOs
 {
     // Chi tiết Job (Khi click vào xem 1 Job cụ thể)

@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using JobSeekingAPI.Data;
 using JobSeekingAPI.Models;
-using JobSeekingAPI.DTOs;
 
 namespace JobSeekingAPI.Repositories
 {

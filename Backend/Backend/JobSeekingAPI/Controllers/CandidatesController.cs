@@ -57,25 +57,22 @@ namespace JobSeekingAPI.Controllers
         [HttpPut("me")]
         public async Task<IActionResult> UpdateCandidateProfile([FromBody] UpdateCandidateDTO dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             int userId = User.GetUserIdFromToken();
             var existingCandidate = await _candidateRepo.GetCandidateEntityByIdAsync(userId);
             if (existingCandidate == null)
                 return NotFound(new { message = "Candidate not found" });
 
-//             if (existingCandidate.User != null)
-//             {
-//                 existingCandidate.User.FullName = dto.FullName ?? existingCandidate.User.FullName;
-//                 existingCandidate.User.Avatar = dto.Avatar ?? existingCandidate.User.Avatar;
-//             }
+            if (existingCandidate.User != null)
+            {
+                existingCandidate.User.FullName = dto.FullName ?? existingCandidate.User.FullName;
+                existingCandidate.User.Avatar = dto.Avatar ?? existingCandidate.User.Avatar;
+            }
 
-//             existingCandidate.Gender = dto.Gender ?? existingCandidate.Gender;
-//             existingCandidate.Birthday = dto.Birthday ?? existingCandidate.Birthday;
-//             existingCandidate.Phone = dto.Phone ?? existingCandidate.Phone;
-//             existingCandidate.Address = dto.Address ?? existingCandidate.Address;
-//             existingCandidate.CVUrl = dto.CVUrl ?? existingCandidate.CVUrl;
+            existingCandidate.Gender = dto.Gender ?? existingCandidate.Gender;
+            existingCandidate.Birthday = dto.Birthday ?? existingCandidate.Birthday;
+            existingCandidate.Phone = dto.Phone ?? existingCandidate.Phone;
+            existingCandidate.Address = dto.Address ?? existingCandidate.Address;
+            existingCandidate.CVUrl = dto.CVUrl ?? existingCandidate.CVUrl;
 
             await _candidateRepo.UpdateAsync(existingCandidate);
 
@@ -85,8 +82,8 @@ namespace JobSeekingAPI.Controllers
                 await _candidateRepo.UpdateCandidateTagsAsync(userId, dto.Tags);
             }
 
-//             return Ok(new { message = "Candidate profile updated successfully." });
-//         }
+            return Ok(new { message = "Candidate profile updated successfully." });
+        }
 
         // GET: api/candidates/search
         [Authorize(Roles = "Admin, Recruiter")]
@@ -126,7 +123,7 @@ namespace JobSeekingAPI.Controllers
                 Description = dto.Description
             };
             var created = await _experienceRepo.AddExperienceAsync(experience);
-            return CreatedAtAction(nameof(GetExperiences), new { id = userId } , MapExperienceToDTO(created));
+            return CreatedAtAction(nameof(GetExperiences), new { id = userId }, MapExperienceToDTO(created));
         }
 
         // PUT: api/candidates/me/experiences/{expId}
@@ -135,7 +132,7 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> UpdateExperience(int expId, [FromBody] UpdateExperienceDTO dto)
         {
             int userId = User.GetUserIdFromToken();
-            if (userId != dto.UserId) 
+            if (userId != dto.UserId)
                 return BadRequest("User ID mismatch.");
             var existing = await _experienceRepo.GetExperienceByIdAsync(expId);
             if (existing == null || existing.UserId != userId)
@@ -169,7 +166,8 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> GetCandidateSkills(int id)
         {
             var skills = await _candidateRepo.GetTagsByCandidateIdAsync(id);
-            var dtos = skills.Select(s => new {
+            var dtos = skills.Select(s => new
+            {
                 s.TagId,
                 TagName = s.Tag?.TagName,
                 s.Proficiency
@@ -188,22 +186,22 @@ namespace JobSeekingAPI.Controllers
         }
 
 
-//         // === Private Mapping Methods ===
-//         private CandidateDetailDTO MapToDetailDTO(Candidate c)
-//         {
-//             return new CandidateDetailDTO
-//             {
-//                 UserId = c.UserId,
-//                 FullName = c.User?.FullName ?? "",
-//                 Gender = c.Gender,
-//                 Birthday = c.Birthday,
-//                 Phone = c.Phone,
-//                 Address = c.Address,
-//                 CVUrl = c.CVUrl,
-//                 Skills = c.CandidateTags.Select(ct => ct.Tag?.TagName ?? "").ToList(),
-//                 Experiences = c.Experiences.Select(e => MapExperienceToDTO(e)).ToList()
-//             };
-//         }
+        // === Private Mapping Methods ===
+        private CandidateDetailDTO MapToDetailDTO(Candidate c)
+        {
+            return new CandidateDetailDTO
+            {
+                UserId = c.UserId,
+                FullName = c.User?.FullName ?? "",
+                Gender = c.Gender,
+                Birthday = c.Birthday,
+                Phone = c.Phone,
+                Address = c.Address,
+                CVUrl = c.CVUrl,
+                Skills = c.CandidateTags.Select(ct => ct.Tag?.TagName ?? "").ToList(),
+                Experiences = c.Experiences.Select(e => MapExperienceToDTO(e)).ToList()
+            };
+        }
 
         private ExperienceDetailDTO MapExperienceToDTO(Experience e)
         {

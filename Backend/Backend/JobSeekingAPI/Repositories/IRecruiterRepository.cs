@@ -1,5 +1,4 @@
-﻿using JobSeekingAPI.DTOs;
-using JobSeekingAPI.Models;
+﻿using JobSeekingAPI.Models;
 
 namespace JobSeekingAPI.Repositories
 {
