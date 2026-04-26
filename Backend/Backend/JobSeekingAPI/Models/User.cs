@@ -10,15 +10,14 @@ namespace JobSeekingAPI.Models
         [Required]
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
-
-        public string Password { get; set; } = string.Empty;  // Đổi từ PasswordHash thành Password
+        public string Password { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;      // Candidate, Recruiter, Admin
         
         public string FullName { get; set; } = string.Empty;
         public string? Avatar { get; set; }
         
         public DateTime? DeletedAt { get; set; }              // Soft delete
-        public DateTime? LastLogin { get; set; }              // Thêm LastLogin
+        public DateTime? LastLogin { get; set; }
         
         // Navigation properties
         public Candidate? Candidate { get; set; }

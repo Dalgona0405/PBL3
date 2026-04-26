@@ -37,7 +37,8 @@ namespace JobSeekingAPI.Controllers
             return Ok(location);
         }
 
-        // POST: api/locations[Authorize(Roles = "Admin")]
+        // POST: api/locations
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateLocation([FromBody] CreateLocationDTO dto)
         {
@@ -56,7 +57,8 @@ namespace JobSeekingAPI.Controllers
             });
         }
 
-        // PUT: api/locations/{id}[Authorize(Roles = "Admin")]
+        // PUT: api/locations/{id}
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateLocation(int id, [FromBody] UpdateLocationDTO dto)
         {

@@ -1,12 +1,23 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace JobSeekingAPI.DTOs
 {
     // Đăng ký User mới
     public class CreateUserDTO
     {
+        [Required]
+        [EmailAddress]
         public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [MinLength(6)]
         public string Password { get; set; } = string.Empty;
+
+        [Required]
         public string FullName { get; set; } = string.Empty;
+        [RegularExpression("^(Candidate|Recruiter)$", ErrorMessage = "Role just can be Candidate or Recruiter")]
         public string Role { get; set; } = "Candidate";
+
         public string? Avatar { get; set; }
     }
 

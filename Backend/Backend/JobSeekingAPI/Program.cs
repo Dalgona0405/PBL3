@@ -1,5 +1,4 @@
 using JobSeekingAPI.Data;
-using JobSeekingAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -53,22 +52,27 @@ if (string.IsNullOrWhiteSpace(jwtKey))
 
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options => {
-        options.TokenValidationParameters = new TokenValidationParameters {
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
             ValidateIssuer = false,
+            ValidIssuer = "JobSeekingAPI",
             ValidateAudience = false,
+            ValidAudience = "JobSeekingClient",
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = signingKey,
-            RoleClaimType = ClaimTypes.Role
+            RoleClaimType = ClaimTypes.Role,
+            ClockSkew = TimeSpan.FromMinutes(30)
         };
     });
 
 // Swagger Configuration
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
         Title = "JobSeeking API",
         Version = "v1",
         Description = "Hệ thống môi giới và gợi ý việc làm",
@@ -86,19 +90,20 @@ builder.Services.AddSwaggerGen(c =>
     });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Nhập 'Bearer [space] {token của bạn}'",
+        Description = "Copy and paste your JWT Token into the field below",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement {
         {
             new OpenApiSecurityScheme {
-                Reference = new OpenApiReference 
-                { 
-                    Type = ReferenceType.SecurityScheme, 
-                    Id = "Bearer" 
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
                 }
             },
             new string[] { }
@@ -114,7 +119,9 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-} else {
+}
+else
+{
     app.UseHttpsRedirection();
 }
 
