@@ -4,12 +4,13 @@ const BASE_URL = 'http://localhost:5000/api';
 export const API_URLS = {
     JOBS: `${BASE_URL}/jobs`,
     COMPANIES: `${BASE_URL}/companies`,
-    SEARCH: `${BASE_URL}/search/jobs`,
+    SEARCH: `${BASE_URL}/jobs/search`, 
     USERS: `${BASE_URL}/users`,
-    LOGIN: `${BASE_URL}/users/login`,
+    REGISTER: `${BASE_URL}/auth/register`, 
+    LOGIN: `${BASE_URL}/auth/login`, 
     APPLICATIONS: `${BASE_URL}/applications`,
     TAGS: `${BASE_URL}/tags`,
-    CANDIDATE_TAGS: `${BASE_URL}/candidatetags`,
+    CANDIDATE_TAGS: `${BASE_URL}/candidates/me/skills`, 
     CANDIDATE: `${BASE_URL}/candidates`,
     RECRUITERS: `${BASE_URL}/recruiters`,
     LOCATION: `${BASE_URL}/locations`
