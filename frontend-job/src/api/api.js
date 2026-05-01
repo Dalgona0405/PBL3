@@ -13,7 +13,8 @@ export const API_URLS = {
     CANDIDATE_TAGS: `${BASE_URL}/candidates/me/skills`, 
     CANDIDATE: `${BASE_URL}/candidates`,
     RECRUITERS: `${BASE_URL}/recruiters`,
-    LOCATION: `${BASE_URL}/locations`
+    LOCATION: `${BASE_URL}/locations`,
+    COMPANY_REQUESTS: `${BASE_URL}/companyrequests`
 };
 
 //

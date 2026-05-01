@@ -37,7 +37,7 @@ namespace JobSeekingAPI.Controllers
             var recruiter = await _recruiterRepository.GetRecruiterDetailByIdAsync(id);
             if (recruiter == null)
                 return NotFound(new { message = "Recruiter not found" });
-            return Ok(recruiter);
+            return Ok(MapToDTO(recruiter));
         }
 
         // GET: api/recruiters/company/{companyId}
@@ -77,13 +77,6 @@ namespace JobSeekingAPI.Controllers
 
             // Update Recruiter
             existingRecruiter.Position = dto.Position ?? existingRecruiter.Position;
-
-            if (dto.CompanyId.HasValue && dto.CompanyId != existingRecruiter.CompanyId)
-            {
-                var companyExists = await _companyRepository.GetByIdAsync(dto.CompanyId.Value);
-                if (companyExists == null) return BadRequest(new { message = "New company does not exist!" });
-                existingRecruiter.CompanyId = dto.CompanyId.Value;
-            }
 
             await _recruiterRepository.UpdateAsync(existingRecruiter);
             return Ok(new { message = "Update success" });

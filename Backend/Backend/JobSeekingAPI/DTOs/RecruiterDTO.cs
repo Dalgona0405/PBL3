@@ -11,7 +11,6 @@ namespace JobSeekingAPI.DTOs
     // Cập nhật NTD
     public class UpdateRecruiterDTO
     {
-        public int? CompanyId { get; set; }
         public string? Position { get; set; }
         public string? FullName { get; set; }
         public string? Avatar { get; set; }

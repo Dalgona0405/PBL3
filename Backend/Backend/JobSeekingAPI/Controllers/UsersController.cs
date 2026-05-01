@@ -165,6 +165,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/users/profile
+        [Authorize]
         [HttpGet("profile")]
         public async Task<IActionResult> GetCurrentUserProfile()
         {

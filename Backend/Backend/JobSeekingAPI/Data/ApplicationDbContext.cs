@@ -21,6 +21,7 @@ namespace JobSeekingAPI.Data
         public DbSet<CandidateTag> CandidateTags { get; set; }
         public DbSet<Application> Applications { get; set; }
         public DbSet<Experience> Experiences { get; set; }
+        public DbSet<CompanyJoinRequest> CompanyJoinRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
