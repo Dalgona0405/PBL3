@@ -30,6 +30,12 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>(); // TẠM THỜI COMMENT - CHỜ FIX SAU Graph AI & Dashboard Stats
 builder.Services.AddScoped<IReportService, ReportService>(); // TẠM THỜI COMMENT - CHỜ FIX SAU Graph AI & Dashboard Stats
 
+// Đăng ký HttpClient để C# có thể gửi request đi các server khác (như server Python)
+builder.Services.AddHttpClient();
+
+// test
+// builder.Services.AddHostedService<JobSeekingAPI.Workers.AISuggestionWorker>();
+
 // Database Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -124,7 +130,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseHttpsRedirection();
+    //app.UseHttpsRedirection();
 }
 
 app.UseCors("AllowReactApp");

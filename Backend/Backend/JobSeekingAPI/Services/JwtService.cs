@@ -19,7 +19,7 @@ namespace JobSeekingAPI.Services
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var keyString = _configuration.GetValue<string>("Jwt:SecretKey")
-                         ?? _configuration.GetValue<string>("Logging:Jwt:SecretKey");
+                        ?? _configuration.GetValue<string>("Logging:Jwt:SecretKey");
             var key = Encoding.UTF8.GetBytes(keyString);
 
             var claims = new List<Claim>
