@@ -1,5 +1,5 @@
-
-using System.ComponentModel.DataAnnotations;  
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace JobSeekingAPI.Models
 {
@@ -36,5 +36,7 @@ namespace JobSeekingAPI.Models
         public Location? Location { get; set; }
         public ICollection<JobTag> JobTags { get; set; } = new List<JobTag>();
         public ICollection<Application> Applications { get; set; } = new List<Application>();
+        [NotMapped]
+        public object CategoryId { get; internal set; }
     }
 }

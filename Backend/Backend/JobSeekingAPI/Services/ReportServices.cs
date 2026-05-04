@@ -101,45 +101,54 @@ namespace JobSeekingAPI.Services
 
         public async Task<object> GetSkillsGraphAsync(int nodeLimit)
         {
-            // Bước 1: Lấy các Nodes (Kỹ năng) có sức ảnh hưởng nhất
+            // Bước 1: Lấy các Nodes như cũ
             var nodes = await _context.Tags
                 .Select(t => new GraphNodeDTO(
-                    t.TagId,
-                    t.TagName,
-                    t.Type ?? "Skill",
-                    t.JobTags.Count + t.CandidateTags.Count
-                ))
+                    t.TagId, t.TagName, t.Type ?? "Skill", t.JobTags.Count + t.CandidateTags.Count))
                 .OrderByDescending(n => n.Size)
                 .Take(nodeLimit)
                 .ToListAsync();
 
             var nodeIds = nodes.Select(n => n.Id).ToList();
 
-            // Bước 2: Lấy dữ liệu các Job và danh sách Tag đi kèm để tính Edges (Cạnh)
+            // Bước 2: Nhóm các Tag theo JobId
             var jobSkillGroups = await _context.JobTags
                 .Where(jt => nodeIds.Contains(jt.TagId))
                 .GroupBy(jt => jt.JobId)
                 .Select(g => g.Select(jt => jt.TagId).ToList())
                 .ToListAsync();
 
-            var edges = new List<GraphEdgeDTO>();
-            // Thuật toán Graph AI: Tìm sự tương quan giữa các cặp kỹ năng
-            for (int i = 0; i < nodes.Count; i++)
+            // Bước 3: Thuật toán O(N) dùng Dictionary (Copy ý tưởng cực hay từ Controller của bạn)
+            var edgeCounts = new Dictionary<(int, int), int>();
+
+            foreach (var tagIds in jobSkillGroups)
             {
-                for (int j = i + 1; j < nodes.Count; j++)
+                var sortedTags = tagIds.Distinct().ToList(); // Đảm bảo không trùng Tag trong 1 Job
+                
+                for (int i = 0; i < sortedTags.Count; i++)
                 {
-                    int weight = jobSkillGroups.Count(g => g.Contains(nodes[i].Id) && g.Contains(nodes[j].Id));
-                    if (weight > 0)
+                    for (int j = i + 1; j < sortedTags.Count; j++)
                     {
-                        edges.Add(new GraphEdgeDTO(
-                            nodes[i].Id, 
-                            nodes[j].Id, 
-                            weight, 
-                            Math.Round((double)weight / jobSkillGroups.Count, 4) // Độ mạnh liên kết
-                        ));
+                        // Luôn quy định Key = (Id nhỏ, Id lớn) để A-B và B-A tính là 1
+                        var key = (Math.Min(sortedTags[i], sortedTags[j]), Math.Max(sortedTags[i], sortedTags[j]));
+                        
+                        if (!edgeCounts.ContainsKey(key))
+                            edgeCounts[key] = 0;
+                        edgeCounts[key]++;
                     }
                 }
             }
+
+            var edges = edgeCounts
+                .Select(x => new GraphEdgeDTO(
+                    x.Key.Item1, 
+                    x.Key.Item2, 
+                    x.Value, 
+                    Math.Round((double)x.Value / jobSkillGroups.Count * 100, 2)
+                ))
+                .OrderByDescending(x => x.Value)
+                .ToList();
+
             return new { nodes, edges };
         }
 

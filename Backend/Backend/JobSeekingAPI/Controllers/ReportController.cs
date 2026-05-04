@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Services;
+using System.Net.NetworkInformation;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -103,82 +104,94 @@ namespace JobSeekingAPI.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetSkillsGraph([FromQuery] int limit = 30)
         {
+            // try
+            // {
+            //     // Lấy danh sách các Tag phổ biến nhất làm Nodes
+            //     var popularTagIds = await _context.JobTags
+            //         .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
+            //         .GroupBy(jt => jt.TagId)
+            //         .OrderByDescending(g => g.Count())
+            //         .Select(g => g.Key)
+            //         .Take(limit)
+            //         .ToListAsync();
+
+            //     var nodes = await _context.Tags
+            //         .Where(t => popularTagIds.Contains(t.TagId))
+            //         .Select(t => new
+            //         {
+            //             id = t.TagId,
+            //             label = t.TagName,
+            //             group = t.Type ?? "general",
+            //             size = t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null)
+            //         })
+            //         .ToListAsync();
+
+            //     if (!nodes.Any())
+            //     {
+            //         return Ok(new { nodes = new List<object>(), edges = new List<object>() });
+            //     }
+
+            //     // Lấy tất cả các cặp Job-Tag để tính edges
+            //     var jobTagLookup = await _context.JobTags
+            //         .Where(jt => jt.Job != null
+            //             && jt.Job.DeletedAt == null
+            //             && popularTagIds.Contains(jt.TagId))
+            //         .GroupBy(jt => jt.JobId)
+            //         .Select(g => g.Select(x => x.TagId).ToList())
+            //         .ToListAsync();
+
+            //     // Tạo Dictionary để đếm cặp hiệu quả hơn
+            //     var edgeCounts = new Dictionary<(int, int), int>();
+
+            //     foreach (var tagIds in jobTagLookup)
+            //     {
+            //         var sortedTags = tagIds.Where(id => popularTagIds.Contains(id)).Distinct().ToList();
+
+            //         for (int i = 0; i < sortedTags.Count; i++)
+            //         {
+            //             for (int j = i + 1; j < sortedTags.Count; j++)
+            //             {
+            //                 var key = (Math.Min(sortedTags[i], sortedTags[j]),
+            //                         Math.Max(sortedTags[i], sortedTags[j]));
+
+            //                 edgeCounts.TryAdd(key, 0);
+            //                 edgeCounts[key]++;
+            //             }
+            //         }
+            //     }
+
+            //     // Tạo edges từ dictionary
+            //     var edges = edgeCounts
+            //         .Where(x => x.Value > 1) // Chỉ lấy các cặp xuất hiện từ 2 lần trở lên
+            //         .Select(x => new
+            //         {
+            //             from = x.Key.Item1,
+            //             to = x.Key.Item2,
+            //             value = x.Value,
+            //             strength = Math.Round((double)x.Value / jobTagLookup.Count * 100, 2)
+            //         })
+            //         .OrderByDescending(x => x.value)
+            //         .Take(50) // Giới hạn số lượng edges
+            //         .ToList();
+
+            //     return Ok(new { nodes, edges });
+            // }
+            // catch (Exception ex)
+            // {
+            //     _logger.LogError(ex, "Error generating skills graph");
+            //     return StatusCode(500, new { message = "An error occurred while generating skills graph" });
+            // }
+
             try
             {
-                // Lấy danh sách các Tag phổ biến nhất làm Nodes
-                var popularTagIds = await _context.JobTags
-                    .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
-                    .GroupBy(jt => jt.TagId)
-                    .OrderByDescending(g => g.Count())
-                    .Select(g => g.Key)
-                    .Take(limit)
-                    .ToListAsync();
-
-                var nodes = await _context.Tags
-                    .Where(t => popularTagIds.Contains(t.TagId))
-                    .Select(t => new
-                    {
-                        id = t.TagId,
-                        label = t.TagName,
-                        group = t.Type ?? "general",
-                        size = t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null)
-                    })
-                    .ToListAsync();
-
-                if (!nodes.Any())
-                {
-                    return Ok(new { nodes = new List<object>(), edges = new List<object>() });
-                }
-
-                // Lấy tất cả các cặp Job-Tag để tính edges
-                var jobTagLookup = await _context.JobTags
-                    .Where(jt => jt.Job != null
-                        && jt.Job.DeletedAt == null
-                        && popularTagIds.Contains(jt.TagId))
-                    .GroupBy(jt => jt.JobId)
-                    .Select(g => g.Select(x => x.TagId).ToList())
-                    .ToListAsync();
-
-                // Tạo Dictionary để đếm cặp hiệu quả hơn
-                var edgeCounts = new Dictionary<(int, int), int>();
-
-                foreach (var tagIds in jobTagLookup)
-                {
-                    var sortedTags = tagIds.Where(id => popularTagIds.Contains(id)).Distinct().ToList();
-
-                    for (int i = 0; i < sortedTags.Count; i++)
-                    {
-                        for (int j = i + 1; j < sortedTags.Count; j++)
-                        {
-                            var key = (Math.Min(sortedTags[i], sortedTags[j]),
-                                      Math.Max(sortedTags[i], sortedTags[j]));
-
-                            edgeCounts.TryAdd(key, 0);
-                            edgeCounts[key]++;
-                        }
-                    }
-                }
-
-                // Tạo edges từ dictionary
-                var edges = edgeCounts
-                    .Where(x => x.Value > 1) // Chỉ lấy các cặp xuất hiện từ 2 lần trở lên
-                    .Select(x => new
-                    {
-                        from = x.Key.Item1,
-                        to = x.Key.Item2,
-                        value = x.Value,
-                        strength = Math.Round((double)x.Value / jobTagLookup.Count * 100, 2)
-                    })
-                    .OrderByDescending(x => x.value)
-                    .Take(50) // Giới hạn số lượng edges
-                    .ToList();
-
-                return Ok(new { nodes, edges });
+                // 
+                var graphData = await _reportService.GetSkillsGraphAsync(limit);
+                return Ok(graphData);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating skills graph");
-                return StatusCode(500, new { message = "An error occurred while generating skills graph" });
+                return StatusCode(500, new { message = "An error occurred while generating skills graph : " + ex.Message });
             }
         }
 
@@ -197,13 +210,14 @@ namespace JobSeekingAPI.Controllers
                 var startOfMonth = new DateTime(today.Year, today.Month, 1);
                 var startOfYear = new DateTime(today.Year, 1, 1);
 
-                // Sử dụng Task.WhenAll để chạy song song các truy vấn
-                var totalJobsTask = _context.Jobs.CountAsync(j => j.DeletedAt == null);
-                var totalCandidatesTask = _context.Candidates.CountAsync(c => c.User != null && c.User.DeletedAt == null);
-                var totalCompaniesTask = _context.Companies.CountAsync(c => c.DeletedAt == null);
-                var totalRecruitersTask = _context.Recruiters.CountAsync(r => r.User != null && r.User.DeletedAt == null);
+                // 1. Thực hiện từng câu lệnh await. 
+                // EF Core sẽ tự động tối ưu hóa các lệnh này, không cần chạy song song.
+                var totalJobs = await _context.Jobs.CountAsync(j => j.DeletedAt == null);
+                var totalCandidates = await _context.Candidates.CountAsync(c => c.User != null && c.User.DeletedAt == null);
+                var totalCompanies = await _context.Companies.CountAsync(c => c.DeletedAt == null);
+                var totalRecruiters = await _context.Recruiters.CountAsync(r => r.User != null && r.User.DeletedAt == null);
 
-                var applicationsTask = _context.Applications
+                var apps = await _context.Applications
                     .Where(a => a.DeletedAt == null)
                     .GroupBy(a => 1)
                     .Select(g => new
@@ -213,9 +227,9 @@ namespace JobSeekingAPI.Controllers
                         ThisMonth = g.Count(a => a.AppliedDate >= startOfMonth),
                         ThisYear = g.Count(a => a.AppliedDate >= startOfYear)
                     })
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync() ?? new { Total = 0, ThisWeek = 0, ThisMonth = 0, ThisYear = 0 };
 
-                var jobsByStatusTask = _context.Jobs
+                var status = await _context.Jobs
                     .Where(j => j.DeletedAt == null)
                     .GroupBy(j => 1)
                     .Select(g => new
@@ -224,34 +238,18 @@ namespace JobSeekingAPI.Controllers
                         Expired = g.Count(j => j.Deadline < today),
                         Total = g.Count()
                     })
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync() ?? new { Active = 0, Expired = 0, Total = 0 };
 
-                // Chờ tất cả tasks hoàn thành
-                await Task.WhenAll(
-                    totalJobsTask,
-                    totalCandidatesTask,
-                    totalCompaniesTask,
-                    totalRecruitersTask,
-                    applicationsTask,
-                    jobsByStatusTask
-                );
-
+                // 2. Tính toán kết quả
                 var stats = new
                 {
-                    TotalJobs = await totalJobsTask,
-                    TotalCandidates = await totalCandidatesTask,
-                    TotalCompanies = await totalCompaniesTask,
-                    TotalRecruiters = await totalRecruitersTask,
-
-                    Applications = await applicationsTask ?? new { Total = 0, ThisWeek = 0, ThisMonth = 0, ThisYear = 0 },
-
-                    JobsByStatus = await jobsByStatusTask ?? new { Active = 0, Expired = 0, Total = 0 },
-
-                    // Tính tỷ lệ
-                    ApplicationRate = await totalJobsTask > 0
-                        ? Math.Round((double)(await applicationsTask)?.Total / (await totalJobsTask) * 100, 2)
-                        : 0,
-
+                    TotalJobs = totalJobs,
+                    TotalCandidates = totalCandidates,
+                    TotalCompanies = totalCompanies,
+                    TotalRecruiters = totalRecruiters,
+                    Applications = apps,
+                    JobsByStatus = status,
+                    ApplicationRate = totalJobs > 0 ? Math.Round((double)apps.Total / totalJobs * 100, 2) : 0,
                     LastUpdated = DateTime.UtcNow
                 };
 
@@ -260,7 +258,7 @@ namespace JobSeekingAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting dashboard summary");
-                return StatusCode(500, new { message = "An error occurred while fetching dashboard summary" });
+                return StatusCode(500, new { message = "An error occurred while fetching dashboard summary: " + ex.Message });
             }
         }
 
