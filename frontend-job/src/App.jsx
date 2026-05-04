@@ -9,6 +9,8 @@ import DetailCompanyPage from "./pages/DetailCompanyPage";
 import ProfilePage from "./pages/ProfilePage";
 import HistoryAppliedPage from "./pages/HistoryAppliedPage";
 import RecruiterDashboardPage from "./pages/RecruiterDashboardPage";
+import JobApplicationsPage from "./pages/JobApplicationsPage";
+import JobFormPage from "./pages/JobFormPage";
 
 function App() {
   const [user, setUser] = useState(() => {
@@ -28,11 +30,14 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/detail-job/:id" element={<DetailJobPage />} />
           <Route path="/detail-company/:id" element={<DetailCompanyPage />} />
-          
+
           {/* Các trang cần đăng nhập */}
           <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
           <Route path="/history-applied" element={user ? <HistoryAppliedPage /> : <Navigate to="/login" />} />
           <Route path="/recruiter-dashboard" element={user?.role === 'Recruiter' ? <RecruiterDashboardPage /> : <Navigate to="/login" />} />
+          <Route path="/recruiter/jobs/:jobId/applications" element={user?.role === 'Recruiter' ? <JobApplicationsPage /> : <Navigate to="/login" />} />
+          <Route path="/recruiter/jobs/create" element={user?.role === 'Recruiter' ? <JobFormPage /> : <Navigate to="/login" />} />
+          <Route path="/recruiter/jobs/edit/:jobId" element={user?.role === 'Recruiter' ? <JobFormPage /> : <Navigate to="/login" />} />
         </Route>
 
         {/* Bắt lỗi 404 */}
