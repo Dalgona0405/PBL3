@@ -4,7 +4,7 @@ using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Data; // Thêm dòng này để dùng ApplicationDbContext
 using Microsoft.EntityFrameworkCore; // Thêm dòng này để dùng ToListAsync
 using System.Net.Http.Json; // Thêm dòng này để dùng PostAsJsonAsync
-
+using Microsoft.Extensions.Caching.Memory; // Thêm dòng này để dùng IMemoryCache
 namespace JobSeekingAPI.Controllers
 {
     [Route("api/[controller]")]
@@ -12,7 +12,7 @@ namespace JobSeekingAPI.Controllers
     public class StatisticsController : ControllerBase
     {
         private readonly IStatisticsService _statsService;
-        
+        private readonly IMemoryCache _cache;
         // 1. Khai báo thêm 2 biến này
         private readonly ApplicationDbContext _context;
         private readonly HttpClient _httpClient;
@@ -20,12 +20,14 @@ namespace JobSeekingAPI.Controllers
         // 2. Tiêm (Inject) chúng vào Constructor
         public StatisticsController(
             IStatisticsService statsService, 
+            IMemoryCache cache,
             ApplicationDbContext context, 
             HttpClient httpClient)
         {
             _statsService = statsService;
             _context = context;
             _httpClient = httpClient;
+            _cache = cache;
         }
 
         [HttpGet("dashboard")]
@@ -47,34 +49,16 @@ namespace JobSeekingAPI.Controllers
 
         // Đoạn code GetSalaryChartFromAI của bạn để ở dưới này là sẽ hết báo lỗi đỏ!
         [HttpGet("salary-chart-from-ai")]
-        public async Task<IActionResult> GetSalaryChartFromAI()
+        public IActionResult GetSalaryChart()
         {
-            try
+            // Lấy dữ liệu đã được Worker chuẩn bị sẵn trong RAM
+            if (_cache.TryGetValue("CachedSalaryChart", out object chartData))
             {
-                var rawSalaries = await _context.Jobs
-                    .Where(j => j.DeletedAt == null && j.Status == 1)
-                    .Select(j => new 
-                    { 
-                        salary_min = j.SalaryMin ?? 0, 
-                        salary_max = j.SalaryMax ?? 0 
-                    })
-                    .ToListAsync();
-
-                var payload = new { jobs = rawSalaries };
-                var response = await _httpClient.PostAsJsonAsync("http://localhost:8000/api/analytics/salary-chart", payload);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var chartResult = await response.Content.ReadFromJsonAsync<object>();
-                    return Ok(chartResult);
-                }
-
-                return StatusCode((int)response.StatusCode, "Python Service từ chối xử lý dữ liệu.");
+                return Ok(chartData);
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Lỗi kết nối C# đến Python: " + ex.Message);
-            }
+
+            // Nếu lúc mới bật máy mà Worker chưa kịp chạy xong
+            return Ok(new { message = "Dữ liệu đang được AI xử lý ngầm, vui lòng quay lại sau." });
         }
     }
 }

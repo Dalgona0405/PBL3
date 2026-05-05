@@ -22,8 +22,6 @@ namespace JobSeekingAPI.Data
         public DbSet<Application> Applications { get; set; }
         public DbSet<Experience> Experiences { get; set; }
         public DbSet<CompanyJoinRequest> CompanyJoinRequests { get; set; }
-        public DbSet<SkillSuggestion> SkillSuggestions { get; set; } // Thêm DbSet cho SkillSuggestion
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

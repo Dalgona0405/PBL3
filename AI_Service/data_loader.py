@@ -17,7 +17,7 @@ def fetch_and_process_data(api_url="http://localhost:5000/api/reports/graph-skil
         idx_to_name = {}
         
         for idx, node in enumerate(raw_nodes):
-            sql_id = node['id']
+            sql_id = node.get('id') or node.get("Id")
             sql_to_idx[sql_id] = idx
             idx_to_sql[idx] = sql_id
             idx_to_name[idx] = node.get('label', f"Skill_{sql_id}")

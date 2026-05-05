@@ -11,6 +11,8 @@ using System.Security.Claims;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddMemoryCache();
+builder.Services.AddHostedService<SalaryAnalyticsWorker>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -33,8 +35,6 @@ builder.Services.AddScoped<IReportService, ReportService>(); // TẠM THỜI COM
 // Đăng ký HttpClient để C# có thể gửi request đi các server khác (như server Python)
 builder.Services.AddHttpClient();
 
-// test
-// builder.Services.AddHostedService<JobSeekingAPI.Workers.AISuggestionWorker>();
 
 // Database Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

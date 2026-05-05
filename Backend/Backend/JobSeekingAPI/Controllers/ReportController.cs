@@ -181,17 +181,62 @@ namespace JobSeekingAPI.Controllers
             //     _logger.LogError(ex, "Error generating skills graph");
             //     return StatusCode(500, new { message = "An error occurred while generating skills graph" });
             // }
+            // đang fix bug GNN
+            // try
+            // {
+            //     // 
+            //     var graphData = await _reportService.GetSkillsGraphAsync(limit);
+            //     return Ok(graphData);
+            // }
+            // catch (Exception ex)
+            // {
+            //     _logger.LogError(ex, "Error generating skills graph");
+            //     return StatusCode(500, new { message = "An error occurred while generating skills graph : " + ex.Message });
+            // }
 
             try
             {
-                // 
-                var graphData = await _reportService.GetSkillsGraphAsync(limit);
-                return Ok(graphData);
+                // 1. Lấy Nodes từ bảng Tags đã có sẵn
+                var nodes = await _context.Tags
+                    .Select(t => new
+                    {
+                        id = t.TagId,
+                        label = t.TagName
+                    })
+                    .Take(limit)
+                    .ToListAsync();
+
+                // 2. Lấy Edges bằng cách tìm các Tag xuất hiện cùng nhau trong một Job
+                // Chúng ta sử dụng bảng JobTags hiện có để tạo mối quan hệ
+                var jobGroups = await _context.JobTags
+                    .GroupBy(jt => jt.JobId)
+                    .Select(g => g.Select(x => x.TagId).ToList())
+                    .ToListAsync();
+
+                var edges = new List<object>();
+                var edgeTracker = new HashSet<(int, int)>();
+
+                foreach (var tagIds in jobGroups)
+                {
+                    for (int i = 0; i < tagIds.Count; i++)
+                    {
+                        for (int j = i + 1; j < tagIds.Count; j++)
+                        {
+                            var pair = (Math.Min(tagIds[i], tagIds[j]), Math.Max(tagIds[i], tagIds[j]));
+                            if (!edgeTracker.Contains(pair))
+                            {
+                                edgeTracker.Add(pair);
+                                edges.Add(new { from = pair.Item1, to = pair.Item2 });
+                            }
+                        }
+                    }
+                }
+
+                return Ok(new { nodes, edges });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating skills graph");
-                return StatusCode(500, new { message = "An error occurred while generating skills graph : " + ex.Message });
+                return StatusCode(500, new { message = "Lỗi trích xuất đồ thị: " + ex.Message });
             }
         }
 
@@ -372,41 +417,41 @@ namespace JobSeekingAPI.Controllers
         /// <summary>
         /// 6. Thống kê theo ngành nghề (Job Categories)
         /// </summary>
-        [HttpGet("job-categories")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetJobCategories()
-        {
-            try
-            {
-                var categories = await _context.Tags
-                    .Where(t => t.Type == "job_category" || t.Type == "industry")
-                    .Select(t => new
-                    {
-                        CategoryId = t.TagId,
-                        CategoryName = t.TagName,
-                        JobCount = t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
-                        AverageSalary = t.JobTags
-                            .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
-                            .Average(jt => (jt.Job!.SalaryMin + jt.Job!.SalaryMax) / 2 ?? 0),
-                        TopCompanies = t.JobTags
-                            .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
-                            .Select(jt => jt.Job!.Company!.CompanyName)
-                            .Distinct()
-                            .Take(5)
-                            .ToList()
-                    })
-                    .OrderByDescending(x => x.JobCount)
-                    .ToListAsync();
+        // [HttpGet("job-categories")]
+        // [ProducesResponseType(StatusCodes.Status200OK)]
+        // [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        // public async Task<IActionResult> GetJobCategories()
+        // {
+        //     try
+        //     {
+        //         var categories = await _context.Tags
+        //             .Where(t => t.Type == "job_category" || t.Type == "industry")
+        //             .Select(t => new
+        //             {
+        //                 CategoryId = t.TagId,
+        //                 CategoryName = t.TagName,
+        //                 JobCount = t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
+        //                 AverageSalary = t.JobTags
+        //                     .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
+        //                     .Average(jt => (jt.Job!.SalaryMin + jt.Job!.SalaryMax) / 2 ?? 0),
+        //                 TopCompanies = t.JobTags
+        //                     .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
+        //                     .Select(jt => jt.Job!.Company!.CompanyName)
+        //                     .Distinct()
+        //                     .Take(5)
+        //                     .ToList()
+        //             })
+        //             .OrderByDescending(x => x.JobCount)
+        //             .ToListAsync();
 
-                return Ok(categories);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting job categories");
-                return StatusCode(500, new { message = "An error occurred while fetching job categories" });
-            }
-        }
+        //         return Ok(categories);
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Error getting job categories");
+        //         return StatusCode(500, new { message = "An error occurred while fetching job categories" });
+        //     }
+        // }
 
         /// <summary>
         /// 7. Top nhà tuyển dụng (Companies) tích cực nhất

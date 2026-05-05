@@ -101,57 +101,103 @@ namespace JobSeekingAPI.Services
 
         public async Task<object> GetSkillsGraphAsync(int nodeLimit)
         {
-            // Bước 1: Lấy các Nodes như cũ
-            var nodes = await _context.Tags
+            // =========================
+            // BƯỚC 1: LẤY DATA THÔ (DB)
+            // =========================
+            var rawTags = await _context.Tags
+                .Select(t => new
+                {
+                    t.TagId,
+                    t.TagName,
+                    t.Type,
+                    JobCount = t.JobTags.Count(),
+                    CandidateCount = t.CandidateTags.Count()
+                })
+                .ToListAsync();
+
+            // =========================
+            // BƯỚC 2: TẠO NODES (RAM)
+            // =========================
+            var nodes = rawTags
                 .Select(t => new GraphNodeDTO(
-                    t.TagId, t.TagName, t.Type ?? "Skill", t.JobTags.Count + t.CandidateTags.Count))
+                    t.TagId,
+                    t.TagName,
+                    t.Type ?? "Skill",
+                    t.JobCount + t.CandidateCount
+                ))
                 .OrderByDescending(n => n.Size)
                 .Take(nodeLimit)
-                .ToListAsync();
+                .ToList();
 
             var nodeIds = nodes.Select(n => n.Id).ToList();
 
-            // Bước 2: Nhóm các Tag theo JobId
+            if (!nodeIds.Any())
+            {
+                return new { nodes = new List<object>(), edges = new List<object>() };
+            }
+
+            // =========================
+            // BƯỚC 3: LẤY JOB-TAG GROUPS
+            // =========================
             var jobSkillGroups = await _context.JobTags
                 .Where(jt => nodeIds.Contains(jt.TagId))
                 .GroupBy(jt => jt.JobId)
-                .Select(g => g.Select(jt => jt.TagId).ToList())
+                .Select(g => g.Select(x => x.TagId).ToList())
                 .ToListAsync();
 
-            // Bước 3: Thuật toán O(N) dùng Dictionary (Copy ý tưởng cực hay từ Controller của bạn)
+            // =========================
+            // BƯỚC 4: BUILD EDGES (RAM)
+            // =========================
             var edgeCounts = new Dictionary<(int, int), int>();
 
             foreach (var tagIds in jobSkillGroups)
             {
-                var sortedTags = tagIds.Distinct().ToList(); // Đảm bảo không trùng Tag trong 1 Job
-                
-                for (int i = 0; i < sortedTags.Count; i++)
+                var distinctTags = tagIds.Distinct().ToList();
+
+                for (int i = 0; i < distinctTags.Count; i++)
                 {
-                    for (int j = i + 1; j < sortedTags.Count; j++)
+                    for (int j = i + 1; j < distinctTags.Count; j++)
                     {
-                        // Luôn quy định Key = (Id nhỏ, Id lớn) để A-B và B-A tính là 1
-                        var key = (Math.Min(sortedTags[i], sortedTags[j]), Math.Max(sortedTags[i], sortedTags[j]));
-                        
-                        if (!edgeCounts.ContainsKey(key))
-                            edgeCounts[key] = 0;
-                        edgeCounts[key]++;
+                        var a = distinctTags[i];
+                        var b = distinctTags[j];
+
+                        var key = (Math.Min(a, b), Math.Max(a, b));
+
+                        if (edgeCounts.ContainsKey(key))
+                            edgeCounts[key]++;
+                        else
+                            edgeCounts[key] = 1;
                     }
                 }
             }
 
+            // =========================
+            // BƯỚC 5: TẠO EDGES DTO
+            // =========================
+            var totalJobs = jobSkillGroups.Count;
+
             var edges = edgeCounts
                 .Select(x => new GraphEdgeDTO(
-                    x.Key.Item1, 
-                    x.Key.Item2, 
-                    x.Value, 
-                    Math.Round((double)x.Value / jobSkillGroups.Count * 100, 2)
+                    x.Key.Item1,
+                    x.Key.Item2,
+                    x.Value,
+                    totalJobs > 0
+                        ? Math.Round((double)x.Value / totalJobs * 100, 2)
+                        : 0
                 ))
-                .OrderByDescending(x => x.Value)
+                .OrderByDescending(e => e.Value)
+                .Take(50)
                 .ToList();
 
-            return new { nodes, edges };
+            // =========================
+            // RETURN RESULT
+            // =========================
+            return new
+            {
+                nodes,
+                edges
+            };
         }
-
         public async Task<DashboardSummaryDTO> GetDashboardSummaryAsync()
         {
             var now = DateTime.UtcNow;
