@@ -19,9 +19,9 @@ namespace JobSeekingAPI.Controllers
 
         // 2. Tiêm (Inject) chúng vào Constructor
         public StatisticsController(
-            IStatisticsService statsService, 
+            IStatisticsService statsService,
             IMemoryCache cache,
-            ApplicationDbContext context, 
+            ApplicationDbContext context,
             HttpClient httpClient)
         {
             _statsService = statsService;
@@ -35,16 +35,8 @@ namespace JobSeekingAPI.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetDashboard()
         {
-            try
-            {
-                var data = await _statsService.GetDashboardStatsAsync();
-                return Ok(data); 
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in GetDashboard: {ex.Message}");
-                return StatusCode(500, new { message = "An error occurred while fetching dashboard statistics : " + ex.Message });
-            }
+            var data = await _statsService.GetDashboardStatsAsync();
+            return Ok(data);
         }
 
         // Đoạn code GetSalaryChartFromAI của bạn để ở dưới này là sẽ hết báo lỗi đỏ!

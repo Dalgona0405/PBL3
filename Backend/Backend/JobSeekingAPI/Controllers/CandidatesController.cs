@@ -20,15 +20,6 @@ namespace JobSeekingAPI.Controllers
             _experienceRepo = experienceRepo;
         }
 
-        // GET: api/candidates => Cân nhắc bỏ hoặc giới hạn quyền truy cập (chỉ admin). Nếu giữ thì phân trang
-        //[Authorize(Roles = "Admin")]
-        //[HttpGet]
-        //public async Task<IActionResult> GetAllCandidates()
-        //{
-        //    var candidates = await _candidateRepo.GetAllCandidatesWithDetailsAsync();
-        //    return Ok(candidates.Select(c => MapToDetailDTO(c)));
-        //}
-
         // GET: api/candidates/{id}
         [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]

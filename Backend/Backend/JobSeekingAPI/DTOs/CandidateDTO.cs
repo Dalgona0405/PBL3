@@ -1,6 +1,8 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace JobSeekingAPI.DTOs
 {
-    // Khởi tạo Candidate (Không chứa FullName/Avatar vì nó nằm ở Users)
+    // Khởi tạo Candidate
     public class CreateCandidateDTO
     {
         public int UserId { get; set; }
@@ -14,11 +16,13 @@ namespace JobSeekingAPI.DTOs
     // Sửa thông tin trang Profile
     public class UpdateCandidateDTO
     {
+        [MaxLength(100, ErrorMessage = "FullName too long")]
         public string? FullName { get; set; } // Map -> Users
         public string? Avatar { get; set; }   // Map -> Users
         public string? Gender { get; set; }   // Map -> Candidates
         public DateTime? Birthday { get; set; }
         public string? Phone { get; set; }
+        [MaxLength(500, ErrorMessage = "Address too long")]
         public string? Address { get; set; }
         public string? CVUrl { get; set; }
         public List<CandidateTagDTO>? Tags { get; set; }

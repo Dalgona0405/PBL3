@@ -30,35 +30,27 @@ namespace JobSeekingAPI.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetMarketTrend([FromQuery] int limit = 10)
         {
-            try
-            {
-                //var totalJobs = await _context.Jobs
-                //    .CountAsync(j => j.DeletedAt == null);
+            //var totalJobs = await _context.Jobs
+            //    .CountAsync(j => j.DeletedAt == null);
 
-                //if (totalJobs == 0)
-                //{
-                //    return Ok(new List<MarketTrendDTO>());
-                //}
+            //if (totalJobs == 0)
+            //{
+            //    return Ok(new List<MarketTrendDTO>());
+            //}
 
-                //var trends = await _context.Tags
-                //    .Where(t => t.JobTags.Any(jt => jt.Job != null && jt.Job.DeletedAt == null))
-                //    .Select(t => new MarketTrendDTO
-                //    (
-                //        t.TagName,
-                //        t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
-                //        Math.Round((double)t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null) / totalJobs * 100, 2)
-                //    ))
-                //    .OrderByDescending(x => x.JobCount)
-                //    .Take(limit)
-                //    .ToListAsync();
-                var trends = await _reportService.GetMarketTrendAsync(limit);
-                return Ok(trends);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting market trend");
-                return StatusCode(500, new { message = "An error occurred while fetching market trend : " + ex.Message });
-            }
+            //var trends = await _context.Tags
+            //    .Where(t => t.JobTags.Any(jt => jt.Job != null && jt.Job.DeletedAt == null))
+            //    .Select(t => new MarketTrendDTO
+            //    (
+            //        t.TagName,
+            //        t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
+            //        Math.Round((double)t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null) / totalJobs * 100, 2)
+            //    ))
+            //    .OrderByDescending(x => x.JobCount)
+            //    .Take(limit)
+            //    .ToListAsync();
+            var trends = await _reportService.GetMarketTrendAsync(limit);
+            return Ok(trends);
         }
 
         /// <summary>
@@ -69,31 +61,23 @@ namespace JobSeekingAPI.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetSalaryByLocation()
         {
-            try
-            {
-                // var salaryReport = await _context.Jobs
-                //     .Where(j => j.DeletedAt == null 
-                //         && j.SalaryMin.HasValue 
-                //         && j.SalaryMax.HasValue 
-                //         && j.Location != null)
-                //     .GroupBy(j => j.Location!.LocationName)
-                //     .Select(g => new SalaryReportDTO
-                //     (
-                //         g.Key,
-                //         Math.Round(g.Average(x => x.SalaryMin ?? 0), 0),
-                //         Math.Round(g.Average(x => x.SalaryMax ?? 0), 0),
-                //         g.Count()
-                //     ))
-                //     .OrderByDescending(x => x.AverageMaxSalary)
-                //     .ToListAsync();
-                var salaryReport = await _reportService.GetSalaryByLocationAsync();
-                return Ok(salaryReport);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting salary by location");
-                return StatusCode(500, new { message = "An error occurred while fetching salary data : " + ex.Message });
-            }
+            // var salaryReport = await _context.Jobs
+            //     .Where(j => j.DeletedAt == null 
+            //         && j.SalaryMin.HasValue 
+            //         && j.SalaryMax.HasValue 
+            //         && j.Location != null)
+            //     .GroupBy(j => j.Location!.LocationName)
+            //     .Select(g => new SalaryReportDTO
+            //     (
+            //         g.Key,
+            //         Math.Round(g.Average(x => x.SalaryMin ?? 0), 0),
+            //         Math.Round(g.Average(x => x.SalaryMax ?? 0), 0),
+            //         g.Count()
+            //     ))
+            //     .OrderByDescending(x => x.AverageMaxSalary)
+            //     .ToListAsync();
+            var salaryReport = await _reportService.GetSalaryByLocationAsync();
+            return Ok(salaryReport);
         }
 
         /// <summary>
@@ -193,51 +177,43 @@ namespace JobSeekingAPI.Controllers
             //     _logger.LogError(ex, "Error generating skills graph");
             //     return StatusCode(500, new { message = "An error occurred while generating skills graph : " + ex.Message });
             // }
-
-            try
-            {
-                // 1. Lấy Nodes từ bảng Tags đã có sẵn
-                var nodes = await _context.Tags
-                    .Select(t => new
-                    {
-                        id = t.TagId,
-                        label = t.TagName
-                    })
-                    .Take(limit)
-                    .ToListAsync();
-
-                // 2. Lấy Edges bằng cách tìm các Tag xuất hiện cùng nhau trong một Job
-                // Chúng ta sử dụng bảng JobTags hiện có để tạo mối quan hệ
-                var jobGroups = await _context.JobTags
-                    .GroupBy(jt => jt.JobId)
-                    .Select(g => g.Select(x => x.TagId).ToList())
-                    .ToListAsync();
-
-                var edges = new List<object>();
-                var edgeTracker = new HashSet<(int, int)>();
-
-                foreach (var tagIds in jobGroups)
+            // 1. Lấy Nodes từ bảng Tags đã có sẵn
+            var nodes = await _context.Tags
+                .Select(t => new
                 {
-                    for (int i = 0; i < tagIds.Count; i++)
+                    id = t.TagId,
+                    label = t.TagName
+                })
+                .Take(limit)
+                .ToListAsync();
+
+            // 2. Lấy Edges bằng cách tìm các Tag xuất hiện cùng nhau trong một Job
+            // Chúng ta sử dụng bảng JobTags hiện có để tạo mối quan hệ
+            var jobGroups = await _context.JobTags
+                .GroupBy(jt => jt.JobId)
+                .Select(g => g.Select(x => x.TagId).ToList())
+                .ToListAsync();
+
+            var edges = new List<object>();
+            var edgeTracker = new HashSet<(int, int)>();
+
+            foreach (var tagIds in jobGroups)
+            {
+                for (int i = 0; i < tagIds.Count; i++)
+                {
+                    for (int j = i + 1; j < tagIds.Count; j++)
                     {
-                        for (int j = i + 1; j < tagIds.Count; j++)
+                        var pair = (Math.Min(tagIds[i], tagIds[j]), Math.Max(tagIds[i], tagIds[j]));
+                        if (!edgeTracker.Contains(pair))
                         {
-                            var pair = (Math.Min(tagIds[i], tagIds[j]), Math.Max(tagIds[i], tagIds[j]));
-                            if (!edgeTracker.Contains(pair))
-                            {
-                                edgeTracker.Add(pair);
-                                edges.Add(new { from = pair.Item1, to = pair.Item2 });
-                            }
+                            edgeTracker.Add(pair);
+                            edges.Add(new { from = pair.Item1, to = pair.Item2 });
                         }
                     }
                 }
+            }
 
-                return Ok(new { nodes, edges });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Lỗi trích xuất đồ thị: " + ex.Message });
-            }
+            return Ok(new { nodes, edges });
         }
 
         /// <summary>
@@ -248,63 +224,55 @@ namespace JobSeekingAPI.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetDashboardSummary()
         {
-            try
-            {
-                var today = DateTime.Today;
-                var startOfWeek = today.AddDays(-(int)today.DayOfWeek + 1);
-                var startOfMonth = new DateTime(today.Year, today.Month, 1);
-                var startOfYear = new DateTime(today.Year, 1, 1);
+            var today = DateTime.Today;
+            var startOfWeek = today.AddDays(-(int)today.DayOfWeek + 1);
+            var startOfMonth = new DateTime(today.Year, today.Month, 1);
+            var startOfYear = new DateTime(today.Year, 1, 1);
 
-                // 1. Thực hiện từng câu lệnh await. 
-                // EF Core sẽ tự động tối ưu hóa các lệnh này, không cần chạy song song.
-                var totalJobs = await _context.Jobs.CountAsync(j => j.DeletedAt == null);
-                var totalCandidates = await _context.Candidates.CountAsync(c => c.User != null && c.User.DeletedAt == null);
-                var totalCompanies = await _context.Companies.CountAsync(c => c.DeletedAt == null);
-                var totalRecruiters = await _context.Recruiters.CountAsync(r => r.User != null && r.User.DeletedAt == null);
+            // 1. Thực hiện từng câu lệnh await. 
+            // EF Core sẽ tự động tối ưu hóa các lệnh này, không cần chạy song song.
+            var totalJobs = await _context.Jobs.CountAsync(j => j.DeletedAt == null);
+            var totalCandidates = await _context.Candidates.CountAsync(c => c.User != null && c.User.DeletedAt == null);
+            var totalCompanies = await _context.Companies.CountAsync(c => c.DeletedAt == null);
+            var totalRecruiters = await _context.Recruiters.CountAsync(r => r.User != null && r.User.DeletedAt == null);
 
-                var apps = await _context.Applications
-                    .Where(a => a.DeletedAt == null)
-                    .GroupBy(a => 1)
-                    .Select(g => new
-                    {
-                        Total = g.Count(),
-                        ThisWeek = g.Count(a => a.AppliedDate >= startOfWeek),
-                        ThisMonth = g.Count(a => a.AppliedDate >= startOfMonth),
-                        ThisYear = g.Count(a => a.AppliedDate >= startOfYear)
-                    })
-                    .FirstOrDefaultAsync() ?? new { Total = 0, ThisWeek = 0, ThisMonth = 0, ThisYear = 0 };
-
-                var status = await _context.Jobs
-                    .Where(j => j.DeletedAt == null)
-                    .GroupBy(j => 1)
-                    .Select(g => new
-                    {
-                        Active = g.Count(j => j.Deadline >= today),
-                        Expired = g.Count(j => j.Deadline < today),
-                        Total = g.Count()
-                    })
-                    .FirstOrDefaultAsync() ?? new { Active = 0, Expired = 0, Total = 0 };
-
-                // 2. Tính toán kết quả
-                var stats = new
+            var apps = await _context.Applications
+                .Where(a => a.DeletedAt == null)
+                .GroupBy(a => 1)
+                .Select(g => new
                 {
-                    TotalJobs = totalJobs,
-                    TotalCandidates = totalCandidates,
-                    TotalCompanies = totalCompanies,
-                    TotalRecruiters = totalRecruiters,
-                    Applications = apps,
-                    JobsByStatus = status,
-                    ApplicationRate = totalJobs > 0 ? Math.Round((double)apps.Total / totalJobs * 100, 2) : 0,
-                    LastUpdated = DateTime.UtcNow
-                };
+                    Total = g.Count(),
+                    ThisWeek = g.Count(a => a.AppliedDate >= startOfWeek),
+                    ThisMonth = g.Count(a => a.AppliedDate >= startOfMonth),
+                    ThisYear = g.Count(a => a.AppliedDate >= startOfYear)
+                })
+                .FirstOrDefaultAsync() ?? new { Total = 0, ThisWeek = 0, ThisMonth = 0, ThisYear = 0 };
 
-                return Ok(stats);
-            }
-            catch (Exception ex)
+            var status = await _context.Jobs
+                .Where(j => j.DeletedAt == null)
+                .GroupBy(j => 1)
+                .Select(g => new
+                {
+                    Active = g.Count(j => j.Deadline >= today),
+                    Expired = g.Count(j => j.Deadline < today),
+                    Total = g.Count()
+                })
+                .FirstOrDefaultAsync() ?? new { Active = 0, Expired = 0, Total = 0 };
+
+            // 2. Tính toán kết quả
+            var stats = new
             {
-                _logger.LogError(ex, "Error getting dashboard summary");
-                return StatusCode(500, new { message = "An error occurred while fetching dashboard summary: " + ex.Message });
-            }
+                TotalJobs = totalJobs,
+                TotalCandidates = totalCandidates,
+                TotalCompanies = totalCompanies,
+                TotalRecruiters = totalRecruiters,
+                Applications = apps,
+                JobsByStatus = status,
+                ApplicationRate = totalJobs > 0 ? Math.Round((double)apps.Total / totalJobs * 100, 2) : 0,
+                LastUpdated = DateTime.UtcNow
+            };
+
+            return Ok(stats);
         }
 
         /// <summary>
@@ -317,101 +285,93 @@ namespace JobSeekingAPI.Controllers
             [FromQuery] string period = "month", // day, week, month, year
             [FromQuery] int months = 6)
         {
-            try
+            var endDate = DateTime.UtcNow;
+            var startDate = period.ToLower() switch
             {
-                var endDate = DateTime.UtcNow;
-                var startDate = period.ToLower() switch
+                "day" => endDate.AddDays(-30),
+                "week" => endDate.AddDays(-90),
+                "month" => endDate.AddMonths(-months),
+                "year" => endDate.AddYears(-3),
+                _ => endDate.AddMonths(-6)
+            };
+            // PHẦN 1: Query dữ liệu thô từ database
+            var rawData = await _context.Applications
+                .Where(a => a.DeletedAt == null && a.AppliedDate >= startDate)
+                .Select(a => new
                 {
-                    "day" => endDate.AddDays(-30),
-                    "week" => endDate.AddDays(-90),
-                    "month" => endDate.AddMonths(-months),
-                    "year" => endDate.AddYears(-3),
-                    _ => endDate.AddMonths(-6)
-                };
-                // PHẦN 1: Query dữ liệu thô từ database
-                var rawData = await _context.Applications
-                    .Where(a => a.DeletedAt == null && a.AppliedDate >= startDate)
-                    .Select(a => new
-                    {
-                        a.AppliedDate,
-                        a.Status,
-                        Year = a.AppliedDate.Year,
-                        Month = a.AppliedDate.Month,
-                        // Week = EF.Functions.DateDiffWeek(startDate, a.AppliedDate),
-                        Week = (a.AppliedDate - startDate).Days / 7,
-                        Day = a.AppliedDate.Date
-                    })
-                    .ToListAsync(); // Thực thi query ngay tại đây
+                    a.AppliedDate,
+                    a.Status,
+                    Year = a.AppliedDate.Year,
+                    Month = a.AppliedDate.Month,
+                    // Week = EF.Functions.DateDiffWeek(startDate, a.AppliedDate),
+                    Week = (a.AppliedDate - startDate).Days / 7,
+                    Day = a.AppliedDate.Date
+                })
+                .ToListAsync(); // Thực thi query ngay tại đây
 
-                if (!rawData.Any())
-                {
-                    return Ok(new
-                    {
-                        Period = period,
-                        StartDate = startDate,
-                        EndDate = endDate,
-                        Data = new List<object>(),
-                        Total = 0
-                    });
-                }
-                // PHẦN 2: Xử lý dữ liệu trong memory (C# code thuần túy)
-                var groupedData = rawData
-                    .GroupBy(a => new
-                    {
-                        a.Year,
-                        a.Month,
-                        a.Week,
-                        a.Day
-                    })
-                    .Select(g => new
-                    {
-                        Period = period.ToLower() switch // Switch expression chạy trong memory, OK!
-                        {
-                            "day" => g.Key.Day.ToString("yyyy-MM-dd"),
-                            "week" => $"Week {g.Key.Week}",
-                            "month" => $"{g.Key.Year}-{g.Key.Month:D2}",
-                            "year" => g.Key.Year.ToString(),
-                            _ => $"{g.Key.Year}-{g.Key.Month:D2}"
-                        },
-                        Total = g.Count(),
-                        ByStatus = new
-                        {
-                            Pending = g.Count(a => a.Status == 1),
-                            Reviewed = g.Count(a => a.Status == 2),
-                            Interviewed = g.Count(a => a.Status == 3),
-                            Accepted = g.Count(a => a.Status == 4),
-                            Rejected = g.Count(a => a.Status == 5)
-                        }
-                    })
-                    .OrderBy(x => x.Period)
-                    .ToList();
-
+            if (!rawData.Any())
+            {
                 return Ok(new
                 {
                     Period = period,
                     StartDate = startDate,
                     EndDate = endDate,
-                    Data = groupedData,
-                    Total = groupedData.Sum(x => x.Total),
-                    Summary = new
-                    {
-                        TotalApplications = groupedData.Sum(x => x.Total),
-                        ByStatus = new
-                        {
-                            Pending = groupedData.Sum(x => x.ByStatus.Pending),
-                            Reviewed = groupedData.Sum(x => x.ByStatus.Reviewed),
-                            Interviewed = groupedData.Sum(x => x.ByStatus.Interviewed),
-                            Accepted = groupedData.Sum(x => x.ByStatus.Accepted),
-                            Rejected = groupedData.Sum(x => x.ByStatus.Rejected)
-                        }
-                    }
+                    Data = new List<object>(),
+                    Total = 0
                 });
             }
-            catch (Exception ex)
+            // PHẦN 2: Xử lý dữ liệu trong memory (C# code thuần túy)
+            var groupedData = rawData
+                .GroupBy(a => new
+                {
+                    a.Year,
+                    a.Month,
+                    a.Week,
+                    a.Day
+                })
+                .Select(g => new
+                {
+                    Period = period.ToLower() switch // Switch expression chạy trong memory, OK!
+                    {
+                        "day" => g.Key.Day.ToString("yyyy-MM-dd"),
+                        "week" => $"Week {g.Key.Week}",
+                        "month" => $"{g.Key.Year}-{g.Key.Month:D2}",
+                        "year" => g.Key.Year.ToString(),
+                        _ => $"{g.Key.Year}-{g.Key.Month:D2}"
+                    },
+                    Total = g.Count(),
+                    ByStatus = new
+                    {
+                        Pending = g.Count(a => a.Status == 1),
+                        Reviewed = g.Count(a => a.Status == 2),
+                        Interviewed = g.Count(a => a.Status == 3),
+                        Accepted = g.Count(a => a.Status == 4),
+                        Rejected = g.Count(a => a.Status == 5)
+                    }
+                })
+                .OrderBy(x => x.Period)
+                .ToList();
+
+            return Ok(new
             {
-                _logger.LogError(ex, "Error getting application timeline");
-                return StatusCode(500, new { message = "An error occurred while fetching application timeline" });
-            }
+                Period = period,
+                StartDate = startDate,
+                EndDate = endDate,
+                Data = groupedData,
+                Total = groupedData.Sum(x => x.Total),
+                Summary = new
+                {
+                    TotalApplications = groupedData.Sum(x => x.Total),
+                    ByStatus = new
+                    {
+                        Pending = groupedData.Sum(x => x.ByStatus.Pending),
+                        Reviewed = groupedData.Sum(x => x.ByStatus.Reviewed),
+                        Interviewed = groupedData.Sum(x => x.ByStatus.Interviewed),
+                        Accepted = groupedData.Sum(x => x.ByStatus.Accepted),
+                        Rejected = groupedData.Sum(x => x.ByStatus.Rejected)
+                    }
+                }
+            });
         }
 
         /// <summary>

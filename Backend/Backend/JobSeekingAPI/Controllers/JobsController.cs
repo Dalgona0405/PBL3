@@ -20,16 +20,6 @@ namespace JobSeekingAPI.Controllers
             _companyRepo = companyRepo;
         }
 
-        // GET: api/jobs => Cân nhắc bỏ vì có thể dùng GET api/jobs/search với searchParams rỗng để thay thế
-        //[AllowAnonymous]
-        //[HttpGet]
-        //public async Task<IActionResult> GetAllJobs()
-        //{
-        //    var jobs = await _jobRepository.GetAllJobsWithDetailsAsync();
-        //    var jobDTOs = jobs.Select(j => MapToDTO(j));
-        //    return Ok(jobDTOs);
-        //}
-
         // GET: api/jobs/{id}
         [AllowAnonymous]
         [HttpGet("{id}")]

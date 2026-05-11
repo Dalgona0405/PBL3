@@ -1,18 +1,20 @@
 using JobSeekingAPI.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using JobSeekingAPI.Services;
+using JobSeekingAPI.Middlewares;
 using JobSeekingAPI.Repositories;
+using JobSeekingAPI.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Security.Claims;
+using System.Text;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMemoryCache();
 builder.Services.AddHostedService<SalaryAnalyticsWorker>();
+builder.Services.AddHostedService<AIIntegrationWorker>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -31,6 +33,7 @@ builder.Services.AddScoped<ICompanyJoinRequestRepository, CompanyJoinRequestRepo
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>(); // TẠM THỜI COMMENT - CHỜ FIX SAU Graph AI & Dashboard Stats
 builder.Services.AddScoped<IReportService, ReportService>(); // TẠM THỜI COMMENT - CHỜ FIX SAU Graph AI & Dashboard Stats
+builder.Services.AddScoped<IApplicationService, ApplicationService>();
 
 // Đăng ký HttpClient để C# có thể gửi request đi các server khác (như server Python)
 builder.Services.AddHttpClient();
@@ -123,6 +126,7 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 // ===== Middleware =====
+app.UseMiddleware<ExceptionMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
