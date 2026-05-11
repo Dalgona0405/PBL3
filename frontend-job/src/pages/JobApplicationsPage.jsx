@@ -1,30 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
+import axiosClient from '../api/axiosClient';
+import { useAuth } from '../contexts/AuthContext';
 
 function JobApplicationsPage() {
     const { jobId } = useParams(); // Lấy ID của Job từ trên thanh địa chỉ (URL) xuống
     const navigate = useNavigate();
-    
+    const { user } = useAuth();
+
     const [applications, setApplications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
     // 1. LẤY DANH SÁCH CV CỦA JOB NÀY
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) { navigate('/login'); return; }
+        if (!user) { navigate('/login'); return; }
 
         const fetchApplications = async () => {
             try {
                 setIsLoading(true);
-                const res = await fetch(`${API_URLS.APPLICATIONS}/jobs/${jobId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (!res.ok) throw new Error("Không thể tải danh sách ứng viên.");
-                
-                const data = await res.json();
+                const data = await axiosClient.get(`${API_URLS.APPLICATIONS}/jobs/${jobId}`);
                 setApplications(data);
             } catch (err) {
                 setError("Lỗi kết nối máy chủ. Vui lòng thử lại sau! 🌿");
@@ -38,27 +34,16 @@ function JobApplicationsPage() {
 
     // 2. HÀM CẬP NHẬT TRẠNG THÁI CV
     const handleUpdateStatus = async (appId, newStatus) => {
-        const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`${API_URLS.APPLICATIONS}/${appId}/status`, {
-                method: 'PATCH',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
+            await axiosClient.patch(`${API_URLS.APPLICATIONS}/${appId}/status`, { status: newStatus });
 
-            if (res.ok) {
-                // Cập nhật UI ngay lập tức
-                setApplications(prev => prev.map(app => 
-                    app.applicationId === appId ? { ...app, status: newStatus } : app
-                ));
-            } else {
-                alert("Cập nhật thất bại! Bạn có quyền đổi trạng thái không?");
-            }
+            // Cập nhật UI ngay lập tức
+            setApplications(prev => prev.map(app =>
+                app.applicationId === appId ? { ...app, status: newStatus } : app
+            ));
         } catch (err) {
-            alert("Lỗi mạng, không thể cập nhật trạng thái!");
+            const errorMsg = err.response?.data?.message || "Cập nhật thất bại! Bạn có quyền đổi trạng thái không?";
+            alert(errorMsg);
         }
     };
 
@@ -82,10 +67,10 @@ function JobApplicationsPage() {
 
     return (
         <div className="max-w-6xl mx-auto w-full pb-12">
-            
+
             {/* NÚT QUAY LẠI & HEADER */}
             <div className="mb-8">
-                <button 
+                <button
                     onClick={() => navigate('/recruiter-dashboard')}
                     className="text-gray-500 hover:text-olive font-medium flex items-center gap-2 mb-4 transition-colors"
                 >
@@ -126,7 +111,7 @@ function JobApplicationsPage() {
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                                                    {app.candidate?.avatar ? <img src={app.candidate.avatar} alt="avt" className="w-full h-full object-cover"/> : '👤'}
+                                                    {app.candidate?.avatar ? <img src={app.candidate.avatar} alt="avt" className="w-full h-full object-cover" /> : '👤'}
                                                 </div>
                                                 <div>
                                                     <strong className="text-textmain block text-lg">{app.candidate?.fullName}</strong>
@@ -148,7 +133,7 @@ function JobApplicationsPage() {
                                             {getStatusBadge(app.status)}
                                         </td>
                                         <td className="py-4 px-6">
-                                            <select 
+                                            <select
                                                 className="bg-white border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-earth focus:border-earth block w-full p-2.5 outline-none cursor-pointer shadow-sm font-medium"
                                                 value={app.status}
                                                 onChange={(e) => handleUpdateStatus(app.applicationId, parseInt(e.target.value))}

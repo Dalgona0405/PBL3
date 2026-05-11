@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
+import axiosClient from '../api/axiosClient';
+import { useAuth } from '../contexts/AuthContext';
 
 function JobFormPage() {
     const { jobId } = useParams(); // Nếu có jobId trên URL -> Chế độ Sửa. Nếu không có -> Chế độ Tạo mới.
     const navigate = useNavigate();
     const isEditMode = Boolean(jobId);
+    const { user } = useAuth();
 
     // Các State lưu trữ dữ liệu danh mục (Dropdown)
     const [locations, setLocations] = useState([]);
     const [allTags, setAllTags] = useState([]);
-    
+
     // State lưu thông tin Form
     const [formData, setFormData] = useState({
         title: '',
@@ -26,69 +29,58 @@ function JobFormPage() {
         benefits: '',
         companyId: null // Bắt buộc phải có để đăng tin
     });
-    
+
     const [selectedTags, setSelectedTags] = useState([]);
-    const[selectedTagId, setSelectedTagId] = useState('');
-    
+    const [selectedTagId, setSelectedTagId] = useState('');
+
     const [isLoading, setIsLoading] = useState(true);
-    const[isSaving, setIsSaving] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState(null);
 
     // 1. LẤY DỮ LIỆU BAN ĐẦU (Locations, Tags, và thông tin Recruiter)
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
-        if (!token || !savedUser) { navigate('/login'); return; }
-        const parsedUser = JSON.parse(savedUser);
+        if (!user) { navigate('/login'); return; }
 
         const fetchInitialData = async () => {
             try {
                 setIsLoading(true);
-                
-                // Lấy danh sách Địa điểm, Kỹ năng và Thông tin HR (để lấy CompanyId)
+
+                // Lấy danh sách Địa điểm, Kỹ năng và Thông tin HR
                 const [locRes, tagsRes, hrRes] = await Promise.all([
-                    fetch(API_URLS.LOCATION),
-                    fetch(API_URLS.TAGS),
-                    fetch(`${API_URLS.RECRUITERS}/${parsedUser.id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                    axiosClient.get(API_URLS.LOCATION),
+                    axiosClient.get(API_URLS.TAGS),
+                    axiosClient.get(`${API_URLS.RECRUITERS}/${user.id}`)
                 ]);
 
-                if (locRes.ok) setLocations(await locRes.json());
-                if (tagsRes.ok) setAllTags(await tagsRes.json());
-                
-                if (hrRes.ok) {
-                    const hrData = await hrRes.json();
-                    if (!hrData.company) {
-                        setError("Bạn chưa gia nhập công ty nào. Vui lòng cập nhật hồ sơ trước khi đăng tin!");
-                        return;
-                    }
-                    // Lưu companyId vào form
-                    setFormData(prev => ({ ...prev, companyId: hrData.company.companyId }));
+                setLocations(locRes ||[]);
+                setAllTags(tagsRes ||[]);
+
+                if (!hrRes.company) {
+                    setError("Bạn chưa gia nhập công ty nào. Vui lòng cập nhật hồ sơ trước khi đăng tin!");
+                    return;
                 }
+                // Lưu companyId vào form
+                setFormData(prev => ({ ...prev, companyId: hrRes.company.companyId }));
 
                 // NẾU LÀ CHẾ ĐỘ SỬA -> Gọi API lấy thông tin Job cũ đắp vào Form
                 if (isEditMode) {
-                    const jobRes = await fetch(`${API_URLS.JOBS}/${jobId}`);
-                    if (jobRes.ok) {
-                        const jobData = await jobRes.json();
-                        setFormData(prev => ({
-                            ...prev,
-                            title: jobData.title || '',
-                            locationId: jobData.location?.locationId || '',
-                            address: jobData.address || '',
-                            salaryMin: jobData.salaryMin || '',
-                            salaryMax: jobData.salaryMax || '',
-                            level: jobData.level || 'Nhân viên',
-                            expYear: jobData.expYear || 'Không yêu cầu',
-                            // Format ngày tháng chuẩn YYYY-MM-DD cho thẻ <input type="date">
-                            deadline: jobData.deadline ? jobData.deadline.split('T')[0] : '',
-                            description: jobData.description || '',
-                            requirement: jobData.requirement || '',
-                            benefits: jobData.benefits || ''
-                        }));
-                        // Đắp Tags cũ vào
-                        if (jobData.tags) {
-                            setSelectedTags(jobData.tags.map(t => ({ tagId: t.tagId, tagName: t.tagName })));
-                        }
+                    const jobData = await axiosClient.get(`${API_URLS.JOBS}/${jobId}`);
+                    setFormData(prev => ({
+                        ...prev,
+                        title: jobData.title || '',
+                        locationId: jobData.location?.locationId || '',
+                        address: jobData.address || '',
+                        salaryMin: jobData.salaryMin || '',
+                        salaryMax: jobData.salaryMax || '',
+                        level: jobData.level || 'Nhân viên',
+                        expYear: jobData.expYear || 'Không yêu cầu',
+                        deadline: jobData.deadline ? jobData.deadline.split('T')[0] : '',
+                        description: jobData.description || '',
+                        requirement: jobData.requirement || '',
+                        benefits: jobData.benefits || ''
+                    }));
+                    if (jobData.tags) {
+                        setSelectedTags(jobData.tags.map(t => ({ tagId: t.tagId, tagName: t.tagName })));
                     }
                 }
             } catch (err) {
@@ -99,19 +91,19 @@ function JobFormPage() {
         };
 
         fetchInitialData();
-    }, [jobId, isEditMode, navigate]);
+    }, [jobId, isEditMode, navigate, user]);
 
     // 2. XỬ LÝ THAY ĐỔI INPUT
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev,[name]: value }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     // 3. XỬ LÝ THÊM/XÓA TAGS
     const handleAddTag = () => {
         if (!selectedTagId) return;
         if (selectedTags.some(t => t.tagId === parseInt(selectedTagId))) return; // Chống trùng
-        
+
         const tagToAdd = allTags.find(t => t.tagId === parseInt(selectedTagId));
         if (tagToAdd) {
             setSelectedTags([...selectedTags, { tagId: tagToAdd.tagId, tagName: tagToAdd.tagName }]);
@@ -127,40 +119,30 @@ function JobFormPage() {
     const handleSave = async (e) => {
         e.preventDefault();
         setIsSaving(true);
-        const token = localStorage.getItem('token');
 
         try {
-            // Chuẩn bị gói hàng (Payload)
             const payload = {
                 ...formData,
                 locationId: parseInt(formData.locationId),
                 salaryMin: formData.salaryMin ? parseFloat(formData.salaryMin) : null,
                 salaryMax: formData.salaryMax ? parseFloat(formData.salaryMax) : null,
-                tagIds: selectedTags.map(t => t.tagId) // Chỉ lấy mảng các ID gửi xuống Backend
+                tagIds: selectedTags.map(t => t.tagId) 
             };
 
-            // Quyết định xem gọi API POST (Tạo mới) hay PUT (Cập nhật)
             const url = isEditMode ? `${API_URLS.JOBS}/${jobId}` : API_URLS.JOBS;
-            const method = isEditMode ? 'PUT' : 'POST';
 
-            const res = await fetch(url, {
-                method: method,
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                alert(`🎉 Đã ${isEditMode ? 'cập nhật' : 'đăng'} tin tuyển dụng thành công! 🌿`);
-                navigate('/recruiter-dashboard'); // Xong việc thì về lại phòng điều hành
+            if (isEditMode) {
+                await axiosClient.put(url, payload);
             } else {
-                const errData = await res.json();
-                alert(`⚠️ Lỗi: ${errData.message || 'Vui lòng kiểm tra lại thông tin.'}`);
+                await axiosClient.post(url, payload);
             }
+
+            alert(`🎉 Đã ${isEditMode ? 'cập nhật' : 'đăng'} tin tuyển dụng thành công! 🌿`);
+            navigate('/recruiter-dashboard'); 
+
         } catch (err) {
-            alert("Lỗi kết nối máy chủ!");
+            const errorMsg = err.response?.data?.message || 'Vui lòng kiểm tra lại thông tin.';
+            alert(`⚠️ Lỗi: ${errorMsg}`);
         } finally {
             setIsSaving(false);
         }
@@ -171,10 +153,10 @@ function JobFormPage() {
 
     return (
         <div className="max-w-6xl mx-auto w-full pb-12">
-            
+
             {/* HEADER */}
             <div className="mb-8">
-                <button 
+                <button
                     onClick={() => navigate('/recruiter-dashboard')}
                     className="text-gray-500 hover:text-olive font-medium flex items-center gap-2 mb-4 transition-colors"
                 >
@@ -190,11 +172,11 @@ function JobFormPage() {
 
             {/* FORM CHÍNH */}
             <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
+
                 {/* CỘT TRÁI: THÔNG TIN CƠ BẢN */}
                 <div className="lg:col-span-1 space-y-6 bg-white p-8 rounded-3xl shadow-sm border-t-8 border-earth h-fit">
                     <h3 className="text-xl font-bold text-olive border-b border-gray-100 pb-3">Thông tin cơ bản</h3>
-                    
+
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Tiêu đề công việc <span className="text-red-500">*</span></label>
                         <input type="text" name="title" required value={formData.title} onChange={handleChange} placeholder="VD: Frontend Developer (ReactJS)" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
@@ -256,7 +238,7 @@ function JobFormPage() {
                 {/* CỘT PHẢI: CHI TIẾT & KỸ NĂNG */}
                 <div className="lg:col-span-2 space-y-6 bg-white p-8 rounded-3xl shadow-sm border-t-8 border-olive">
                     <h3 className="text-xl font-bold text-olive border-b border-gray-100 pb-3">Chi tiết công việc</h3>
-                    
+
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Mô tả công việc</label>
                         <textarea name="description" rows="5" value={formData.description} onChange={handleChange} placeholder="Mô tả các công việc ứng viên sẽ làm..." className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white resize-none"></textarea>
@@ -276,7 +258,7 @@ function JobFormPage() {
                     <div className="pt-4 border-t border-gray-100">
                         <label className="block text-sm font-bold text-gray-700 mb-3">Thẻ kỹ năng (Tags)</label>
                         <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                            <select 
+                            <select
                                 className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50"
                                 value={selectedTagId}
                                 onChange={(e) => setSelectedTagId(e.target.value)}
@@ -286,7 +268,7 @@ function JobFormPage() {
                                     <option key={tag.tagId} value={tag.tagId}>{tag.tagName}</option>
                                 ))}
                             </select>
-                            <button 
+                            <button
                                 type="button"
                                 className="bg-olive hover:bg-earth text-white font-bold py-2.5 px-6 rounded-xl transition-colors"
                                 onClick={handleAddTag}
@@ -294,13 +276,13 @@ function JobFormPage() {
                                 + Thêm Tag
                             </button>
                         </div>
-                        
+
                         <div className="flex flex-wrap gap-3">
                             {selectedTags.length > 0 ? (
                                 selectedTags.map((tag) => (
                                     <span key={tag.tagId} className="inline-flex items-center bg-cream text-olive px-4 py-2 rounded-full text-sm font-medium border border-gray-200 shadow-sm">
                                         {tag.tagName}
-                                        <button 
+                                        <button
                                             type="button"
                                             className="ml-2 text-red-400 hover:text-red-600 font-bold text-lg leading-none focus:outline-none transform hover:scale-110 transition-transform"
                                             onClick={() => handleRemoveTag(tag.tagId)}
@@ -317,7 +299,7 @@ function JobFormPage() {
 
                     {/* NÚT LƯU */}
                     <div className="pt-8 text-right">
-                        <button 
+                        <button
                             type="submit"
                             disabled={isSaving}
                             className={`px-10 py-3.5 rounded-full text-white font-bold text-lg shadow-md transition-all transform hover:-translate-y-1 ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-earth hover:bg-olive hover:shadow-lg'}`}

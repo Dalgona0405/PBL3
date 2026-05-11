@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { API_URLS } from "../api/api";
+import axiosClient from "../api/axiosClient";
+import { useAuth } from "../contexts/AuthContext";
 
 function DetailJobPage() {
     const navigate = useNavigate();
     const { id } = useParams();
     const [jobDetail, setJobDetail] = useState(null);
-    const [user, setUser] = useState(null);
+    const { user } = useAuth(); // Lấy thông tin user từ AuthContext
 
     // STATE CHO MODAL NỘP CV
     const [showModal, setShowModal] = useState(false);
@@ -15,16 +17,16 @@ function DetailJobPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        fetch(`${API_URLS.JOBS}/${id}`)
-            .then(response => response.json())
-            .then(data => setJobDetail(data))
-            .catch(error => console.error('Lỗi lấy chi tiết:', error));
+        const fetchJobDetail = async () => {
+            try {
+                const data = await axiosClient.get(`${API_URLS.JOBS}/${id}`);
+                setJobDetail(data);
+            } catch (error) {
+                console.error('Lỗi lấy chi tiết:', error);
+            }
+        };
+        fetchJobDetail();
     }, [id]);
-
-    useEffect(() => {
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) setUser(JSON.parse(savedUser));
-    }, []);
 
     // Hàm mở Modal
     const handleOpenModal = () => {
@@ -62,7 +64,6 @@ function DetailJobPage() {
     // Hàm chính: Gửi đơn ứng tuyển
     const handleConfirmApply = async () => {
         setIsSubmitting(true);
-        const token = localStorage.getItem('token');
         let finalCvUrl = ""; // Mặc định rỗng, Backend C# của Trúc sẽ tự lấy CV mặc định
 
         try {
@@ -102,24 +103,13 @@ function DetailJobPage() {
                 cvUrl: finalCvUrl
             };
 
-            const response = await fetch(API_URLS.APPLICATIONS, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
+            await axiosClient.post(API_URLS.APPLICATIONS, payload);
 
-            if (response.ok) {
-                alert("🎉 Chúc mừng bạn! Nộp CV thành công rồi nè, chuẩn bị tinh thần HR gọi nha!");
-                setShowModal(false); // Đóng modal
-            } else {
-                const errorData = await response.json();
-                alert(`Lỗi: ${errorData.message || "Bạn đã ứng tuyển công việc này rồi. 🌿"}`);
-            }
+            alert("🎉 Chúc mừng bạn! Nộp CV thành công rồi nè, chuẩn bị tinh thần HR gọi nha!");
+            setShowModal(false); // Đóng modal
         } catch (error) {
-            alert("Lỗi kết nối. Vui lòng thử lại sau nhé! 🌿");
+            const errorMsg = error.response?.data?.message || "Bạn đã ứng tuyển công việc này rồi hoặc lỗi mạng. 🌿";
+            alert(`Lỗi: ${errorMsg}`);
         } finally {
             setIsSubmitting(false);
         }

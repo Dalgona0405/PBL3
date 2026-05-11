@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+
 import MainLayout from "./layouts/MainLayout";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
@@ -12,39 +13,49 @@ import RecruiterDashboardPage from "./pages/RecruiterDashboardPage";
 import JobApplicationsPage from "./pages/JobApplicationsPage";
 import JobFormPage from "./pages/JobFormPage";
 
+// Component con để bảo vệ các trang bắt buộc đăng nhập (Route Guard)
+const ProtectedRoute = ({ children, allowedRole }) => {
+    const { user } = useAuth();
+    
+    if (!user) return <Navigate to="/login" />;
+    if (allowedRole && user.role !== allowedRole) return <Navigate to="/" />;
+    
+    return children;
+};
+
+function AppRoutes() {
+    return (
+        <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+
+            <Route element={<MainLayout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/detail-job/:id" element={<DetailJobPage />} />
+                <Route path="/detail-company/:id" element={<DetailCompanyPage />} />
+
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/history-applied" element={<ProtectedRoute allowedRole="Candidate"><HistoryAppliedPage /></ProtectedRoute>} />
+                
+                <Route path="/recruiter-dashboard" element={<ProtectedRoute allowedRole="Recruiter"><RecruiterDashboardPage /></ProtectedRoute>} />
+                <Route path="/recruiter/jobs/:jobId/applications" element={<ProtectedRoute allowedRole="Recruiter"><JobApplicationsPage /></ProtectedRoute>} />
+                <Route path="/recruiter/jobs/create" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />
+                <Route path="/recruiter/jobs/edit/:jobId" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+    );
+}
+
 function App() {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* Các trang KHÔNG cần Layout */}
-        <Route path="/login" element={<LoginPage setUser={setUser} />} />
-        <Route path="/register" element={<RegisterPage setUser={setUser} />} />
-
-        {/* Các trang CÓ Layout (Sidebar + Header) */}
-        <Route element={<MainLayout user={user} setUser={setUser} />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/detail-job/:id" element={<DetailJobPage />} />
-          <Route path="/detail-company/:id" element={<DetailCompanyPage />} />
-
-          {/* Các trang cần đăng nhập */}
-          <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
-          <Route path="/history-applied" element={user ? <HistoryAppliedPage /> : <Navigate to="/login" />} />
-          <Route path="/recruiter-dashboard" element={user?.role === 'Recruiter' ? <RecruiterDashboardPage /> : <Navigate to="/login" />} />
-          <Route path="/recruiter/jobs/:jobId/applications" element={user?.role === 'Recruiter' ? <JobApplicationsPage /> : <Navigate to="/login" />} />
-          <Route path="/recruiter/jobs/create" element={user?.role === 'Recruiter' ? <JobFormPage /> : <Navigate to="/login" />} />
-          <Route path="/recruiter/jobs/edit/:jobId" element={user?.role === 'Recruiter' ? <JobFormPage /> : <Navigate to="/login" />} />
-        </Route>
-
-        {/* Bắt lỗi 404 */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </BrowserRouter>
-  );
+    return (
+        <AuthProvider>
+            <BrowserRouter>
+                <AppRoutes />
+            </BrowserRouter>
+        </AuthProvider>
+    );
 }
 
 export default App;

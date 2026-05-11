@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_URLS } from '../api/api';
+import axiosClient from '../api/axiosClient';
+import { useAuth } from '../contexts/AuthContext';
 
-function RegisterPage({ setUser }) {
+function RegisterPage() {
     const navigate = useNavigate();
     const location = useLocation();
+
+    const { login } = useAuth();
 
     const [formData, setFormData] = useState({
         fullName: '', email: '', password: '', confirmPassword: '', role: 'Candidate'
@@ -17,7 +21,7 @@ function RegisterPage({ setUser }) {
     };
 
     const handleRegister = async (e) => {
-        e.preventDefault(); 
+        e.preventDefault();
         if (formData.password !== formData.confirmPassword) {
             setMessage('Mật khẩu xác nhận không khớp nha!');
             return;
@@ -26,37 +30,30 @@ function RegisterPage({ setUser }) {
         setIsLoading(true);
         try {
             const payload = {
-                email: formData.email, password: formData.password,
-                fullName: formData.fullName, role: formData.role
+                email: formData.email,
+                password: formData.password,
+                fullName: formData.fullName,
+                role: formData.role
             };
 
-            const response = await fetch(API_URLS.REGISTER, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const data = await axiosClient.post(API_URLS.REGISTER, payload);
 
-            if (response.ok) {
-                const data = await response.json();
+            if (data.token) {
                 const userInfo = { id: data.userId, email: data.email, role: data.role, name: data.fullName };
+                login(userInfo, data.token);
 
-                localStorage.setItem('user', JSON.stringify(userInfo));
-                setUser(userInfo);
-                
                 setMessage('🎉 Đăng ký thành công! Đang tự động đăng nhập...');
-                
+
                 setTimeout(() => {
                     if (userInfo.role === 'Recruiter') navigate('/recruiter-dashboard');
                     else navigate('/');
                 }, 1500);
-                
-            } else {
-                const errorData = await response.json();
-                setMessage(errorData.message || 'Có lỗi xảy ra, thử lại sau nhé.');
+
             }
         } catch (error) {
             console.error("Lỗi kết nối:", error);
-            setMessage('Lỗi kết nối máy chủ 🌿');
+            const errorMsg = error.response?.data?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại!';
+            setMessage(errorMsg);
         } finally {
             setIsLoading(false);
         }
@@ -64,7 +61,7 @@ function RegisterPage({ setUser }) {
 
     return (
         <div className="min-h-screen flex flex-col bg-cream font-sans">
-            
+
             {/* HEADER GIỐNG MAIN LAYOUT */}
             <header className="h-20 bg-white shadow-sm flex items-center justify-between px-8 shrink-0">
                 <h1 className="text-2xl font-bold text-olive cursor-pointer flex items-center gap-2" onClick={() => navigate('/')}>
@@ -127,7 +124,7 @@ function RegisterPage({ setUser }) {
                             {isLoading ? 'Đang xử lý...' : 'Đăng ký ngay'}
                         </button>
                     </form>
-                    
+
                     <p className="text-center mt-8 text-gray-500">
                         Đã có tài khoản?{' '}
                         <span className="text-earth font-bold cursor-pointer hover:text-olive hover:underline transition-colors" onClick={() => navigate('/login')}>

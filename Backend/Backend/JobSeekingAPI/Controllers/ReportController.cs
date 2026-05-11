@@ -344,7 +344,7 @@ namespace JobSeekingAPI.Controllers
                     {
                         Pending = g.Count(a => a.Status == 1),
                         Reviewed = g.Count(a => a.Status == 2),
-                        Interviewed = g.Count(a => a.Status == 3),
+                        Interviewing = g.Count(a => a.Status == 3),
                         Accepted = g.Count(a => a.Status == 4),
                         Rejected = g.Count(a => a.Status == 5)
                     }
@@ -366,7 +366,7 @@ namespace JobSeekingAPI.Controllers
                     {
                         Pending = groupedData.Sum(x => x.ByStatus.Pending),
                         Reviewed = groupedData.Sum(x => x.ByStatus.Reviewed),
-                        Interviewed = groupedData.Sum(x => x.ByStatus.Interviewed),
+                        Interviewing = groupedData.Sum(x => x.ByStatus.Interviewing),
                         Accepted = groupedData.Sum(x => x.ByStatus.Accepted),
                         Rejected = groupedData.Sum(x => x.ByStatus.Rejected)
                     }

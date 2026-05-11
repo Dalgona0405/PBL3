@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import JobList from "../components/JobList"; 
 import { API_URLS } from "../api/api";
+import axiosClient from "../api/axiosClient";
 
 function DetailCompanyPage() {
     const { id } = useParams(); 
@@ -12,16 +13,17 @@ function DetailCompanyPage() {
 
     useEffect(() => {
         setIsLoading(true);
-        fetch(`${API_URLS.COMPANIES}/${id}`) 
-            .then(response => response.json())
-            .then(data => {
+        const fetchCompanyDetail = async () => {
+            try {
+                const data = await axiosClient.get(`${API_URLS.COMPANIES}/${id}`);
                 setCompanyDetail(data);
                 setIsLoading(false);
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Lỗi lấy chi tiết:', error);
                 setIsLoading(false);
-            });
+            }
+        };
+        fetchCompanyDetail();
     }, [id]);
 
     // Hiệu ứng Loading đồng bộ với các trang khác
@@ -102,8 +104,6 @@ function DetailCompanyPage() {
                     </h2>
                     <p className="text-gray-500 mt-2 pl-4">Khám phá các cơ hội nghề nghiệp hấp dẫn đang mở tuyển.</p>
                 </div>
-
-                {/* Gọi khối Lego JobList ra đây, truyền ID công ty vào để nó tự lọc */}
                 <JobList companyId={id} />
             </div>
 

@@ -36,7 +36,7 @@ namespace JobSeekingAPI.DTOs
     public record StatusBreakdownDTO(
         int Pending,
         int Reviewed,
-        int Interviewed,
+        int Interviewing,
         int Accepted,
         int Rejected
     );

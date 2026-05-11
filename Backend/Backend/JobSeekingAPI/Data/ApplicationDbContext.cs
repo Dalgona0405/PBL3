@@ -37,7 +37,7 @@ namespace JobSeekingAPI.Data
                 entity.HasIndex(u => u.Email).IsUnique();
                 entity.Property(u => u.Email).IsRequired().HasMaxLength(100);
                 entity.Property(u => u.Password).IsRequired().HasMaxLength(255);
-                entity.Property(u => u.Role).IsRequired(); // int: 1,2,3
+                entity.Property(u => u.Role).IsRequired();
                 entity.Property(u => u.Avatar).HasMaxLength(500);
                 entity.Property(u => u.LastLogin);
                 entity.Property(u => u.DeletedAt);
@@ -97,7 +97,6 @@ namespace JobSeekingAPI.Data
                     .HasForeignKey<Candidate>(c => c.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // entity.Property(c => c.FullName).IsRequired().HasMaxLength(100); // User đã có FullName rồi
                 entity.Property(c => c.Gender).HasMaxLength(10);
                 entity.Property(c => c.Birthday);
                 entity.Property(c => c.Phone).HasMaxLength(20);
@@ -232,7 +231,7 @@ namespace JobSeekingAPI.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(a => a.AppliedDate).HasDefaultValueSql("GETDATE()");
-                entity.Property(a => a.Status).HasDefaultValue(0);
+                entity.Property(a => a.Status).HasDefaultValue(1);
                 entity.Property(a => a.CVUrl).HasMaxLength(500);
                 entity.Property(a => a.DeletedAt);
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URLS } from "../api/api";
+import axiosClient from "../api/axiosClient";
 
 function HistoryAppliedPage() {
     const navigate = useNavigate();
@@ -9,34 +10,9 @@ function HistoryAppliedPage() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const savedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token'); // Lấy thẻ VIP
-        
-        if (!savedUser || !token) {
-            navigate('/login');
-            return;
-        }
-        const parsedUser = JSON.parse(savedUser);
-        
-        // Chỉ Candidate mới được vào trang này
-        if (parsedUser.role !== 'Candidate') {
-            navigate('/');
-            return;
-        }
-
         const fetchHistory = async () => {
             try {
-                // SỬA API: Dùng /candidate/me thay vì /candidate/{id}
-                const res = await fetch(`${API_URLS.APPLICATIONS}/candidate/me`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`, // Đưa thẻ VIP ra
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!res.ok) throw new Error("Không thể tải dữ liệu.");
-
-                const data = await res.json();
+                const data = await axiosClient.get(`${API_URLS.APPLICATIONS}/candidate/me`);
                 setApplications(data);
             } catch (err) {
                 setError("Không thể tải lịch sử ứng tuyển. Vui lòng thử lại sau! 🌿");

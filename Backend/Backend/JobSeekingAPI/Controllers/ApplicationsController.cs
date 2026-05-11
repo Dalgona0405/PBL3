@@ -172,9 +172,10 @@ namespace JobSeekingAPI.Controllers
             {
                 TotalApplications = total,
                 Pending = statistics?.FirstOrDefault(kv => kv.Key == 1).Value ?? 0,
-                Interviewed = statistics?.FirstOrDefault(kv => kv.Key == 2).Value ?? 0,
-                Accepted = statistics?.FirstOrDefault(kv => kv.Key == 3).Value ?? 0,
-                Rejected = statistics?.FirstOrDefault(kv => kv.Key == 4).Value ?? 0
+                Reviewed = statistics?.FirstOrDefault(kv => kv.Key == 2).Value ?? 0,
+                Interviewing = statistics?.FirstOrDefault(kv => kv.Key == 3).Value ?? 0,
+                Accepted = statistics?.FirstOrDefault(kv => kv.Key == 4).Value ?? 0,
+                Rejected = statistics?.FirstOrDefault(kv => kv.Key == 5).Value ?? 0
             };
 
             return Ok(result);

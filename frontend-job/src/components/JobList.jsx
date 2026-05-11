@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import JobCard from './JobCard';
 import { API_URLS } from '../api/api';
+import axiosClient from '../api/axiosClient';
 
 // ==========================================
 // COMPONENT CON: SKELETON (Khung xám nhấp nháy)
@@ -48,26 +49,23 @@ function JobList({ keyword, companyId }) {
         setIsFetching(true); 
 
         if (companyId) {
-            fetch(`${API_URLS.JOBS}/company/${companyId}`)
-                .then(response => response.json())
-                .then(data => {
-                    setJobs(data ||[]);
-                    setTotalPages(1);
+            
+            axiosClient.get(`${API_URLS.JOBS}/company/${companyId}`)
+                .then(response => {
+                    setJobs(response.data || []);
                 })
                 .catch(error => console.error('Lỗi lấy dữ liệu công ty:', error))
                 .finally(() => setIsFetching(false)); // Lấy xong (dù lỗi hay thành công) -> Tắt Skeleton
-        } 
-        else {
+        } else {
             const pageSize = 9;
             let url = `${API_URLS.SEARCH}?page=${currentPage}&pageSize=${pageSize}&pageNumber=${currentPage}`;
             
             if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
 
-            fetch(url) 
-                .then(response => response.json())
-                .then(data => {
-                    setJobs(data.data || data.Data ||[]);
-                    setTotalPages(data.totalPages || data.TotalPages || 1);
+            axiosClient.get(url)
+                .then(response => {
+                    setJobs(response.data || []);
+                    setTotalPages(response.totalPages || 1);
                 })
                 .catch(error => console.error('Lỗi lấy dữ liệu:', error))
                 .finally(() => setIsFetching(false)); // Lấy xong -> Tắt Skeleton

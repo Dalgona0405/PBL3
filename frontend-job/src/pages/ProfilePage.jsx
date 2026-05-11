@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
+import axiosClient from '../api/axiosClient';
+import { useAuth } from '../contexts/AuthContext';
 
 // ==========================================
 // COMPONENT CON: FORM SỬA THÔNG TIN
@@ -11,8 +13,8 @@ function EditProfileForm({ formData, setFormData }) {
     const [companyResults, setCompanyResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
-    const[selectedNewCompany, setSelectedNewCompany] = useState(null); // Lưu công ty vừa chọn để gửi request
-    const[isSendingRequest, setIsSendingRequest] = useState(false);
+    const [selectedNewCompany, setSelectedNewCompany] = useState(null); // Lưu công ty vừa chọn để gửi request
+    const [isSendingRequest, setIsSendingRequest] = useState(false);
     const dropdownRef = useRef(null);
 
     useEffect(() => {
@@ -23,7 +25,7 @@ function EditProfileForm({ formData, setFormData }) {
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    },[]);
+    }, []);
 
     const handleSearchCompany = async (keyword) => {
         setSearchTerm(keyword);
@@ -37,11 +39,8 @@ function EditProfileForm({ formData, setFormData }) {
         setIsSearching(true);
         setShowDropdown(true);
         try {
-            const res = await fetch(`${API_URLS.COMPANIES}/search?keyword=${encodeURIComponent(keyword)}`);
-            if (res.ok) {
-                const data = await res.json();
-                setCompanyResults(data.items || data.Items ||[]);
-            }
+            const data = await axiosClient.get(`${API_URLS.COMPANIES}/search?keyword=${encodeURIComponent(keyword)}`);
+            setCompanyResults(data.items || data.Items || []);
         } catch (err) {
             console.error("Lỗi tìm công ty:", err);
         } finally {
@@ -59,28 +58,19 @@ function EditProfileForm({ formData, setFormData }) {
     const handleSendCompanyRequest = async () => {
         if (!selectedNewCompany) return;
         setIsSendingRequest(true);
-        const token = localStorage.getItem('token');
 
         try {
-            const res = await fetch(API_URLS.COMPANY_REQUESTS, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ companyId: selectedNewCompany.companyId })
-            });
+            const payload = {
+                companyId: selectedNewCompany.companyId,
+            };
 
-            const data = await res.json();
-            if (res.ok) {
-                alert("🎉 " + data.message);
-                setSelectedNewCompany(null);
-                setSearchTerm('');
-            } else {
-                alert("⚠️ " + data.message);
-            }
+            const data = await axiosClient.post(API_URLS.COMPANY_REQUESTS, payload);
+            setSelectedNewCompany(null);
+            setSearchTerm('');
+            alert("⚠️ " + data.message);
         } catch (err) {
-            alert("Lỗi kết nối, không thể gửi yêu cầu!");
+            const errorMessage = err.response?.data?.message || "⚠️ Có lỗi xảy ra khi gửi yêu cầu.";
+            alert(errorMessage);
         } finally {
             setIsSendingRequest(false);
         }
@@ -154,7 +144,7 @@ function EditProfileForm({ formData, setFormData }) {
                             <input type="text" id="position" className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white"
                                 value={formData.recruiter?.position || ''} onChange={handleInputChange} />
                         </div>
-                        
+
                         {/* HIỂN THỊ CÔNG TY HIỆN TẠI */}
                         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                             <p className="w-32 font-medium text-gray-600">🏢 Công ty hiện tại:</p>
@@ -168,17 +158,17 @@ function EditProfileForm({ formData, setFormData }) {
                             <p className="w-32 font-medium text-olive mt-3">🔄 Đổi công ty:</p>
                             <div className="flex-1 relative">
                                 <div className="flex gap-2">
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         placeholder="Gõ tên công ty muốn gia nhập..."
                                         className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white"
-                                        value={searchTerm} 
-                                        onChange={(e) => handleSearchCompany(e.target.value)} 
+                                        value={searchTerm}
+                                        onChange={(e) => handleSearchCompany(e.target.value)}
                                         onFocus={() => searchTerm.length >= 2 && setShowDropdown(true)}
                                     />
                                     {/* Nút gửi yêu cầu chỉ hiện khi đã chọn 1 công ty từ dropdown */}
                                     {selectedNewCompany && (
-                                        <button 
+                                        <button
                                             onClick={handleSendCompanyRequest}
                                             disabled={isSendingRequest}
                                             className="bg-earth hover:bg-olive text-white font-bold px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap shadow-sm"
@@ -187,7 +177,7 @@ function EditProfileForm({ formData, setFormData }) {
                                         </button>
                                     )}
                                 </div>
-                                
+
                                 {/* Dropdown kết quả tìm kiếm */}
                                 {showDropdown && (
                                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
@@ -195,8 +185,8 @@ function EditProfileForm({ formData, setFormData }) {
                                             <div className="p-4 text-gray-500 text-center text-sm">Đang tìm kiếm... 🌿</div>
                                         ) : companyResults.length > 0 ? (
                                             companyResults.map(company => (
-                                                <div 
-                                                    key={company.companyId} 
+                                                <div
+                                                    key={company.companyId}
                                                     className="p-3 hover:bg-cream cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
                                                     onClick={() => handleSelectCompany(company)}
                                                 >
@@ -227,48 +217,39 @@ function EditProfileForm({ formData, setFormData }) {
 function ProfilePage() {
     const navigate = useNavigate();
     const [formData, setFormData] = useState(null);
-    const[allTags, setAllTags] = useState([]);
+    const [allTags, setAllTags] = useState([]);
     const [userTags, setUserTags] = useState([]);
-    const[selectedTagId, setSelectedTagId] = useState('');
+    const [selectedTagId, setSelectedTagId] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { user } = useAuth();
 
     useEffect(() => {
-        const savedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
 
-        if (!savedUser || !token) { navigate('/login'); return; }
-        const parsedUser = JSON.parse(savedUser);
+        if (!user) { navigate('/login'); return; }
 
         const fetchData = async () => {
             try {
                 setIsLoading(true);
                 const [profileRes, allTagsRes] = await Promise.all([
-                    fetch(`${API_URLS.USERS}/profile`, {
-                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-                    }),
-                    fetch(`${API_URLS.TAGS}`)
+                    axiosClient.get(`${API_URLS.USERS}/profile`),
+                    axiosClient.get(`${API_URLS.TAGS}`)
                 ]);
 
-                if (!profileRes.ok) throw new Error("Không thể tải hồ sơ.");
-
-                const profileData = await profileRes.json();
-                const allTagsData = allTagsRes.ok ? await allTagsRes.json() :[];
+                const profileData = profileRes;
+                const allTagsData = allTagsRes || [];
 
                 if (profileData.role === 'Candidate') {
                     const [userTagsRes, candidateRes] = await Promise.all([
-                        fetch(`${API_URLS.CANDIDATE}/${parsedUser.id}/skills`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                        fetch(`${API_URLS.CANDIDATE}/me`, { headers: { 'Authorization': `Bearer ${token}` } })
+                        axiosClient.get(`${API_URLS.CANDIDATE}/${user.id}/skills`),
+                        axiosClient.get(`${API_URLS.CANDIDATE}/me`)
                     ]);
 
-                    if (userTagsRes.ok) setUserTags(await userTagsRes.json());
-                    if (candidateRes.ok) profileData.candidate = await candidateRes.json();
-                } 
+                    setUserTags(userTagsRes || []);
+                    profileData.candidate = candidateRes;
+                }
                 else if (profileData.role === 'Recruiter') {
-                    const recruiterRes = await fetch(`${API_URLS.RECRUITERS}/${parsedUser.id}`, { 
-                        headers: { 'Authorization': `Bearer ${token}` } 
-                    });
-                    if (recruiterRes.ok) profileData.recruiter = await recruiterRes.json();
+                    profileData.recruiter = await axiosClient.get(`${API_URLS.RECRUITERS}/${user.id}`);
                 }
 
                 setFormData(profileData);
@@ -303,7 +284,6 @@ function ProfilePage() {
     };
 
     const handleSave = async () => {
-        const token = localStorage.getItem('token');
         try {
             const apiCalls = [];
             if (formData.role === 'Candidate') {
@@ -320,45 +300,29 @@ function ProfilePage() {
                 }));
 
                 apiCalls.push(
-                    fetch(`${API_URLS.CANDIDATE}/me`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify(payloadCandidate)
-                    }),
-                    fetch(`${API_URLS.CANDIDATE_TAGS}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify(payloadSkills)
-                    })
+                    axiosClient.put(`${API_URLS.CANDIDATE}/me`, payloadCandidate),
+                    axiosClient.put(`${API_URLS.CANDIDATE_TAGS}`, payloadSkills)
                 );
-            } 
-            // SỬA LỖI CHÍNH TẢ: Recruiter
+
+            }
+
             else if (formData.role === 'Recruiter') {
                 const payloadRecruiter = {
                     fullName: formData.fullName,
                     position: formData.recruiter?.position,
-                    // Gửi CompanyId (số nguyên) thay vì chuỗi tên công ty
-                    companyId: formData.recruiter?.companyId 
+                    companyId: formData.recruiter?.companyId
                 };
 
                 apiCalls.push(
-                    fetch(`${API_URLS.RECRUITERS}/${formData.userId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify(payloadRecruiter)
-                    })
+                    axiosClient.put(`${API_URLS.RECRUITERS}/${user.id}`, payloadRecruiter)
                 );
             }
 
             const responses = await Promise.all(apiCalls);
-
-            if (responses.every(res => res.ok)) {
-                alert("🎉 Đã lưu thông tin thành công! 🌿");
-            } else {
-                alert("Có lỗi xảy ra khi lưu thông tin.");
-            }
+            alert("🎉 Đã lưu thông tin thành công! 🌿");
         } catch (err) {
-            alert("Hệ thống lỗi hoặc rớt mạng, không thể lưu được!");
+            const errorMessage = err.response?.data?.message || "Có lỗi xảy ra khi lưu thông tin.";
+            alert(errorMessage);
         }
     };
     if (isLoading) return <div className="flex justify-center items-center h-64 text-olive text-xl animate-pulse">Đang tải hồ sơ của bạn... 🌿</div>;
