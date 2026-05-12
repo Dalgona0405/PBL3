@@ -45,6 +45,18 @@ const MainLayout = () => {
               🏢 <span className="ml-3 font-medium">Quản lý tuyển dụng</span>
             </button>
           )}
+
+          {user?.role === 'Admin' && (
+            <>
+              <div className="pt-4 pb-2 px-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Quản trị viên</p>
+              </div>
+              <button onClick={() => navigate('/admin/company-requests')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+                🛡️ <span className="ml-3 font-medium">Duyệt Công ty</span>
+              </button>
+              {/* Sau này mình sẽ thêm nút Quản lý Tag, Quản lý User ở đây */}
+            </>
+          )}
         </nav>
       </aside>
 

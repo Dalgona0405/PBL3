@@ -12,6 +12,7 @@ import HistoryAppliedPage from "./pages/HistoryAppliedPage";
 import RecruiterDashboardPage from "./pages/RecruiterDashboardPage";
 import JobApplicationsPage from "./pages/JobApplicationsPage";
 import JobFormPage from "./pages/JobFormPage";
+import CompanyRequestsPage from "./pages/CompanyRequestsPage";
 
 // Component con để bảo vệ các trang bắt buộc đăng nhập (Route Guard)
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -41,6 +42,7 @@ function AppRoutes() {
                 <Route path="/recruiter/jobs/:jobId/applications" element={<ProtectedRoute allowedRole="Recruiter"><JobApplicationsPage /></ProtectedRoute>} />
                 <Route path="/recruiter/jobs/create" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />
                 <Route path="/recruiter/jobs/edit/:jobId" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />
+                <Route path="/admin/company-requests" element={<ProtectedRoute allowedRole="Admin"><CompanyRequestsPage /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" />} />
