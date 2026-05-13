@@ -1,3 +1,4 @@
+from fastapi.responses import JSONResponse
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List
@@ -95,7 +96,7 @@ def generate_salary_chart(request: SalaryChartRequest):
 @app.post("/api/predict")
 def predict_skills(request: SkillRequest):
     if node_embeddings is None:
-        return {"status": "error", "message": "Model GNN chưa sẵn sàng."}
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Model GNN chưa sẵn sàng."})
     
     # Chuyển đổi ID từ SQL sang Index của đồ thị[cite: 1, 2]
     current_indices = [sql_to_idx[s] for s in request.current_skills if s in sql_to_idx]
@@ -123,3 +124,36 @@ def predict_skills(request: SkillRequest):
             
     suggestions.sort(key=lambda x: x["score"], reverse=True)
     return {"status": "success", "suggestions": suggestions[:3]}
+
+# 1. API Health Check (Kiểm tra sức khỏe hệ thống)
+@app.get("/api/health")
+def health_check():
+    return{
+        "status": "online", 
+        "model_loaded": node_embeddings is not None,
+        "nodes_count": len(sql_to_idx) if sql_to_idx else 0
+    }
+# 2. Bọc try-except cho API dự báo kỹ năng để xử lý lỗi không mong muốn
+@app.get("/api/graph/predict-edges")
+def get_predicted_edges():
+    try:
+        if node_embeddings is None:
+            # Trả về 400 Bad Request nếu model chưa train, thay vì để sập
+            return JSONResponse(status_code=400, content={"message": "Model GNN chưa được nạp. Vui lòng chạy train.py trước."})
+        
+        predicted_edges = []
+        for i in range(len(idx_to_sql)):
+            for j in range(i + 1, len(idx_to_sql)):
+                score = calculate_score(node_embeddings, i, j)
+                if score > 0.6: 
+                    predicted_edges.append({
+                        "from": idx_to_sql[i],
+                        "to": idx_to_sql[j],
+                        "weight": int(score * 100),
+                        "value": round(score * 100, 2)
+                    })
+        return predicted_edges
+
+    except Exception as e:
+        # Bắt mọi lỗi thuật toán và trả về 500 kèm thông báo rõ ràng cho C# đọc
+        return JSONResponse(status_code=500, content={"error": f"Lỗi tính toán AI: {str(e)}"})
