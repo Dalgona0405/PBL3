@@ -3,9 +3,7 @@ import JobCard from './JobCard';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 
-// ==========================================
 // COMPONENT CON: SKELETON (Khung xám nhấp nháy)
-// ==========================================
 const JobCardSkeleton = () => (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-50 flex flex-col h-full animate-pulse">
         <div className="flex items-start gap-4 mb-4">
@@ -29,9 +27,7 @@ const JobCardSkeleton = () => (
     </div>
 );
 
-// ==========================================
 // COMPONENT CHÍNH: JOB LIST
-// ==========================================
 function JobList({ keyword, companyId }) {
     const [jobs, setJobs] = useState([]);
     const[currentPage, setCurrentPage] = useState(1);

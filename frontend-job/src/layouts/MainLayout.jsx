@@ -1,10 +1,10 @@
 import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const MainLayout = () => {
   const navigate = useNavigate();
-  
+
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -14,7 +14,7 @@ const MainLayout = () => {
 
   return (
     <div className="flex h-screen bg-cream font-sans">
-      
+
       {/* SIDEBAR */}
       <aside className="w-64 bg-white shadow-lg flex flex-col">
         <div className="h-20 flex items-center justify-center border-b border-gray-100">
@@ -27,7 +27,7 @@ const MainLayout = () => {
           <button onClick={() => navigate('/')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
             🏠 <span className="ml-3 font-medium">Trang chủ</span>
           </button>
-          
+
           {user && (
             <button onClick={() => navigate('/profile')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
               👤 <span className="ml-3 font-medium">Hồ sơ của tôi</span>
@@ -54,7 +54,12 @@ const MainLayout = () => {
               <button onClick={() => navigate('/admin/company-requests')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
                 🛡️ <span className="ml-3 font-medium">Duyệt Công ty</span>
               </button>
-              {/* Sau này mình sẽ thêm nút Quản lý Tag, Quản lý User ở đây */}
+              <button onClick={() => navigate('/admin/tags')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+                🏷️ <span className="ml-3 font-medium">Quản lý Kỹ năng</span>
+              </button>
+              <button onClick={() => navigate('/admin/users')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+                👥 <span className="ml-3 font-medium">Quản lý Người dùng</span>
+              </button>
             </>
           )}
         </nav>
@@ -62,7 +67,7 @@ const MainLayout = () => {
 
       {/* RIGHT CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        
+
         <header className="h-20 bg-white shadow-sm flex items-center justify-between px-8">
           <div className="text-gray-400 text-sm">
             Hệ thống dự báo và môi giới việc làm IT

@@ -25,7 +25,7 @@ function LoginPage() {
 
     try {
       const data = await axiosClient.post(API_URLS.LOGIN, credentials); // Sử dụng axiosClient để gửi yêu cầu
-      login(data.user, date.token); // Cập nhật context với token và thông tin user
+      login(data.user, data.token); // Cập nhật context với token và thông tin user
 
       setMessage("Đăng nhập thành công! Đang chuyển hướng... 🌿");
 

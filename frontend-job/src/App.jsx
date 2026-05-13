@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 import MainLayout from "./layouts/MainLayout";
 import HomePage from "./pages/HomePage";
@@ -13,6 +13,8 @@ import RecruiterDashboardPage from "./pages/RecruiterDashboardPage";
 import JobApplicationsPage from "./pages/JobApplicationsPage";
 import JobFormPage from "./pages/JobFormPage";
 import CompanyRequestsPage from "./pages/CompanyRequestsPage";
+import ManageTagsPage from "./pages/ManageTags";
+import ManageUsersPage from "./pages/ManageUsersPage";
 
 // Component con để bảo vệ các trang bắt buộc đăng nhập (Route Guard)
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -43,6 +45,8 @@ function AppRoutes() {
                 <Route path="/recruiter/jobs/create" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />
                 <Route path="/recruiter/jobs/edit/:jobId" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />
                 <Route path="/admin/company-requests" element={<ProtectedRoute allowedRole="Admin"><CompanyRequestsPage /></ProtectedRoute>} />
+                <Route path="/admin/tags" element={<ProtectedRoute allowedRole="Admin"><ManageTagsPage /></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute allowedRole="Admin"><ManageUsersPage /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" />} />

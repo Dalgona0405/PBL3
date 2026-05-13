@@ -1,17 +1,17 @@
 export const API_URLS = {
-    JOBS: `/jobs`,
-    COMPANIES: `/companies`,
-    SEARCH: `/jobs/search`, 
-    USERS: `/users`,
-    REGISTER: `/auth/register`, 
-    LOGIN: `/auth/login`, 
-    APPLICATIONS: `/applications`,
-    TAGS: `/tags`,
-    CANDIDATE_TAGS: `/candidates/me/skills`, 
-    CANDIDATE: `/candidates`,
-    RECRUITERS: `/recruiters`,
-    LOCATION: `/locations`,
-    COMPANY_REQUESTS: `/companyrequests`
+    JOBS: `/Jobs`,
+    COMPANIES: `/Companies`,
+    SEARCH: `/Jobs/Search`, 
+    USERS: `/Users`,
+    REGISTER: `/Auth/Register`, 
+    LOGIN: `/Auth/Login`, 
+    APPLICATIONS: `/Applications`,
+    TAGS: `/Tags`,
+    CANDIDATE_TAGS: `/Candidates/me/Skills`, 
+    CANDIDATE: `/Candidates`,
+    RECRUITERS: `/Recruiters`,
+    LOCATION: `/Locations`,
+    COMPANY_REQUESTS: `/CompanyRequests`
 };
 
 //

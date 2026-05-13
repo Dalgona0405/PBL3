@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import SearchBar from '../components/SearchBar';
 import JobList from '../components/JobList';
-import '../App.css';
 
 function HomePage() {
   const [keyword, setKeyword] = useState('');

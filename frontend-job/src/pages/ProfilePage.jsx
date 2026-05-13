@@ -4,9 +4,7 @@ import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
 
-// ==========================================
 // COMPONENT CON: FORM SỬA THÔNG TIN
-// ==========================================
 function EditProfileForm({ formData, setFormData }) {
     // State cho Search Company
     const [searchTerm, setSearchTerm] = useState('');
@@ -211,9 +209,7 @@ function EditProfileForm({ formData, setFormData }) {
     );
 }
 
-// ==========================================
 // COMPONENT CHÍNH: PROFILE PAGE
-// ==========================================
 function ProfilePage() {
     const navigate = useNavigate();
     const [formData, setFormData] = useState(null);
