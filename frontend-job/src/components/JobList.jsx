@@ -3,99 +3,101 @@ import JobCard from './JobCard';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 
-// COMPONENT CON: SKELETON (Khung xám nhấp nháy)
 const JobCardSkeleton = () => (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-50 flex flex-col h-full animate-pulse">
         <div className="flex items-start gap-4 mb-4">
-            {/* Khung Logo */}
             <div className="w-12 h-12 rounded-xl bg-gray-200 flex-shrink-0"></div>
             <div className="flex-1">
-                {/* Khung Tiêu đề */}
                 <div className="h-5 bg-gray-200 rounded-md w-3/4 mb-2"></div>
                 <div className="h-5 bg-gray-200 rounded-md w-1/2"></div>
-                {/* Khung Tên công ty */}
                 <div className="h-4 bg-gray-100 rounded-md w-1/3 mt-3"></div>
             </div>
         </div>
         <div className="flex-1 space-y-3 mb-6 mt-2">
-            {/* Khung Lương & Địa điểm */}
             <div className="h-4 bg-gray-100 rounded-md w-1/2"></div>
             <div className="h-4 bg-gray-100 rounded-md w-2/3"></div>
         </div>
-        {/* Khung Nút bấm */}
         <div className="w-full h-10 bg-gray-100 rounded-xl"></div>
     </div>
 );
 
-// COMPONENT CHÍNH: JOB LIST
-function JobList({ keyword, companyId }) {
+// 🛠️ ĐỔI PROPS: Nhận 'filters' thay vì 'keyword'
+function JobList({ filters = {}, companyId }) {
     const [jobs, setJobs] = useState([]);
-    const[currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    
-    // THÊM STATE MỚI: Theo dõi xem có đang đi lấy dữ liệu không
-    const[isFetching, setIsFetching] = useState(true); 
+    const [isFetching, setIsFetching] = useState(true); 
 
+    // Reset về trang 1 nếu bộ lọc thay đổi
     useEffect(() => {
         setCurrentPage(1);
-    }, [keyword, companyId]);
+    }, [filters, companyId]);
 
     useEffect(() => {
-        // Bắt đầu đi lấy data -> Bật Skeleton lên
         setIsFetching(true); 
 
         if (companyId) {
-            
             axiosClient.get(`${API_URLS.JOBS}/company/${companyId}`)
                 .then(response => {
-                    setJobs(response.data || []);
+                    const fetchedJobs = response.items || response.Items || response.data || response;
+                    setJobs(Array.isArray(fetchedJobs) ? fetchedJobs :[]);
                 })
                 .catch(error => console.error('Lỗi lấy dữ liệu công ty:', error))
-                .finally(() => setIsFetching(false)); // Lấy xong (dù lỗi hay thành công) -> Tắt Skeleton
+                .finally(() => setIsFetching(false)); 
         } else {
-            const pageSize = 9;
-            let url = `${API_URLS.SEARCH}?page=${currentPage}&pageSize=${pageSize}&pageNumber=${currentPage}`;
-            
-            if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+            // 🛠️ TUYỆT CHIÊU URLSearchParams: Tự động nối chuỗi API chuẩn xác
+            const params = new URLSearchParams();
+            params.append('page', currentPage);
+            params.append('pageSize', 9);
+
+            // Nếu có filter nào thì mới nhét vào URL
+            if (filters.keyword) params.append('Keyword', filters.keyword);
+            if (filters.locationId) params.append('LocationId', filters.locationId);
+            if (filters.tagId) params.append('TagId', filters.tagId);
+            if (filters.minSalary) params.append('MinSalary', filters.minSalary);
+            if (filters.maxSalary) params.append('MaxSalary', filters.maxSalary);
+
+            const url = `${API_URLS.SEARCH}?${params.toString()}`;
 
             axiosClient.get(url)
                 .then(response => {
-                    setJobs(response.data || []);
+                    const fetchedJobs = response.items || response.Items || response.data || response;
+                    setJobs(Array.isArray(fetchedJobs) ? fetchedJobs :[]);
                     setTotalPages(response.totalPages || 1);
                 })
                 .catch(error => console.error('Lỗi lấy dữ liệu:', error))
-                .finally(() => setIsFetching(false)); // Lấy xong -> Tắt Skeleton
+                .finally(() => setIsFetching(false)); 
         }
-    },[keyword, companyId, currentPage]);
+    }, [filters, companyId, currentPage]);
 
     const handleNextPage = () => setCurrentPage(prev => prev + 1);
     const handlePrevPage = () => setCurrentPage(prev => prev - 1);
 
     return (
         <div className="w-full">
-            <div className="flex justify-between items-end mb-6">
-                <h2 className="text-2xl font-bold text-textmain">
-                    {keyword ? `Kết quả cho: "${keyword}"` : "Việc làm mới nhất"}
-                </h2>
-                <span className="text-gray-400 text-sm">
-                    {isFetching ? "Đang tải..." : `Hiển thị ${jobs.length} kết quả`}
-                </span>
-            </div>
+            {!companyId && (
+                <div className="flex justify-between items-end mb-6">
+                    <h2 className="text-2xl font-bold text-textmain">
+                        {filters.keyword ? `Kết quả cho: "${filters.keyword}"` : "Việc làm mới nhất"}
+                    </h2>
+                    <span className="text-gray-400 text-sm">
+                        {isFetching ? "Đang tải..." : `Hiển thị ${jobs.length} kết quả`}
+                    </span>
+                </div>
+            )}
 
-            {/* NẾU ĐANG TẢI DATA -> HIỂN THỊ 9 CÁI SKELETON */}
             {isFetching ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[...Array(9)].map((_, index) => (
+                    {[...Array(companyId ? 3 : 9)].map((_, index) => (
                         <JobCardSkeleton key={index} />
                     ))}
                 </div>
             ) : jobs.length === 0 ? (
                 <div className="bg-white rounded-2xl p-10 text-center shadow-sm border border-gray-50">
-                    <p className="text-gray-500 text-lg">Không tìm thấy công việc nào phù hợp 🌿</p>
+                    <p className="text-gray-500 text-lg">Không tìm thấy công việc nào phù hợp với bộ lọc 🌿</p>
                 </div>
             ) : (
                 <>
-                    {/* NẾU TẢI XONG -> HIỂN THỊ JOB CARD THẬT */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {jobs.map((job, index) => (
                             <JobCard
@@ -111,7 +113,6 @@ function JobList({ keyword, companyId }) {
                         ))}
                     </div>
 
-                    {/* Phân trang */}
                     {totalPages > 1 && (
                         <div className="flex justify-center items-center mt-10 gap-4">
                             <button 

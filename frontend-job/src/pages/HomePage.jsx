@@ -3,13 +3,20 @@ import SearchBar from '../components/SearchBar';
 import JobList from '../components/JobList';
 
 function HomePage() {
-  const [keyword, setKeyword] = useState('');
+  const [filters, setFilters] = useState({
+      keyword: '',
+      locationId: '',
+      tagId: '',
+      minSalary: '',
+      maxSalary: ''
+  });
 
   return (
     <div className="app-wrapper">
       <main className="content">
-        <SearchBar onSearch={setKeyword} />
-        <JobList keyword={keyword} />
+        {/* Truyền hàm setFilters cho SearchBar để nó bỏ điều kiện vào giỏ */}
+        <SearchBar onSearch={setFilters} />
+        <JobList filters={filters} />
       </main>
     </div>
   );
