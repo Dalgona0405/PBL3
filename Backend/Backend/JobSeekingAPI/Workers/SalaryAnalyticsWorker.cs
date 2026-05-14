@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using JobSeekingAPI.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,12 +8,14 @@ public class SalaryAnalyticsWorker : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly HttpClient _httpClient;
     private readonly IMemoryCache _cache;
+    private readonly ILogger<SalaryAnalyticsWorker> _logger;
 
-    public SalaryAnalyticsWorker(IServiceScopeFactory scopeFactory, HttpClient httpClient, IMemoryCache cache)
+    public SalaryAnalyticsWorker(IServiceScopeFactory scopeFactory, HttpClient httpClient, IMemoryCache cache, ILogger<SalaryAnalyticsWorker> logger)
     {
         _scopeFactory = scopeFactory;
         _httpClient = httpClient;
         _cache = cache;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -32,20 +35,38 @@ public class SalaryAnalyticsWorker : BackgroundService
                         .ToListAsync(stoppingToken);
 
                     // 2. Gửi sang Python xử lý ma trận[cite: 2]
-                    var response = await _httpClient.PostAsJsonAsync("http://localhost:8000/api/analytics/salary-chart", new { jobs = rawSalaries }, stoppingToken);
+                    // var response = await _httpClient.PostAsJsonAsync("http://localhost:8000/api/analytics/salary-chart", new { jobs = rawSalaries }, stoppingToken);
 
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var chartResult = await response.Content.ReadFromJsonAsync<object>(cancellationToken: stoppingToken);
+                    // if (response.IsSuccessStatusCode)
+                    // {
+                    //     var chartResult = await response.Content.ReadFromJsonAsync<object>(cancellationToken: stoppingToken);
                         
-                        // 3. Cất vào "tủ lạnh" Cache (Lưu trong 1 tiếng)
-                        _cache.Set("CachedSalaryChart", chartResult, TimeSpan.FromHours(1));
+                    //     // 3. Cất vào "tủ lạnh" Cache (Lưu trong 1 tiếng)
+                    //     _cache.Set("CachedSalaryChart", chartResult, TimeSpan.FromHours(1));
+                    // }
+                    _logger.LogInformation($"Worker: Lấy được {rawSalaries.Count} công việc để gửi sang Python.");
+
+                    if (rawSalaries.Count > 0) {
+                        var response = await _httpClient.PostAsJsonAsync("http://localhost:8000/api/analytics/salary-chart", new { jobs = rawSalaries }, stoppingToken);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var chartResult = await response.Content.ReadFromJsonAsync<object>(cancellationToken: stoppingToken);
+                            
+                            // 3. Cất vào "tủ lạnh" Cache (Lưu trong 1 tiếng)
+                            _cache.Set("CachedSalaryChart", chartResult, TimeSpan.FromHours(1));
+                            _logger.LogInformation($"Worker: Đã cập nhật biểu đồ lương mới vào cache.");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"Worker: Không thể lấy biểu đồ lương từ Python. Status Code: {response.StatusCode}");
+                        }
                     }
+
                 }
             }
             catch (Exception ex)
             {
-                // Log lỗi nếu Python không phản hồi nhưng không làm sập App C#
+                _logger.LogError(ex, "Worker: Đã xảy ra lỗi khi xử lý dữ liệu lương.");
             }
 
             // Chạy lại sau mỗi 30 phút để cập nhật số liệu mới nhất

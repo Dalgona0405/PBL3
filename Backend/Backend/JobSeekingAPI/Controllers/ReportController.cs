@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Services;
@@ -14,12 +15,14 @@ namespace JobSeekingAPI.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ReportsController> _logger;
         private readonly IReportService _reportService;
+        private readonly IMemoryCache _cache;
 
-        public ReportsController(ApplicationDbContext context, ILogger<ReportsController> logger, IReportService reportService)
+        public ReportsController(ApplicationDbContext context, ILogger<ReportsController> logger, IReportService reportService, IMemoryCache cache)
         {
             _context = context;
             _logger = logger;
             _reportService = reportService;
+            _cache = cache;
         }
 
         /// <summary>
@@ -30,25 +33,6 @@ namespace JobSeekingAPI.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetMarketTrend([FromQuery] int limit = 10)
         {
-            //var totalJobs = await _context.Jobs
-            //    .CountAsync(j => j.DeletedAt == null);
-
-            //if (totalJobs == 0)
-            //{
-            //    return Ok(new List<MarketTrendDTO>());
-            //}
-
-            //var trends = await _context.Tags
-            //    .Where(t => t.JobTags.Any(jt => jt.Job != null && jt.Job.DeletedAt == null))
-            //    .Select(t => new MarketTrendDTO
-            //    (
-            //        t.TagName,
-            //        t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
-            //        Math.Round((double)t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null) / totalJobs * 100, 2)
-            //    ))
-            //    .OrderByDescending(x => x.JobCount)
-            //    .Take(limit)
-            //    .ToListAsync();
             var trends = await _reportService.GetMarketTrendAsync(limit);
             return Ok(trends);
         }
@@ -61,163 +45,12 @@ namespace JobSeekingAPI.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetSalaryByLocation()
         {
-            // var salaryReport = await _context.Jobs
-            //     .Where(j => j.DeletedAt == null 
-            //         && j.SalaryMin.HasValue 
-            //         && j.SalaryMax.HasValue 
-            //         && j.Location != null)
-            //     .GroupBy(j => j.Location!.LocationName)
-            //     .Select(g => new SalaryReportDTO
-            //     (
-            //         g.Key,
-            //         Math.Round(g.Average(x => x.SalaryMin ?? 0), 0),
-            //         Math.Round(g.Average(x => x.SalaryMax ?? 0), 0),
-            //         g.Count()
-            //     ))
-            //     .OrderByDescending(x => x.AverageMaxSalary)
-            //     .ToListAsync();
             var salaryReport = await _reportService.GetSalaryByLocationAsync();
             return Ok(salaryReport);
         }
 
         /// <summary>
-        /// 3. Graph AI Data: Các kỹ năng thường đi kèm với nhau (Nodes & Edges)
-        /// </summary>
-        [HttpGet("graph-skills")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetSkillsGraph([FromQuery] int limit = 30)
-        {
-            // try
-            // {
-            //     // Lấy danh sách các Tag phổ biến nhất làm Nodes
-            //     var popularTagIds = await _context.JobTags
-            //         .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
-            //         .GroupBy(jt => jt.TagId)
-            //         .OrderByDescending(g => g.Count())
-            //         .Select(g => g.Key)
-            //         .Take(limit)
-            //         .ToListAsync();
-
-            //     var nodes = await _context.Tags
-            //         .Where(t => popularTagIds.Contains(t.TagId))
-            //         .Select(t => new
-            //         {
-            //             id = t.TagId,
-            //             label = t.TagName,
-            //             group = t.Type ?? "general",
-            //             size = t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null)
-            //         })
-            //         .ToListAsync();
-
-            //     if (!nodes.Any())
-            //     {
-            //         return Ok(new { nodes = new List<object>(), edges = new List<object>() });
-            //     }
-
-            //     // Lấy tất cả các cặp Job-Tag để tính edges
-            //     var jobTagLookup = await _context.JobTags
-            //         .Where(jt => jt.Job != null
-            //             && jt.Job.DeletedAt == null
-            //             && popularTagIds.Contains(jt.TagId))
-            //         .GroupBy(jt => jt.JobId)
-            //         .Select(g => g.Select(x => x.TagId).ToList())
-            //         .ToListAsync();
-
-            //     // Tạo Dictionary để đếm cặp hiệu quả hơn
-            //     var edgeCounts = new Dictionary<(int, int), int>();
-
-            //     foreach (var tagIds in jobTagLookup)
-            //     {
-            //         var sortedTags = tagIds.Where(id => popularTagIds.Contains(id)).Distinct().ToList();
-
-            //         for (int i = 0; i < sortedTags.Count; i++)
-            //         {
-            //             for (int j = i + 1; j < sortedTags.Count; j++)
-            //             {
-            //                 var key = (Math.Min(sortedTags[i], sortedTags[j]),
-            //                         Math.Max(sortedTags[i], sortedTags[j]));
-
-            //                 edgeCounts.TryAdd(key, 0);
-            //                 edgeCounts[key]++;
-            //             }
-            //         }
-            //     }
-
-            //     // Tạo edges từ dictionary
-            //     var edges = edgeCounts
-            //         .Where(x => x.Value > 1) // Chỉ lấy các cặp xuất hiện từ 2 lần trở lên
-            //         .Select(x => new
-            //         {
-            //             from = x.Key.Item1,
-            //             to = x.Key.Item2,
-            //             value = x.Value,
-            //             strength = Math.Round((double)x.Value / jobTagLookup.Count * 100, 2)
-            //         })
-            //         .OrderByDescending(x => x.value)
-            //         .Take(50) // Giới hạn số lượng edges
-            //         .ToList();
-
-            //     return Ok(new { nodes, edges });
-            // }
-            // catch (Exception ex)
-            // {
-            //     _logger.LogError(ex, "Error generating skills graph");
-            //     return StatusCode(500, new { message = "An error occurred while generating skills graph" });
-            // }
-            // đang fix bug GNN
-            // try
-            // {
-            //     // 
-            //     var graphData = await _reportService.GetSkillsGraphAsync(limit);
-            //     return Ok(graphData);
-            // }
-            // catch (Exception ex)
-            // {
-            //     _logger.LogError(ex, "Error generating skills graph");
-            //     return StatusCode(500, new { message = "An error occurred while generating skills graph : " + ex.Message });
-            // }
-            // 1. Lấy Nodes từ bảng Tags đã có sẵn
-            var nodes = await _context.Tags
-                .Select(t => new
-                {
-                    id = t.TagId,
-                    label = t.TagName
-                })
-                .Take(limit)
-                .ToListAsync();
-
-            // 2. Lấy Edges bằng cách tìm các Tag xuất hiện cùng nhau trong một Job
-            // Chúng ta sử dụng bảng JobTags hiện có để tạo mối quan hệ
-            var jobGroups = await _context.JobTags
-                .GroupBy(jt => jt.JobId)
-                .Select(g => g.Select(x => x.TagId).ToList())
-                .ToListAsync();
-
-            var edges = new List<object>();
-            var edgeTracker = new HashSet<(int, int)>();
-
-            foreach (var tagIds in jobGroups)
-            {
-                for (int i = 0; i < tagIds.Count; i++)
-                {
-                    for (int j = i + 1; j < tagIds.Count; j++)
-                    {
-                        var pair = (Math.Min(tagIds[i], tagIds[j]), Math.Max(tagIds[i], tagIds[j]));
-                        if (!edgeTracker.Contains(pair))
-                        {
-                            edgeTracker.Add(pair);
-                            edges.Add(new { from = pair.Item1, to = pair.Item2 });
-                        }
-                    }
-                }
-            }
-
-            return Ok(new { nodes, edges });
-        }
-
-        /// <summary>
-        /// 4. Thống kê tổng quan (Dashboard Summary)
+        /// 3. Thống kê tổng quan (Dashboard Summary)
         /// </summary>
         [HttpGet("dashboard-summary")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -276,7 +109,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         /// <summary>
-        /// 5. Thống kê ứng tuyển theo thời gian
+        /// 4. Thống kê ứng tuyển theo thời gian
         /// </summary>
         [HttpGet("application-timeline")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -373,48 +206,8 @@ namespace JobSeekingAPI.Controllers
                 }
             });
         }
-
         /// <summary>
-        /// 6. Thống kê theo ngành nghề (Job Categories)
-        /// </summary>
-        // [HttpGet("job-categories")]
-        // [ProducesResponseType(StatusCodes.Status200OK)]
-        // [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        // public async Task<IActionResult> GetJobCategories()
-        // {
-        //     try
-        //     {
-        //         var categories = await _context.Tags
-        //             .Where(t => t.Type == "job_category" || t.Type == "industry")
-        //             .Select(t => new
-        //             {
-        //                 CategoryId = t.TagId,
-        //                 CategoryName = t.TagName,
-        //                 JobCount = t.JobTags.Count(jt => jt.Job != null && jt.Job.DeletedAt == null),
-        //                 AverageSalary = t.JobTags
-        //                     .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
-        //                     .Average(jt => (jt.Job!.SalaryMin + jt.Job!.SalaryMax) / 2 ?? 0),
-        //                 TopCompanies = t.JobTags
-        //                     .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
-        //                     .Select(jt => jt.Job!.Company!.CompanyName)
-        //                     .Distinct()
-        //                     .Take(5)
-        //                     .ToList()
-        //             })
-        //             .OrderByDescending(x => x.JobCount)
-        //             .ToListAsync();
-
-        //         return Ok(categories);
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Error getting job categories");
-        //         return StatusCode(500, new { message = "An error occurred while fetching job categories" });
-        //     }
-        // }
-
-        /// <summary>
-        /// 7. Top nhà tuyển dụng (Companies) tích cực nhất
+        /// 5. Top nhà tuyển dụng (Companies) tích cực nhất
         /// </summary>
         [HttpGet("top-companies")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -432,6 +225,39 @@ namespace JobSeekingAPI.Controllers
                 _logger.LogError(ex, "Error getting top companies");
                 return StatusCode(500, new { message = "An error occurred while fetching top companies : " + ex.Message });
             }
+        }
+        /// <summary>
+        /// 6. Chạy hệ thống AI_Service để cập nhật dữ liệu báo cáo (nếu cần thiết)
+        /// </summary>
+        [HttpGet("graph-skills")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetGraphSkills([FromQuery] int limit = 50)
+        {
+            // try
+            // {
+            //     // Gọi xuống hàm Service mà bạn đã viết rất xịn trước đó
+            //     var graphData = (dynamic)await _reportService.GetSkillsGraphAsync(limit);
+            //     return Ok(graphData);
+            // }
+            // catch (Exception ex)
+            // {
+            //     _logger.LogError(ex, "Error getting graph skills");
+            //     return StatusCode(500, new { message = "An error occurred while fetching graph skills : " + ex.Message });
+            // }
+
+                var graphData = (dynamic)await _reportService.GetSkillsGraphAsync(limit);
+                if (_cache.TryGetValue("GnnSkillEdges", out List<GraphEdgeDTO> aiEdges))
+                {
+                    // Gộp thêm các cạnh AI vào kết quả trả về
+                    // Bạn có thể đánh dấu đây là cạnh "AI" để Frontend vẽ màu khác
+                    return Ok(new {
+                        nodes = graphData.nodes,
+                        edges = graphData.edges,
+                        aiSuggestedEdges = aiEdges
+                    });
+                }
+                return Ok(graphData);
         }
     }
 }

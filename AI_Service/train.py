@@ -72,7 +72,3 @@ def train_gnn():
 
 if __name__ == "__main__":
     train_gnn()
-
-    graph = torch.load("graph_data/real_graph.pt")
-    mappings = pickle.load(open("graph_data/real_mappings.pkl", "rb"))
-    skill_to_idx = mappings["skill_id_to_idx"]

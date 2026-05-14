@@ -101,33 +101,29 @@ namespace JobSeekingAPI.Services
 
         public async Task<object> GetSkillsGraphAsync(int nodeLimit)
         {
-            // =========================
-            // BƯỚC 1: LẤY DATA THÔ (DB)
-            // =========================
-            var rawTags = await _context.Tags
-                .Select(t => new
+            // =========================================================
+            // BƯỚC 1: LẤY DANH SÁCH NODES BẰNG ANONYMOUS TYPE (FIX LỖI EF CORE)
+            // =========================================================
+            var rawNodes = await _context.Tags
+                .Select(t => new 
                 {
                     t.TagId,
                     t.TagName,
                     t.Type,
-                    JobCount = t.JobTags.Count(),
-                    CandidateCount = t.CandidateTags.Count()
+                    // Ép EF Core đếm dưới DB và gán thành biến Size
+                    Size = t.JobTags.Count() + t.CandidateTags.Count() 
                 })
-                .ToListAsync();
-
-            // =========================
-            // BƯỚC 2: TẠO NODES (RAM)
-            // =========================
-            var nodes = rawTags
-                .Select(t => new GraphNodeDTO(
-                    t.TagId,
-                    t.TagName,
-                    t.Type ?? "Skill",
-                    t.JobCount + t.CandidateCount
-                ))
-                .OrderByDescending(n => n.Size)
+                .OrderByDescending(n => n.Size) // SQL ORDER BY hoạt động trơn tru
                 .Take(nodeLimit)
-                .ToList();
+                .ToListAsync(); // <--- Chạy SQL và kéo data về RAM tại đây
+
+            // Ép sang GraphNodeDTO trên RAM (C# code)
+            var nodes = rawNodes.Select(t => new GraphNodeDTO(
+                t.TagId,
+                t.TagName,
+                t.Type ?? "Skill",
+                t.Size
+            )).ToList();
 
             var nodeIds = nodes.Select(n => n.Id).ToList();
 
@@ -136,32 +132,30 @@ namespace JobSeekingAPI.Services
                 return new { nodes = new List<object>(), edges = new List<object>() };
             }
 
-            // =========================
-            // BƯỚC 3: LẤY JOB-TAG GROUPS
-            // =========================
+            // =========================================================
+            // BƯỚC 2: LẤY DỮ LIỆU NHÓM KỸ NĂNG THEO TỪNG CÔNG VIỆC
+            // =========================================================
             var jobSkillGroups = await _context.JobTags
                 .Where(jt => nodeIds.Contains(jt.TagId))
                 .GroupBy(jt => jt.JobId)
-                .Select(g => g.Select(x => x.TagId).ToList())
+                .Select(g => g.Select(x => x.TagId).Distinct().ToList())
                 .ToListAsync();
 
-            // =========================
-            // BƯỚC 4: BUILD EDGES (RAM)
-            // =========================
+            // =========================================================
+            // BƯỚC 3: TÍNH TOÁN CÁC CẠNH (EDGES) BẰNG DICTIONARY
+            // =========================================================
             var edgeCounts = new Dictionary<(int, int), int>();
 
             foreach (var tagIds in jobSkillGroups)
             {
-                var distinctTags = tagIds.Distinct().ToList();
-
-                for (int i = 0; i < distinctTags.Count; i++)
+                for (int i = 0; i < tagIds.Count; i++)
                 {
-                    for (int j = i + 1; j < distinctTags.Count; j++)
+                    for (int j = i + 1; j < tagIds.Count; j++)
                     {
-                        var a = distinctTags[i];
-                        var b = distinctTags[j];
+                        var a = tagIds[i];
+                        var b = tagIds[j];
 
-                        var key = (Math.Min(a, b), Math.Max(a, b));
+                        var key = a < b ? (a, b) : (b, a);
 
                         if (edgeCounts.ContainsKey(key))
                             edgeCounts[key]++;
@@ -171,33 +165,27 @@ namespace JobSeekingAPI.Services
                 }
             }
 
-            // =========================
-            // BƯỚC 5: TẠO EDGES DTO
-            // =========================
-            var totalJobs = jobSkillGroups.Count;
+            // =========================================================
+            // BƯỚC 4: TỔNG HỢP KẾT QUẢ VÀ TÍNH ĐỘ MẠNH LIÊN KẾT (WEIGHT)
+            // =========================================================
+            var totalActiveJobs = jobSkillGroups.Count;
 
             var edges = edgeCounts
                 .Select(x => new GraphEdgeDTO(
                     x.Key.Item1,
                     x.Key.Item2,
-                    x.Value,
-                    totalJobs > 0
-                        ? Math.Round((double)x.Value / totalJobs * 100, 2)
+                    x.Value, 
+                    totalActiveJobs > 0 
+                        ? Math.Round((double)x.Value / totalActiveJobs * 100, 2) 
                         : 0
                 ))
-                .OrderByDescending(e => e.Value)
-                .Take(50)
+                .OrderByDescending(e => e.Value) 
+                .Take(100) 
                 .ToList();
 
-            // =========================
-            // RETURN RESULT
-            // =========================
-            return new
-            {
-                nodes,
-                edges
-            };
+            return new { nodes, edges };
         }
+        
         public async Task<DashboardSummaryDTO> GetDashboardSummaryAsync()
         {
             var now = DateTime.UtcNow;
