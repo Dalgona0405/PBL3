@@ -21,10 +21,10 @@ namespace JobSeekingAPI.DTOs
     );
 
     public record GraphEdgeDTO(
-        int From, 
-        int To, 
-        int Value,
-        double Strength
+        int From,
+        int To,
+        double Value = 1.0,
+        double Strength = 0.5
     );
 
     public record TimelineDataDTO(
@@ -59,4 +59,11 @@ namespace JobSeekingAPI.DTOs
         decimal AvgSalary,
         DateTime? LatestJobDate
     );
+
+    public class JobMatchResultDTO
+    {
+        public double MatchScore { get; set; }
+        public List<string> MissingSkills { get; set; } = new();
+        public string? Advice { get; set; }
+    }
 }

@@ -227,37 +227,35 @@ namespace JobSeekingAPI.Controllers
             }
         }
         /// <summary>
-        /// 6. Chạy hệ thống AI_Service để cập nhật dữ liệu báo cáo (nếu cần thiết)
+        /// 6. Lấy dữ liệu vẽ biểu đồ Mạng nén đồ thị (GNN) cho Kỹ năng
         /// </summary>
         [HttpGet("graph-skills")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetGraphSkills([FromQuery] int limit = 50)
         {
-            // try
-            // {
-            //     // Gọi xuống hàm Service mà bạn đã viết rất xịn trước đó
-            //     var graphData = (dynamic)await _reportService.GetSkillsGraphAsync(limit);
-            //     return Ok(graphData);
-            // }
-            // catch (Exception ex)
-            // {
-            //     _logger.LogError(ex, "Error getting graph skills");
-            //     return StatusCode(500, new { message = "An error occurred while fetching graph skills : " + ex.Message });
-            // }
+            // 1. Lấy dữ liệu GỐC từ C# (Các kỹ năng thực tế đang liên kết với nhau)
+            // Dùng dynamic vì Service đang trả về một Anonymous Object { nodes, edges }
+            var graphData = (dynamic)await _reportService.GetSkillsGraphAsync(limit);
 
-                var graphData = (dynamic)await _reportService.GetSkillsGraphAsync(limit);
-                if (_cache.TryGetValue("GnnSkillEdges", out List<GraphEdgeDTO> aiEdges))
+            // 2. Mở "tủ lạnh" Cache lấy dữ liệu DỰ BÁO từ AI (Do GNNUpdateWorker cất vào)
+            if (_cache.TryGetValue("GnnSkillEdges", out List<GraphEdgeDTO> aiEdges))
+            {
+                // 3. Nếu có AI, gộp chung lại và trả về 3 mảng riêng biệt
+                return Ok(new
                 {
-                    // Gộp thêm các cạnh AI vào kết quả trả về
-                    // Bạn có thể đánh dấu đây là cạnh "AI" để Frontend vẽ màu khác
-                    return Ok(new {
-                        nodes = graphData.nodes,
-                        edges = graphData.edges,
-                        aiSuggestedEdges = aiEdges
-                    });
-                }
-                return Ok(graphData);
+                    nodes = graphData.nodes,
+                    edges = graphData.edges,           // Nét vẽ bình thường (Thực tế)
+                    aiSuggestedEdges = aiEdges         // Nét vẽ đứt/màu đỏ (AI dự báo)
+                });
+            }
+
+            // 4. Nếu AI chưa kịp chạy xong (hoặc Python đang tắt), cứ trả về dữ liệu gốc để Frontend không bị lỗi
+            return Ok(new
+            {
+                nodes = graphData.nodes,
+                edges = graphData.edges,
+                aiSuggestedEdges = new List<GraphEdgeDTO>() // Trả về mảng rỗng để ReactJS không bị undefined
+            });
         }
     }
 }

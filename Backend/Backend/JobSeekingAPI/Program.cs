@@ -2,6 +2,7 @@ using JobSeekingAPI.Data;
 using JobSeekingAPI.Middlewares;
 using JobSeekingAPI.Repositories;
 using JobSeekingAPI.Services;
+using JobSeekingAPI.Workers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -15,6 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMemoryCache();
 builder.Services.AddHostedService<SalaryAnalyticsWorker>();
 builder.Services.AddHostedService<AIIntegrationWorker>();
+builder.Services.AddHostedService<GNNUpdateWorker>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -31,9 +33,10 @@ builder.Services.AddScoped<IExperienceRepository, ExperienceRepository>();
 builder.Services.AddScoped<ICompanyJoinRequestRepository, CompanyJoinRequestRepository>();
 
 builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<IStatisticsService, StatisticsService>(); // TẠM THỜI COMMENT - CHỜ FIX SAU Graph AI & Dashboard Stats
-builder.Services.AddScoped<IReportService, ReportService>(); // TẠM THỜI COMMENT - CHỜ FIX SAU Graph AI & Dashboard Stats
+builder.Services.AddScoped<IStatisticsService, StatisticsService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IApplicationService, ApplicationService>();
+builder.Services.AddScoped<IMatchingService, MatchingService>();
 
 // Đăng ký HttpClient để C# có thể gửi request đi các server khác (như server Python)
 builder.Services.AddHttpClient();

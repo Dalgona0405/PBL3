@@ -30,16 +30,16 @@ namespace JobSeekingAPI.Workers
 
                     if (response.IsSuccessStatusCode)
                     {
-                        var aiEdges = await response.Content.ReadFromJsonAsync<List<GraphEdgeDTO>>(stoppingToken);
+                        var aiEdges = await response.Content.ReadFromJsonAsync<List<GraphEdgeDTO>>(cancellationToken: stoppingToken);
                         
                         if (aiEdges != null && aiEdges.Any())
                         {
                             // =========================================================
-                            // CÁCH 2: LỌC DỮ LIỆU ĐỂ TRÁNH RỐI BIỂU ĐỒ (HAIRBALL)
+                            // LỌC DỮ LIỆU ĐỂ TRÁNH RỐI BIỂU ĐỒ (HAIRBALL)
                             // Sắp xếp theo Value (độ tin cậy) giảm dần và chỉ lấy Top 150
                             // =========================================================
                             var filteredEdges = aiEdges
-                                .OrderByDescending(e => e.Value) // Hoặc e.Weight tùy vào định nghĩa của bạn trong GraphEdgeDTO
+                                .OrderByDescending(e => e.Value)
                                 .Take(150)
                                 .ToList();
 
@@ -51,21 +51,13 @@ namespace JobSeekingAPI.Workers
                             _cache.Set("GnnSkillEdges", filteredEdges, cacheOptions);
                             
                             // Cập nhật lại Log để biết hệ thống đã lọc bớt bao nhiêu
-                            _logger.LogInformation($"AI trả về {aiEdges.Count} liên kết. Đã lọc và lưu Top {filteredEdges.Count} liên kết mạnh nhất vào RAM thành công.");
+                            _logger.LogInformation($"AI trả về {aiEdges.Count} liên kết. Đã lọc và lưu Top {filteredEdges.Count} vào RAM thành công.");
                         }
                         else
                         {
                             _logger.LogWarning($"[CẢNH BÁO] Python AI trả về mã lỗi: {response.StatusCode}. Hệ thống vẫn tiếp tục dùng dữ liệu cũ.");
                         }
                     }
-                }
-                catch (HttpRequestException ex)
-                {
-                    _logger.LogWarning($"[MẤT KẾT NỐI] Không thể gọi tới Python API (Port 8000 chưa bật). Lỗi: {ex.Message}");
-                }
-                catch (TaskCanceledException)
-                {
-                    _logger.LogWarning("[TIMEOUT] Python AI xử lý quá lâu (>30s). Đã ngắt kết nối tạm thời.");
                 }
                 catch (Exception ex)
                 {

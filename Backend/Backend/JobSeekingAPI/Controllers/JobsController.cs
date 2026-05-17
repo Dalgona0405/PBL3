@@ -4,6 +4,7 @@ using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using JobSeekingAPI.Helpers;
+using JobSeekingAPI.Services;
 
 namespace JobSeekingAPI.Controllers
 {
@@ -13,11 +14,12 @@ namespace JobSeekingAPI.Controllers
     {
         private readonly IJobRepository _jobRepository;
         private readonly ICompanyRepository _companyRepo;
-
-        public JobsController(IJobRepository jobRepository, ICompanyRepository companyRepo)
+        private readonly IMatchingService _matchingService;
+        public JobsController(IJobRepository jobRepository, ICompanyRepository companyRepo, IMatchingService matchingService)
         {
             _jobRepository = jobRepository;
             _companyRepo = companyRepo;
+            _matchingService = matchingService;
         }
 
         // GET: api/jobs/{id}
@@ -176,6 +178,27 @@ namespace JobSeekingAPI.Controllers
             }
             await _jobRepository.SoftDeleteJobAsync(id);
             return Ok(new { message = "Delete success" });
+        }
+
+        // GET: api/jobs/{jobId}/match/{candidateId}
+        [Authorize(Roles = "Candidate, Admin")]
+        [HttpGet("{jobId}/match/{candidateId}")]
+        public async Task<IActionResult> GetJobMatchScore(int jobId, int candidateId)
+        {
+            try
+            {
+                // Giao hết việc nặng cho Service
+                var result = await _matchingService.GetJobMatchScoreAsync(jobId, candidateId);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 
         private JobDetailDTO MapToDTO(Job j)

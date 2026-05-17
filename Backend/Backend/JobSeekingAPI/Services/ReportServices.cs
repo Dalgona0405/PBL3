@@ -105,6 +105,7 @@ namespace JobSeekingAPI.Services
             // BƯỚC 1: LẤY DANH SÁCH NODES BẰNG ANONYMOUS TYPE (FIX LỖI EF CORE)
             // =========================================================
             var rawNodes = await _context.Tags
+                .Where(t => t.Type == "Skill" || t.Type == "Language")
                 .Select(t => new 
                 {
                     t.TagId,

@@ -24,6 +24,10 @@ class SalaryChartRequest(BaseModel):
 class SkillRequest(BaseModel):
     current_skills: List[int]
 
+class MatchScoreRequest(BaseModel):
+    candidate_skills: List[int]
+    job_skills: List[int]
+
 # --- PHẦN 2: BIẾN TOÀN CỤC VÀ KHỞI TẠO HỆ THỐNG ---
 
 graph_data = None
@@ -45,7 +49,7 @@ def load_system():
         model = GCNNet(in_channels=1) 
         
         # Load trọng số nếu bạn đã có file train (bỏ comment dòng dưới nếu cần)
-        # model.load_state_dict(torch.load('gnn_encoder.pth'))
+        model.load_state_dict(torch.load('gnn_encoder.pth'))
         
         model.eval() 
         with torch.no_grad():
@@ -149,11 +153,58 @@ def get_predicted_edges():
                     predicted_edges.append({
                         "from": idx_to_sql[i],
                         "to": idx_to_sql[j],
-                        "weight": int(score * 100),
+                        "strength": int(score * 100),
                         "value": round(score * 100, 2)
                     })
         return predicted_edges
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Lỗi khi dự đoán cạnh: {str(e)}"})
+    
+@app.post("/api/matching/score")
+def get_matching_score(request: MatchScoreRequest):
+    if node_embeddings is None:
+        return JSONResponse(status_code=400, content={"message": "Model GNN chưa được nạp. Vui lòng chạy train.py trước."})
+    
+    try:
+        candidate_skills = request.candidate_skills
+        job_skills = request.job_skills
 
+        candidate_indices = [sql_to_idx[s] for s in candidate_skills if s in sql_to_idx]
+        job_indices = [sql_to_idx[s] for s in job_skills if s in sql_to_idx]
+
+        if not job_indices:
+            return{
+                "matchScore": 100.0,
+                "missingSkills": [],
+                "advice": "Công việc này không yêu cầu kỹ năng cụ thể nào, bạn đã hoàn toàn phù hợp!"
+            }
+        
+        total_score = 0
+        missing_skills_names = []
+
+        for j_idx in job_indices:
+            if j_idx in candidate_indices:
+                total_score += 1.0
+            else:
+                max_sim = 0
+            total_score += max_sim
+            if max_sim < 0.5:
+                missing_skills_names.append(idx_to_name.get(j_idx, "Unknown Skill"))
+        
+        match_score = round((total_score / len(job_indices)) * 100, 1)
+
+        if not missing_skills_names:
+            advice = "Tuyệt vời! Bạn đã có tất cả kỹ năng cần thiết cho công việc này."
+        else:
+            top_missing = ", ".join(missing_skills_names[:3])
+            advice = f"Bạn cần học thêm các kỹ năng: {top_missing} để tăng cơ hội trúng tuyển."
+        
+        return {
+            "matchScore": match_score,
+            "missingSkills": missing_skills_names,
+            "advice": advice
+        }
+    
     except Exception as e:
         # Bắt mọi lỗi thuật toán và trả về 500 kèm thông báo rõ ràng cho C# đọc
         return JSONResponse(status_code=500, content={"error": f"Lỗi tính toán AI: {str(e)}"})

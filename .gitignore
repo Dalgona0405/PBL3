@@ -2,6 +2,7 @@
 .vs/
 *.vsidx
 *.suo
+.vscode/
 DocumentLayout.json
 DocumentLayout.backup.json
 
