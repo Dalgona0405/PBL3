@@ -15,6 +15,7 @@ import JobFormPage from "./pages/JobFormPage";
 import CompanyRequestsPage from "./pages/CompanyRequestsPage";
 import ManageTagsPage from "./pages/ManageTags";
 import ManageUsersPage from "./pages/ManageUsersPage";
+import ForeCast from "./pages/ForeCast";
 
 // Component con để bảo vệ các trang bắt buộc đăng nhập (Route Guard)
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -34,6 +35,7 @@ function AppRoutes() {
 
             <Route element={<MainLayout />}>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/forecast" element={<ForeCast />} />
                 <Route path="/detail-job/:id" element={<DetailJobPage />} />
                 <Route path="/detail-company/:id" element={<DetailCompanyPage />} />
 

@@ -1,6 +1,3 @@
-// ==========================================
-// FILE: src/pages/ManageUsersPage.jsx
-// ==========================================
 import React, { useState, useEffect } from 'react';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';

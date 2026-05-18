@@ -27,6 +27,9 @@ const MainLayout = () => {
           <button onClick={() => navigate('/')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
             🏠 <span className="ml-3 font-medium">Trang chủ</span>
           </button>
+          <button onClick={() => navigate('/forecast')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+            📊 <span className="ml-3 font-medium">Dự báo thị trường</span>
+          </button>
 
           {user && (
             <button onClick={() => navigate('/profile')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
