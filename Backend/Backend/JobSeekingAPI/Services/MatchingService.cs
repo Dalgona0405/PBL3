@@ -8,12 +8,15 @@ namespace JobSeekingAPI.Services
         private readonly IJobRepository _jobRepo;
         private readonly ICandidateRepository _candidateRepo;
         private readonly HttpClient _httpClient;
+        private readonly string _pythonBaseUrl;
 
-        public MatchingService(IJobRepository jobRepo, ICandidateRepository candidateRepo, HttpClient httpClient)
+
+        public MatchingService(IJobRepository jobRepo, ICandidateRepository candidateRepo, HttpClient httpClient, IConfiguration config)
         {
             _jobRepo = jobRepo;
             _candidateRepo = candidateRepo;
             _httpClient = httpClient;
+            _pythonBaseUrl = config["PythonAI:BaseUrl"] ?? "http://localhost:8000";
         }
 
         public async Task<JobMatchResultDTO> GetJobMatchScoreAsync(int jobId, int candidateId)
@@ -43,7 +46,7 @@ namespace JobSeekingAPI.Services
             };
 
             // 4. Gọi sang Python
-            var pythonApiUrl = "http://localhost:8000/api/matching/score";
+            var pythonApiUrl = $"{_pythonBaseUrl}/api/matching/score";
             var response = await _httpClient.PostAsJsonAsync(pythonApiUrl, payload);
 
             if (response.IsSuccessStatusCode)

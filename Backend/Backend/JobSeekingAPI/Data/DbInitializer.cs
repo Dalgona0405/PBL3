@@ -1,5 +1,4 @@
 using JobSeekingAPI.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace JobSeekingAPI.Data
 {

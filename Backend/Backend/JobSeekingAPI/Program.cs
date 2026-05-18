@@ -15,7 +15,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMemoryCache();
 builder.Services.AddHostedService<SalaryAnalyticsWorker>();
-builder.Services.AddHostedService<AIIntegrationWorker>();
 builder.Services.AddHostedService<GNNUpdateWorker>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

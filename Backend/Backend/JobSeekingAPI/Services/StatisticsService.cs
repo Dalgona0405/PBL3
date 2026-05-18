@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
+using Microsoft.EntityFrameworkCore;
 
 namespace JobSeekingAPI.Services
 {

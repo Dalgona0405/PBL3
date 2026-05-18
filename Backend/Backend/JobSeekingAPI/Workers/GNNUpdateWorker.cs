@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Caching.Memory;
 using JobSeekingAPI.DTOs;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace JobSeekingAPI.Workers
 {
@@ -8,12 +8,15 @@ namespace JobSeekingAPI.Workers
         private readonly IMemoryCache _cache;
         private readonly ILogger<GNNUpdateWorker> _logger;
         private readonly HttpClient _httpClient;
+        private readonly string _pythonBaeseUrl;
 
-        public GNNUpdateWorker(IMemoryCache cache, ILogger<GNNUpdateWorker> logger, HttpClient httpClient)
+        public GNNUpdateWorker(IMemoryCache cache, ILogger<GNNUpdateWorker> logger, HttpClient httpClient, IConfiguration config)
         {
             _cache = cache;
             _logger = logger;
             _httpClient = httpClient;
+            _pythonBaeseUrl = config["PythonAI:BaseUrl"] ?? "http://localhost:8000";
+
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -26,7 +29,7 @@ namespace JobSeekingAPI.Workers
                 {
                     _logger.LogInformation("Worker : Đang kiểm tra kết nối và lấy dữ liệu Đồ thị Kỹ năng từ Python AI...");
                     
-                    var response = await _httpClient.GetAsync("http://localhost:8000/api/graph/predict-edges", stoppingToken);
+                    var response = await _httpClient.GetAsync($"{_pythonBaeseUrl}/api/graph/predict-edges", stoppingToken);
 
                     if (response.IsSuccessStatusCode)
                     {

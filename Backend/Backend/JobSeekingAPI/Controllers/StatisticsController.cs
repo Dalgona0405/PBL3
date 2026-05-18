@@ -1,9 +1,7 @@
-using Microsoft.AspNetCore.Mvc;
-using JobSeekingAPI.Services;
-using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Data; // Thêm dòng này để dùng ApplicationDbContext
-using Microsoft.EntityFrameworkCore; // Thêm dòng này để dùng ToListAsync
-using System.Net.Http.Json; // Thêm dòng này để dùng PostAsJsonAsync
+using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory; // Thêm dòng này để dùng IMemoryCache
 namespace JobSeekingAPI.Controllers
 {

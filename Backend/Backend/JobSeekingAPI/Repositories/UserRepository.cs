@@ -26,44 +26,54 @@ namespace JobSeekingAPI.Repositories
         // HÀM ĐĂNG KÝ
         public async Task<User> RegisterUserAsync(CreateUserDTO userDto)
         {
-            // Tạo User cơ bản và mã hóa mật khẩu
-            var user = new User
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                Email = userDto.Email,
-                // Luôn luôn mã hóa mật khẩu trước khi lưu
-                Password = BCrypt.Net.BCrypt.HashPassword(userDto.Password),
-                Role = userDto.Role,
-                FullName = userDto.FullName,
-                Avatar = userDto.Avatar
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync(); // Lưu để user có UserId
-
-            // Dựa vào Role, tạo profile tương ứng
-            if (user.Role == "Candidate")
-            {
-                var candidate = new Candidate
+                // Tạo User cơ bản và mã hóa mật khẩu
+                var user = new User
                 {
-                    UserId = user.UserId
+                    Email = userDto.Email,
+                    // Luôn luôn mã hóa mật khẩu trước khi lưu
+                    Password = BCrypt.Net.BCrypt.HashPassword(userDto.Password),
+                    Role = userDto.Role,
+                    FullName = userDto.FullName,
+                    Avatar = userDto.Avatar
                 };
-                _context.Candidates.Add(candidate);
-            }
-            if (user.Role == "Recruiter")
-            {
-                var rectuiter = new Recruiter
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync(); // Lưu để user có UserId
+
+                // Dựa vào Role, tạo profile tương ứng
+                if (user.Role == "Candidate")
                 {
-                    UserId = user.UserId,
-                    Company = new Company
+                    var candidate = new Candidate
                     {
-                        CompanyName = "Default Company Name"
-                    }
-                };
-                _context.Recruiters.Add(rectuiter);
-            }
+                        UserId = user.UserId
+                    };
+                    _context.Candidates.Add(candidate);
+                }
+                if (user.Role == "Recruiter")
+                {
+                    var rectuiter = new Recruiter
+                    {
+                        UserId = user.UserId,
+                        Company = new Company
+                        {
+                            CompanyName = "Default Company Name"
+                        }
+                    };
+                    _context.Recruiters.Add(rectuiter);
+                }
 
-            await _context.SaveChangesAsync();
-            return user;
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return user;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<PagedResultDTO<UserListDTO>> GetAllUsersWithDetailsAsync(int page, int pageSize)

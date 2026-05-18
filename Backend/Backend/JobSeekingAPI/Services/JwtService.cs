@@ -1,8 +1,8 @@
+using JobSeekingAPI.Models;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using JobSeekingAPI.Models;
-using Microsoft.IdentityModel.Tokens;
 
 namespace JobSeekingAPI.Services
 {

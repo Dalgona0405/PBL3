@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using JobSeekingAPI.Data;
-using JobSeekingAPI.Models;
+﻿using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace JobSeekingAPI.Repositories
 {

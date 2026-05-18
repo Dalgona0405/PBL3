@@ -1,8 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace JobSeekingAPI.Controllers
 {
