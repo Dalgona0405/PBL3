@@ -51,17 +51,6 @@ namespace JobSeekingAPI.Workers
                                 _cache.Set("CachedSalaryChart", chartResult, TimeSpan.FromHours(1));
                                 _logger.LogInformation("Worker: Đã cập nhật biểu đồ lương mới vào cache.");
                             }
-
-                            // ====================================================
-                            // LẤY MA TRẬN LƯƠNG
-                            // ====================================================
-                            var matrixResponse = await _httpClient.GetAsync($"{_pythonBaseUrl}/api/analytics/salary-matrix", stoppingToken);
-                            if (matrixResponse.IsSuccessStatusCode)
-                            {
-                                var matrixData = await matrixResponse.Content.ReadFromJsonAsync<object>(cancellationToken: stoppingToken);
-                                _cache.Set("SalaryMatrix", matrixData, TimeSpan.FromMinutes(30));
-                                _logger.LogInformation("Worker: Đã cập nhật Ma trận lương từ AI Service ngầm.");
-                            }
                         }
                     }
                 }

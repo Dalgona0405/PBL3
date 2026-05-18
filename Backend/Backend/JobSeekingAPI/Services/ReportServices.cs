@@ -20,6 +20,7 @@ namespace JobSeekingAPI.Services
 
             // Bước 1: Kéo data thô từ DB (EF Core dịch cực dễ)
             var rawTags = await _context.Tags
+                .Where(t => t.Type == "Skill" || t.Type == "Language")
                 .Select(t => new {
                     t.TagName,
                     JobCount = t.JobTags.Count()

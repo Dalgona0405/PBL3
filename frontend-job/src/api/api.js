@@ -12,7 +12,8 @@ export const API_URLS = {
     RECRUITERS: `/Recruiters`,
     LOCATION: `/Locations`,
     COMPANY_REQUESTS: `/CompanyRequests`,
-    STATISTICS: `/Statistics`
+    STATISTICS: `/Statistics`,
+    REPORTS: `/Reports`
 };
 
 //
