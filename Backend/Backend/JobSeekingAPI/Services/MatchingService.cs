@@ -23,11 +23,17 @@ namespace JobSeekingAPI.Services
             if (job == null)
                 throw new ArgumentException("Job not found");
 
-            var jobSkills = job.JobTags.Select(jt => jt.TagId).ToList();
+            var jobSkills = job.JobTags
+                .Where(jt => jt.Tag != null && (jt.Tag.Type == "Skill" || jt.Tag.Type == "Language"))
+                .Select(jt => jt.TagId)
+                .ToList();
 
             // 2. Lấy danh sách TagId của Candidate
             var candidateTags = await _candidateRepo.GetTagsByCandidateIdAsync(candidateId);
-            var candidateSkills = candidateTags.Select(ct => ct.TagId).ToList();
+            var candidateSkills = candidateTags
+                .Where(ct => ct.Tag != null && (ct.Tag.Type == "Skill" || ct.Tag.Type == "Language"))
+                .Select(ct => ct.TagId)
+                .ToList();
 
             // 3. Đóng gói Payload
             var payload = new
