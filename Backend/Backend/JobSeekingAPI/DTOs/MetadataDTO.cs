@@ -66,4 +66,12 @@ namespace JobSeekingAPI.DTOs
         public List<string> MissingSkills { get; set; } = new();
         public string? Advice { get; set; }
     }
+
+    public class JobSuggestionDTO
+    {
+        public JobSummaryDTO Job { get; set; } = null;
+        public double MatchScore { get; set; }
+        public List<string> MissingSkills { get; set; } = new();
+        public string? Advice { get; set; }
+    }
 }

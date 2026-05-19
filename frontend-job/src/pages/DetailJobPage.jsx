@@ -15,6 +15,7 @@ function DetailJobPage() {
     const [cvOption, setCvOption] = useState('default'); // 'default' hoặc 'new'
     const [selectedFile, setSelectedFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [matchScore, setMatchScore] = useState(null); // Điểm match (nếu có)
 
     useEffect(() => {
         const fetchJobDetail = async () => {
@@ -25,7 +26,22 @@ function DetailJobPage() {
                 console.error('Lỗi lấy chi tiết:', error);
             }
         };
+
+        const fetchMatchScore = async () => {
+            if (user && user.role === 'Candidate') {
+                try {
+                    const matchData = await axiosClient.get(`${API_URLS.JOBS}/${id}/match/${user.id}`);
+                    const score = matchData.MatchScore;
+                    if (typeof score === 'number') {
+                        setMatchScore(score);
+                    }
+                } catch (error) {
+                    console.error('Lỗi lấy điểm match:', error);
+                }
+            }
+        };
         fetchJobDetail();
+        fetchMatchScore();
     }, [id]);
 
     // Hàm mở Modal
@@ -141,6 +157,24 @@ function DetailJobPage() {
                     <p className="flex items-center"><span className="text-xl mr-3">⏳</span> <strong>Cấp bậc:</strong> &nbsp;{jobDetail.level}</p>
                 </div>
             </div>
+
+            {matchScore !== null && (
+                <div className="bg-gradient-to-r from-cream to-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6 flex flex-col md:flex-row items-center gap-6 transform transition-all hover:shadow-md">
+                    <div className="w-20 h-20 shrink-0 rounded-full flex items-center justify-center border-4 border-olive bg-white shadow-inner relative">
+                        <span className="text-2xl font-bold text-olive">{matchScore}%</span>
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <h3 className="text-xl font-bold text-olive mb-2">Độ phù hợp của bạn</h3>
+                        <p className="text-gray-600">
+                            {matchScore >= 80 
+                                ? "Tuyệt vời! Kỹ năng của bạn cực kỳ phù hợp với vị trí này. Hãy ứng tuyển ngay nhé! 🚀" 
+                                : matchScore >= 50 
+                                ? "Khá tốt! Bạn có một số kỹ năng phù hợp. Đừng ngần ngại thử sức! 🌿" 
+                                : "Có vẻ vị trí này yêu cầu một số kỹ năng mới. Đây là cơ hội tốt để học hỏi thêm! 📚"}
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* KHỐI 2: MÔ TẢ CHI TIẾT */}
             <div className="bg-white rounded-2xl shadow-sm p-8">

@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area
 } from 'recharts';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
+
+// Ép chữ nằm thẳng 1 dòng, cấm rớt dòng
+const CustomYAxisTick = ({ x, y, payload }) => {
+    return (
+        <text
+            x={x - 10}
+            y={y}
+            dy={4} // Căn chỉnh cho chữ nằm ngay giữa thanh ngang
+            textAnchor="end" // Neo chữ về bên phải cho sát vào trục
+            fill="#666"
+            fontSize={13}
+        >
+            {payload.value}
+        </text>
+    );
+};
 
 function ForeCast() {
     // 1. STATE: Chuẩn bị các "cái mâm" để đựng dữ liệu từ 6 API khác nhau
@@ -14,7 +30,7 @@ function ForeCast() {
     const [timeline, setTimeline] = useState([]);
     const [topCompanies, setTopCompanies] = useState([]);
     const [aiSalary, setAiSalary] = useState([]);
-    
+
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -27,7 +43,7 @@ function ForeCast() {
         const fetchAllReports = async () => {
             try {
                 setIsLoading(true);
-                
+
                 const [
                     dashRes,
                     trendRes,
@@ -78,7 +94,7 @@ function ForeCast() {
 
     return (
         <div className="max-w-7xl mx-auto w-full pb-12">
-            
+
             {/* HEADER */}
             <div className="mb-8 border-b-2 border-olive pb-4 flex justify-between items-end">
                 <div>
@@ -111,19 +127,25 @@ function ForeCast() {
             </div>
 
             {/* KHỐI 2: CÁC BIỂU ĐỒ CHI TIẾT */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
+            <div className="flex flex-col gap-12">
                 {/* 1. XU HƯỚNG KỸ NĂNG (Từ API /Reports/market-trend) */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                     <h3 className="text-xl font-bold text-olive mb-6">🔥 Top Kỹ Năng Đang Hot (Market Trend)</h3>
-                    <div className="h-80 min-h-[300px] w-full">
+                    <div className="h-[400px] w-full">
                         <ResponsiveContainer width="99%" height="100%">
-                            <BarChart data={marketTrend} layout="vertical" margin={{ left: 20 }}>
+                            <BarChart data={marketTrend} layout="vertical" margin={{ left: 20, right: 80, top: 20, bottom: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={true} vertical={false} />
                                 <XAxis type="number" stroke="#8A9A86" />
-                                <YAxis dataKey="skillName" type="category" stroke="#8A9A86" width={80} />
+                                <YAxis
+                                    dataKey="skillName"
+                                    type="category"
+                                    stroke="#8A9A86"
+                                    width={160}
+                                    tick={<CustomYAxisTick />}
+                                />
+
                                 <Tooltip cursor={{ fill: '#f9f9f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                                <Bar dataKey="jobCount" name="Số lượng Job" fill="#8A9A86" radius={[0, 8, 8, 0]} barSize={20} />
+                                <Bar dataKey="jobCount" name="Số lượng Job" fill="#8A9A86" radius={[0, 8, 8, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -132,16 +154,19 @@ function ForeCast() {
                 {/* 2. MỨC LƯƠNG THEO KHU VỰC (Từ API /Reports/salary-by-location) */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                     <h3 className="text-xl font-bold text-olive mb-6">💰 Mức Lương Theo Khu Vực (Triệu VNĐ)</h3>
-                    <div className="h-80 min-h-[300px] w-full">
+                    <div className="h-[400px] w-full">
                         <ResponsiveContainer width="99%" height="100%">
-                            <BarChart data={salaryLocation}>
+                            {/* MẸO: Tăng margin bottom lên 60 để có chỗ cho chữ nghiêng */}
+                            <BarChart data={salaryLocation} margin={{ bottom: 20, top: 20, right: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="locationName" stroke="#8A9A86" />
-                                <YAxis stroke="#8A9A86" />
+                                {/* MẸO: Xoay chữ nghiêng -45 độ, neo ở đuôi chữ (textAnchor="end") */}
+                                <XAxis dataKey="locationName" stroke="#8A9A86" angle={-45} textAnchor="end" tick={{ fontSize: 12, fill: '#666' }} height={60} />
+                                <YAxis stroke="#8A9A86" tick={{ fontSize: 12 }} />
                                 <Tooltip cursor={{ fill: '#f9f9f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                                <Legend />
-                                <Bar dataKey="averageMinSalary" name="Lương Tối Thiểu (TB)" fill="#D4C4B7" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="averageMaxSalary" name="Lương Tối Đa (TB)" fill="#C19A6B" radius={[4, 4, 0, 0]} />
+                                {/* MẸO: Đưa Legend (chú thích) lên trên cùng cho thoáng phần dưới */}
+                                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: '20px' }} />
+                                <Bar dataKey="averageMinSalary" name="Lương Tối Thiểu (TB)" fill="#D4C4B7" radius={[4, 4, 0, 0]} barSize={24} />
+                                <Bar dataKey="averageMaxSalary" name="Lương Tối Đa (TB)" fill="#C19A6B" radius={[4, 4, 0, 0]} barSize={24} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -155,8 +180,8 @@ function ForeCast() {
                             <AreaChart data={timeline}>
                                 <defs>
                                     <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#8A9A86" stopOpacity={0.8}/>
-                                        <stop offset="95%" stopColor="#8A9A86" stopOpacity={0}/>
+                                        <stop offset="5%" stopColor="#8A9A86" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="#8A9A86" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -191,7 +216,7 @@ function ForeCast() {
                                     ))}
                                 </Pie>
                                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                                <Legend verticalAlign="bottom" height={36}/>
+                                <Legend verticalAlign="bottom" height={36} />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
@@ -216,7 +241,6 @@ function ForeCast() {
                         </ResponsiveContainer>
                     </div>
                 </div>
-
             </div>
         </div>
     );

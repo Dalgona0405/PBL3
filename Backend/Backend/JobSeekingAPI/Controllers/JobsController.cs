@@ -187,7 +187,6 @@ namespace JobSeekingAPI.Controllers
         {
             try
             {
-                // Giao hết việc nặng cho Service
                 var result = await _matchingService.GetJobMatchScoreAsync(jobId, candidateId);
                 return Ok(result);
             }
@@ -198,6 +197,23 @@ namespace JobSeekingAPI.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // GET: api/jobs/suggested
+        [Authorize(Roles = "Candidate")]
+        [HttpGet("suggested")]
+        public async Task<IActionResult> GetSuggestedJobs([FromQuery] int topN = 6)
+        {
+            try
+            {
+                int userId = User.GetUserIdFromToken();
+                var suggestions = await _matchingService.GetTopJobSuggestionsForCandidateAsync(userId, topN);
+                return Ok(suggestions);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error to get suggested jobs: " + ex.Message });
             }
         }
 
