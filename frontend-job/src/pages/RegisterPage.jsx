@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 function RegisterPage() {
     const navigate = useNavigate();
@@ -13,7 +14,6 @@ function RegisterPage() {
     const [formData, setFormData] = useState({
         fullName: '', email: '', password: '', confirmPassword: '', role: 'Candidate'
     });
-    const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
@@ -23,7 +23,7 @@ function RegisterPage() {
     const handleRegister = async (e) => {
         e.preventDefault();
         if (formData.password !== formData.confirmPassword) {
-            setMessage('Mật khẩu xác nhận không khớp nha!');
+            toast.error('Mật khẩu xác nhận không khớp nha!');
             return;
         }
 
@@ -42,7 +42,7 @@ function RegisterPage() {
                 const userInfo = { id: data.userId, email: data.email, role: data.role, name: data.fullName };
                 login(userInfo, data.token);
 
-                setMessage('🎉 Đăng ký thành công! Đang tự động đăng nhập...');
+                toast.success('🎉 Đăng ký thành công! Đang tự động đăng nhập...', { id: toastId });
 
                 setTimeout(() => {
                     if (userInfo.role === 'Recruiter') navigate('/recruiter-dashboard');
@@ -53,7 +53,7 @@ function RegisterPage() {
         } catch (error) {
             console.error("Lỗi kết nối:", error);
             const errorMsg = error.response?.data?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại!';
-            setMessage(errorMsg);
+            toast.error(errorMsg, { id: toastId });
         } finally {
             setIsLoading(false);
         }
@@ -84,12 +84,6 @@ function RegisterPage() {
                         <h2 className="text-3xl font-bold text-textmain mb-2">Gia nhập IT Job Hunter!</h2>
                         <p className="text-gray-500">Tạo tài khoản để bắt đầu hành trình</p>
                     </div>
-
-                    {message && (
-                        <div className={`mb-6 p-4 rounded-xl text-center font-medium ${message.includes('thành công') ? 'bg-green-50 text-olive' : 'bg-red-50 text-red-500'}`}>
-                            {message}
-                        </div>
-                    )}
 
                     <form onSubmit={handleRegister} className="space-y-5">
                         <div>

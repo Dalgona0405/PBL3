@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -11,7 +12,6 @@ function LoginPage() {
   const { login } = useAuth();
 
   const [credentials, setCredentials] = useState({ email: '', password: '' });
-  const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -21,13 +21,13 @@ function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setMessage('');
+    const toastId = toast.loading("Đang đăng nhập... 🌿");
 
     try {
       const data = await axiosClient.post(API_URLS.LOGIN, credentials); // Sử dụng axiosClient để gửi yêu cầu
       login(data.user, data.token); // Cập nhật context với token và thông tin user
 
-      setMessage("Đăng nhập thành công! Đang chuyển hướng... 🌿");
+      toast.success("Đăng nhập thành công! Đang chuyển hướng... 🌿", { id: toastId });
 
       setTimeout(() => {
         if (data.user.role === 'Recruiter') {
@@ -40,7 +40,7 @@ function LoginPage() {
   } catch (error) {
     console.error("Lỗi đăng nhập:", error);
     const errorMsg = error.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
-    setMessage(errorMsg);
+    toast.error(errorMsg, { id: toastId });
   } finally {
     setIsLoading(false);
   }
@@ -83,12 +83,6 @@ return (
           <h2 className="text-3xl font-bold text-textmain mb-2">Chào mừng! ✨</h2>
           <p className="text-gray-500">Đăng nhập để tìm kiếm cơ hội IT của bạn</p>
         </div>
-
-        {message && (
-          <div className={`mb-6 p-4 rounded-xl text-center font-medium ${message.includes('thành công') ? 'bg-green-50 text-olive' : 'bg-red-50 text-red-500'}`}>
-            {message}
-          </div>
-        )}
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>

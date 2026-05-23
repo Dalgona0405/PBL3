@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 function RecruiterDashboardPage() {
     const navigate = useNavigate();
@@ -41,9 +42,9 @@ function RecruiterDashboardPage() {
             await axiosClient.delete(`${API_URLS.JOBS}/${jobId}`);
             // Xóa xong thì cập nhật lại giao diện
             setJobs(prevJobs => prevJobs.filter(job => job.jobId !== jobId));
-            alert("Đã xóa tin tuyển dụng thành công!");
+            toast.success("Đã xóa tin tuyển dụng thành công!");
         } catch (err) {
-            alert("Không thể xóa tin này. Có thể đã có người ứng tuyển! 🌿");
+            toast.error("Không thể xóa tin này. Có thể đã có người ứng tuyển! 🌿");
         }
     }
 };

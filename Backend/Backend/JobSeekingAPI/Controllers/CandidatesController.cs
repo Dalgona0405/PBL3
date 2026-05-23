@@ -176,6 +176,19 @@ namespace JobSeekingAPI.Controllers
             return Ok(new { message = "Skills updated successfully." });
         }
 
+        // PATCH: api/candidates/me/default-cv - Cập nhật CV mặc định của ứng viên
+        [Authorize(Roles = "Candidate")]
+        [HttpPatch("me/default-cv")]
+        public async Task<IActionResult> UpdateDefaultCV([FromBody] UpdateDefaultCVDTO dto)
+        {
+            int userId = User.GetUserIdFromToken();
+            var candidate = await _candidateRepo.GetCandidateEntityByIdAsync(userId);
+            if (candidate == null)
+                return NotFound(new { message = "Candidate not found" });
+            candidate.CVUrl = dto.CVUrl;
+            await _candidateRepo.UpdateAsync(candidate);
+            return Ok(new { message = "Default CV updated successfully.", cvUrl = candidate.CVUrl });
+        }
 
         // === Private Mapping Methods ===
         private CandidateDetailDTO MapToDetailDTO(Candidate c)

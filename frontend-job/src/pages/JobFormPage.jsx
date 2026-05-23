@@ -129,6 +129,7 @@ function JobFormPage() {
                 tagIds: selectedTags.map(t => t.tagId) 
             };
 
+            const toastId = toast.loading(isEditMode ? 'Đang cập nhật tin...' : 'Đang đăng tin...');
             const url = isEditMode ? `${API_URLS.JOBS}/${jobId}` : API_URLS.JOBS;
 
             if (isEditMode) {
@@ -137,12 +138,12 @@ function JobFormPage() {
                 await axiosClient.post(url, payload);
             }
 
-            alert(`🎉 Đã ${isEditMode ? 'cập nhật' : 'đăng'} tin tuyển dụng thành công! 🌿`);
+            toast.success(`🎉 Đã ${isEditMode ? 'cập nhật' : 'đăng'} tin tuyển dụng thành công! 🌿`, { id: toastId });
             navigate('/recruiter-dashboard'); 
 
         } catch (err) {
             const errorMsg = err.response?.data?.message || 'Vui lòng kiểm tra lại thông tin.';
-            alert(`⚠️ Lỗi: ${errorMsg}`);
+            toast.error(`⚠️ Lỗi: ${errorMsg}`, { id: toastId });
         } finally {
             setIsSaving(false);
         }

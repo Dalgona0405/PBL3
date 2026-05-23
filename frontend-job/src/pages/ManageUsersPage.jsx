@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
+import toast from 'react-hot-toast';
 
 function ManageUsersPage() {
     const [users, setUsers] = useState([]);
@@ -18,7 +19,6 @@ function ManageUsersPage() {
 
             const data = await axiosClient.get(url);
             
-            // 🛠️ FIX LỖI .MAP Ở ĐÂY:
             // In ra console để Trúc xem Backend trả về cái thùng hình gì nha
             console.log("Dữ liệu User từ Backend:", data); 
             
@@ -64,10 +64,10 @@ function ManageUsersPage() {
             // Xóa thành công thì lọc (filter) user đó ra khỏi danh sách hiện tại trên màn hình
             setUsers(prevUsers => prevUsers.filter(u => (u.id || u.userId) !== userId));
             
-            alert(`Đã xóa tài khoản ${userName} thành công! 🌿`);
+            toast.success(`Đã xóa tài khoản ${userName} thành công! 🌿`);
         } catch (error) {
             const errorMsg = error.response?.data?.message || "Không thể xóa người dùng này. Vui lòng thử lại!";
-            alert(`⚠️ Lỗi: ${errorMsg}`);
+            toast.error(`⚠️ Lỗi: ${errorMsg}`);
         }
     };
 

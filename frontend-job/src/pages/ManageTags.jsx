@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
+import toast from 'react-hot-toast';
 
 function ManageTagsPage() {
     const [tags, setTags] = useState([]);
@@ -28,7 +29,8 @@ function ManageTagsPage() {
             const tagList = data.items || data.Items || data.data || data;
             setTags(Array.isArray(tagList) ? tagList :[]);
         } catch (error) {
-            console.error("Lỗi lấy tags:", error);
+            error_message = error.response?.data?.message || "Lỗi kết nối máy chủ. Vui lòng thử lại sau!";
+            toast.error("Lỗi lấy tags:" + error_message);
             setTags([]);
         } finally {
             setIsLoading(false);
@@ -55,19 +57,20 @@ function ManageTagsPage() {
 
         setIsSaving(true);
         try {
+            const toastId = toast.loading(editingId ? 'Đang cập nhật...' : 'Đang thêm mới...');
             if (editingId) {
                 await axiosClient.put(`${API_URLS.TAGS}/${editingId}`, formData);
-                alert("Cập nhật thành công! 🌿");
+                toast.success("Cập nhật thành công! 🌿", { id: toastId });
             } else {
                 await axiosClient.post(API_URLS.TAGS, formData);
-                alert("Thêm mới thành công! 🌿");
+                toast.success("Thêm mới thành công! 🌿", { id: toastId });
             }
             
             setFormData({ tagName: '', type: 'Skill' });
             setEditingId(null);
             fetchTags(searchKeyword); // Tải lại danh sách giữ nguyên từ khóa đang tìm
         } catch (error) {
-            alert("Có lỗi xảy ra: " + (error.response?.data?.message || "Vui lòng thử lại"));
+            toast.error("Có lỗi xảy ra: " + (error.response?.data?.message || "Vui lòng thử lại"), { id: toastId });
         } finally {
             setIsSaving(false);
         }
@@ -85,7 +88,7 @@ function ManageTagsPage() {
             await axiosClient.delete(`${API_URLS.TAGS}/${id}`);
             setTags(tags.filter(t => t.tagId !== id)); 
         } catch (error) {
-            alert("Không thể xóa! Có thể kỹ năng này đang được ứng viên sử dụng. 🌿");
+            toast.error("Không thể xóa! Có thể kỹ năng này đang được ứng viên sử dụng. 🌿", { id: toastId });
         }
     };
 

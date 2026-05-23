@@ -131,6 +131,61 @@ function EditProfileForm({ formData, setFormData }) {
                             <input type="date" id="birthday" className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white"
                                 value={formData.candidate?.birthday ? formData.candidate.birthday.split('T')[0] : ''} onChange={handleInputChange} />
                         </div>
+                        <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4 mt-6 pt-6 border-t border-dashed border-gray-200">
+                            <p className="w-32 font-medium text-olive mt-2">📄 CV Mặc định:</p>
+                            <div className="flex-1">
+                                {formData.candidate?.cvUrl ? (
+                                    <div className="mb-3 flex items-center gap-3">
+                                        <a href={formData.candidate.cvUrl} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 font-medium underline">
+                                            Xem CV hiện tại
+                                        </a>
+                                        <span className="text-green-500 text-sm font-bold">✅ Đã tải lên</span>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-400 text-sm mb-3 italic">Bạn chưa có CV mặc định.</p>
+                                )}
+                                
+                                <div className="flex items-center gap-3">
+                                    <input 
+                                        type="file" 
+                                        accept=".pdf"
+                                        id="cvUpload"
+                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cream file:text-olive hover:file:bg-olive hover:file:text-white transition-all cursor-pointer"
+                                        onChange={async (e) => {
+                                            const file = e.target.files[0];
+                                            if (!file) return;
+                                            if (file.type !== 'application/pdf') {
+                                                alert("Chỉ chấp nhận file PDF nha Trúc ơi! 🌿");
+                                                e.target.value = null;
+                                                return;
+                                            }
+                                            
+                                            try {
+                                                // 1. Upload file lấy URL
+                                                const formDataUpload = new FormData();
+                                                formDataUpload.append('file', file);
+                                                const uploadRes = await axiosClient.post('/Files/upload', formDataUpload, {
+                                                    headers: { 'Content-Type': 'multipart/form-data' }
+                                                });
+                                                const newCvUrl = uploadRes.url || uploadRes.fileUrl || uploadRes.data || uploadRes;
+
+                                                // 2. Gọi API PATCH Trúc vừa viết để lưu CV mặc định
+                                                await axiosClient.patch('/Candidates/me/default-cv', { cvUrl: newCvUrl });
+                                                
+                                                // 3. Cập nhật lại giao diện
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    candidate: { ...prev.candidate, cvUrl: newCvUrl }
+                                                }));
+                                                alert("🎉 Cập nhật CV mặc định thành công!");
+                                            } catch (err) {
+                                                alert("⚠️ Lỗi khi tải CV lên. Vui lòng thử lại!");
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </>
                 )}
 

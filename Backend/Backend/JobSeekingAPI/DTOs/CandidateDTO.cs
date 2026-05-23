@@ -62,4 +62,9 @@ namespace JobSeekingAPI.DTOs
         public int TagId { get; set; }
         public string? Proficiency { get; set; }
     }
+
+    public class UpdateDefaultCVDTO
+    {
+        public string CVUrl { get; set; } = string.Empty;
+    }
 }

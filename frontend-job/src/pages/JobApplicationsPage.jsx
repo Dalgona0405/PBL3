@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 function JobApplicationsPage() {
     const { jobId } = useParams(); // Lấy ID của Job từ trên thanh địa chỉ (URL) xuống
@@ -43,7 +44,7 @@ function JobApplicationsPage() {
             ));
         } catch (err) {
             const errorMsg = err.response?.data?.message || "Cập nhật thất bại! Bạn có quyền đổi trạng thái không?";
-            alert(errorMsg);
+            toast.error(errorMsg, { id: toastId });
         }
     };
 

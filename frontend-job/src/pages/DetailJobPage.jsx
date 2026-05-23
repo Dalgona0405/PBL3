@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { API_URLS } from "../api/api";
 import axiosClient from "../api/axiosClient";
 import { useAuth } from "../contexts/AuthContext";
+import toast from 'react-hot-toast';
 
 function DetailJobPage() {
     const navigate = useNavigate();
@@ -51,7 +52,7 @@ function DetailJobPage() {
             return;
         }
         if (user.role !== 'Candidate') {
-            alert("Bạn là nhà tuyển dụng mà, sao lại tự đi xin việc? 😆");
+            toast.error("Bạn là nhà tuyển dụng mà, sao lại tự đi xin việc? 😆", { id: toastId });
             return;
         }
         setShowModal(true);
@@ -63,13 +64,13 @@ function DetailJobPage() {
         if (file) {
             // Kiểm tra đuôi file (Chỉ nhận PDF)
             if (file.type !== 'application/pdf') {
-                alert("Vui lòng chỉ tải lên file PDF nha!");
+                toast.error("Vui lòng chỉ tải lên file PDF nha!", { id: toastId });
                 e.target.value = null;
                 return;
             }
             // Kiểm tra dung lượng (Ví dụ: Max 5MB)
             if (file.size > 5 * 1024 * 1024) {
-                alert("File CV nặng quá, vui lòng chọn file dưới 5MB!");
+                toast.error("File CV nặng quá, vui lòng chọn file dưới 5MB!", { id: toastId });
                 e.target.value = null;
                 return;
             }
@@ -80,40 +81,29 @@ function DetailJobPage() {
     // Hàm chính: Gửi đơn ứng tuyển
     const handleConfirmApply = async () => {
         setIsSubmitting(true);
-        let finalCvUrl = ""; // Mặc định rỗng, Backend C# của Trúc sẽ tự lấy CV mặc định
+        let finalCvUrl = ""; // Mặc định rỗng, Backend C# sẽ tự lấy CV mặc định
 
         try {
             // NẾU CHỌN CV MỚI: Phải upload file lên Server trước
             if (cvOption === 'new') {
                 if (!selectedFile) {
-                    alert("Bạn chưa chọn file CV mới kìa!");
+                    toast.error("Bạn chưa chọn file CV mới kìa! 🌿", { id: toastId });
                     setIsSubmitting(false);
                     return;
                 }
 
-                /* 
-                =========================================================
-                GÓC NHÌN BrSE: CHỖ NÀY CẦN BACKEND C# VIẾT API UPLOAD
-                =========================================================
                 const formData = new FormData();
                 formData.append('file', selectedFile);
 
-                const uploadRes = await fetch(`${API_URLS.BASE_URL}/upload`, {
-                    method: 'POST',
-                    body: formData
+                const uploadRes = await axiosClient.post('/Files/upload', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
                 });
-                const uploadData = await uploadRes.json();
-                finalCvUrl = uploadData.fileUrl; // Lấy URL từ Backend trả về
-                =========================================================
-                */
-
-                // Tạm thời giả lập URL vì Backend chưa có API Upload
-                alert("Tính năng Upload File đang chờ Backend hoàn thiện. Tạm thời hệ thống sẽ dùng CV mặc định của bạn nha! 🌿");
-                finalCvUrl = "";
+                finalCvUrl = uploadRes.file;
             }
-
-            // GỌI API NỘP ĐƠN CHÍNH THỨC
-            const payload = {
+            
+             const payload = {
                 userId: user.id,
                 jobId: parseInt(id),
                 cvUrl: finalCvUrl
@@ -121,11 +111,12 @@ function DetailJobPage() {
 
             await axiosClient.post(API_URLS.APPLICATIONS, payload);
 
-            alert("🎉 Chúc mừng bạn! Nộp CV thành công rồi nè, chuẩn bị tinh thần HR gọi nha!");
+            toast.success("🎉 Chúc mừng bạn! Nộp CV thành công rồi nè, chuẩn bị tinh thần HR gọi nha!", { id: toastId });
             setShowModal(false); // Đóng modal
+
         } catch (error) {
             const errorMsg = error.response?.data?.message || "Bạn đã ứng tuyển công việc này rồi hoặc lỗi mạng. 🌿";
-            alert(`Lỗi: ${errorMsg}`);
+            toast.error(`Lỗi: ${errorMsg}`, { id: toastId });
         } finally {
             setIsSubmitting(false);
         }

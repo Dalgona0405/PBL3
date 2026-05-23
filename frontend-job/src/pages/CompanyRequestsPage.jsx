@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 function CompanyRequestsPage() {
     const navigate = useNavigate();
@@ -21,11 +22,12 @@ function CompanyRequestsPage() {
 
         const fetchPendingRequests = async () => {
             try {
+                const toastId = toast.loading("Đang tải danh sách yêu cầu... 🌿");
                 setIsLoading(true);
                 const data = await axiosClient.get(`${API_URLS.COMPANY_REQUESTS}/pending`);
                 setRequests(data ||[]);
             } catch (err) {
-                setError("Không thể tải danh sách yêu cầu. Vui lòng thử lại sau! 🌿");
+                toast.error("Không thể tải danh sách yêu cầu. Vui lòng thử lại sau! 🌿", { id: toastId });
             } finally {
                 setIsLoading(false);
             }
@@ -44,16 +46,17 @@ function CompanyRequestsPage() {
         }
 
         try {
+            const toastId = toast.loading(`Đang ${actionName.toLowerCase()} công ty... 🌿`);
             await axiosClient.patch(`${API_URLS.COMPANY_REQUESTS}/${requestId}/status`, {
                 status: newStatus
             });
 
             setRequests(prev => prev.filter(req => req.requestId !== requestId));
             
-            alert(`🎉 Đã ${actionName.toLowerCase()} thành công!`);
+            toast.success(`🎉 Đã ${actionName.toLowerCase()} thành công!`, { id: toastId });
         } catch (err) {
             const errorMsg = err.response?.data?.message || "Có lỗi xảy ra khi cập nhật trạng thái.";
-            alert(`⚠️ Lỗi: ${errorMsg}`);
+            toast.error(`⚠️ Lỗi: ${errorMsg}`, { id: toastId });
         }
     };
 
