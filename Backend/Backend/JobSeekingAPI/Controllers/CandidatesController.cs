@@ -1,4 +1,5 @@
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Enums;
 using JobSeekingAPI.Helpers;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
@@ -21,7 +22,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/candidates/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCandidateById(int id)
         {
@@ -32,7 +33,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/candidates/me => Cân nhắc, nếu giữ thì cần xác thực người dùng và lấy ID từ token
-        [Authorize(Roles = "Candidate")]
+        [Authorize(Roles = UserRoles.Candidate)]
         [HttpGet("me")]
         public async Task<IActionResult> GetMyProfile()
         {
@@ -44,7 +45,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/candidates/me
-        [Authorize(Roles = "Candidate")]
+        [Authorize(Roles = UserRoles.Candidate)]
         [HttpPut("me")]
         public async Task<IActionResult> UpdateCandidateProfile([FromBody] UpdateCandidateDTO dto)
         {
@@ -77,7 +78,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/candidates/search
-        [Authorize(Roles = "Admin, Recruiter")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpGet("search")]
         public async Task<IActionResult> SearchCandidates([FromQuery] string? keyword, [FromQuery] int? tagId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
@@ -87,7 +88,7 @@ namespace JobSeekingAPI.Controllers
 
         // API VỀ EXPERIENCE
         // GET: api/candidates/{id}/experiences
-        [Authorize(Roles = "Admin, Recruiter, Candidate")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Candidate)]
         [HttpGet("{id}/experiences")]
         public async Task<IActionResult> GetExperiences(int id)
         {
@@ -96,7 +97,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // POST: /api/candidates/me/experiences
-        [Authorize(Roles = "Candidate")]
+        [Authorize(Roles = UserRoles.Candidate)]
         [HttpPost("me/experiences")]
         public async Task<IActionResult> AddExperience([FromBody] CreateExperienceDTO dto)
         {
@@ -118,7 +119,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/candidates/me/experiences/{expId}
-        [Authorize(Roles = "Candidate")]
+        [Authorize(Roles = UserRoles.Candidate)]
         [HttpPut("me/experiences/{expId}")]
         public async Task<IActionResult> UpdateExperience(int expId, [FromBody] UpdateExperienceDTO dto)
         {
@@ -138,7 +139,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // DELETE: api/candidates/me/experiences/{expId}
-        [Authorize(Roles = "Candidate")]
+        [Authorize(Roles = UserRoles.Candidate)]
         [HttpDelete("me/experiences/{expId}")]
         public async Task<IActionResult> DeleteExperience(int expId)
         {
@@ -152,7 +153,7 @@ namespace JobSeekingAPI.Controllers
 
         // CÁC API VỀ SKILLS
         // GET: api/candidates/{id}/skills => Cân nhắc
-        [Authorize(Roles = "Admin, Candidate, Recruiter")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Candidate + ", " + UserRoles.Recruiter)]
         [HttpGet("{id}/skills")]
         public async Task<IActionResult> GetCandidateSkills(int id)
         {
@@ -167,7 +168,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/candidates/me/skills - Cập nhật toàn bộ skill của chính ứng viên
-        [Authorize(Roles = "Candidate")]
+        [Authorize(Roles = UserRoles.Candidate)]
         [HttpPut("me/skills")]
         public async Task<IActionResult> UpdateCandidateSkills([FromBody] List<CandidateTagDTO> dtos)
         {
@@ -177,7 +178,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PATCH: api/candidates/me/default-cv - Cập nhật CV mặc định của ứng viên
-        [Authorize(Roles = "Candidate")]
+        [Authorize(Roles = UserRoles.Candidate)]
         [HttpPatch("me/default-cv")]
         public async Task<IActionResult> UpdateDefaultCV([FromBody] UpdateDefaultCVDTO dto)
         {

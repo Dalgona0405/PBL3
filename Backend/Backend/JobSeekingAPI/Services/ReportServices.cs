@@ -1,5 +1,6 @@
 using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Enums;
 using Microsoft.EntityFrameworkCore;
 namespace JobSeekingAPI.Services
 {
@@ -185,18 +186,63 @@ namespace JobSeekingAPI.Services
 
             return new { nodes, edges };
         }
-        
+
         public async Task<DashboardSummaryDTO> GetDashboardSummaryAsync()
         {
             var now = DateTime.UtcNow;
-            
-            // Tính toán trước các thông số để code sạch sẽ hơn
+
             var totalJobs = await _context.Jobs.CountAsync(j => j.DeletedAt == null);
             var totalCandidates = await _context.Candidates.CountAsync();
             var totalCompanies = await _context.Companies.CountAsync(c => c.DeletedAt == null);
             var totalRecruiters = await _context.Recruiters.CountAsync();
 
-            // Trả về đúng cấu trúc 3 phần đã định nghĩa
+            var activeJobsQuery = _context.Jobs
+                .Where(j => j.DeletedAt == null && j.Status == (int)JobStatus.Active && (j.Deadline == null || j.Deadline >= now));
+
+            var activeHiringCompanies = await activeJobsQuery.Select(j => j.CompanyId).Distinct().CountAsync();
+            var activeIndustries = await _context.JobTags
+                .Where(jt => jt.Job != null && jt.Job.DeletedAt == null && jt.Job.Status == (int)JobStatus.Active && (jt.Job.Deadline == null || jt.Job.Deadline >= now))
+                .Select(jt => jt.TagId).Distinct().CountAsync();
+
+            // =========================================================
+            // LOGIC TÍNH BIỂU ĐỒ LƯƠNG (Mang từ StatisticsService sang)
+            // =========================================================
+            var salaries = await activeJobsQuery.Select(j => new { j.SalaryMin, j.SalaryMax }).ToListAsync();
+            int rangeUnder10 = 0, range10To20 = 0, range20To30 = 0, range30To50 = 0, rangeOver50 = 0, negotiable = 0;
+
+            foreach (var s in salaries)
+            {
+                decimal min = s.SalaryMin ?? 0;
+                decimal max = s.SalaryMax ?? 0;
+
+                if (min == 0 && max == 0) { negotiable++; continue; }
+
+                decimal referenceSalary = 0;
+                if (min > 0 && max > 0) referenceSalary = (min + max) / 2;
+                else if (min == 0 && max > 0) referenceSalary = max;
+                else if (min > 0 && max == 0) referenceSalary = min;
+
+                if (referenceSalary < 10) rangeUnder10++;
+                else if (referenceSalary >= 10 && referenceSalary < 20) range10To20++;
+                else if (referenceSalary >= 20 && referenceSalary < 30) range20To30++;
+                else if (referenceSalary >= 30 && referenceSalary <= 50) range30To50++;
+                else if (referenceSalary > 50) rangeOver50++;
+            }
+
+            var salaryChartData = new List<SimpleStatDTO>
+    {
+        new SimpleStatDTO { Label = "Lương thỏa thuận", Value = negotiable },
+        new SimpleStatDTO { Label = "Dưới 10 Triệu", Value = rangeUnder10 },
+        new SimpleStatDTO { Label = "10 - 20 Triệu", Value = range10To20 },
+        new SimpleStatDTO { Label = "20 - 30 Triệu", Value = range20To30 },
+        new SimpleStatDTO { Label = "30 - 50 Triệu", Value = range30To50 },
+        new SimpleStatDTO { Label = "Trên 50 Triệu", Value = rangeOver50 }
+    };
+
+            // Tận dụng luôn 2 hàm đã viết sẵn ở dưới của ReportService
+            var jobByDept = await GetJobDistributionByLevelAsync();
+            var hiringTrends = await GetHiringTrendsAndForecastAsync();
+
             return new DashboardSummaryDTO
             {
                 Overview = new DashboardOverviewStatsDTO
@@ -205,10 +251,15 @@ namespace JobSeekingAPI.Services
                     TotalCandidates = totalCandidates,
                     TotalCompanies = totalCompanies,
                     TotalRecruiters = totalRecruiters,
+                    TotalActiveHiringCompanies = activeHiringCompanies,
+                    TotalActiveIndustries = activeIndustries,
                     ApplicationRate = totalJobs > 0 ? Math.Round((double)totalCandidates / totalJobs, 2) : 0
-                    // Lưu ý: Các trường TotalActiveHiringCompanies và TotalActiveIndustries
-                    // tạm thời sẽ bằng 0 ở đây nếu ReportService không đếm. Bạn có thể thêm logic đếm 
-                    // tương tự bên StatisticsService nếu muốn nó hiển thị ở API này.
+                },
+                Charts = new DashboardChartsDTO
+                {
+                    SalaryRanges = salaryChartData,
+                    JobByDept = jobByDept,
+                    HiringTrends = hiringTrends
                 },
                 FormsAndStatus = new DashboardFormsAndStatusDTO
                 {
@@ -219,12 +270,11 @@ namespace JobSeekingAPI.Services
                         await _context.Applications.CountAsync(a => a.AppliedDate.Year == now.Year)
                     ),
                     JobsByStatus = new JobStatusStatsDTO(
-                        await _context.Jobs.CountAsync(j => j.DeletedAt == null && j.Status == 1),
+                        await activeJobsQuery.CountAsync(),
                         await _context.Jobs.CountAsync(j => j.DeletedAt == null && j.Deadline < now),
                         totalJobs
                     )
                 },
-                Charts = new DashboardChartsDTO(), // Khởi tạo rỗng vì hàm này chưa gọi các biểu đồ
                 LastUpdated = now
             };
         }
@@ -274,6 +324,89 @@ namespace JobSeekingAPI.Services
                 });
             }
             return trends;
+        }
+
+        public async Task<object> GetApplicationTimelineAsync(string period, int months)
+        {
+            var endDate = DateTime.UtcNow;
+            var startDate = period.ToLower() switch
+            {
+                "day" => endDate.AddDays(-30),
+                "week" => endDate.AddDays(-90),
+                "month" => endDate.AddMonths(-months),
+                "year" => endDate.AddYears(-3),
+                _ => endDate.AddMonths(-6)
+            };
+            var rawData = await _context.Applications
+                .Where(a => a.DeletedAt == null && a.AppliedDate >= startDate)
+                .Select(a => new
+                {
+                    a.AppliedDate,
+                    a.Status,
+                    Year = a.AppliedDate.Year,
+                    Month = a.AppliedDate.Month,
+                    Week = (a.AppliedDate - startDate).Days / 7,
+                    Day = a.AppliedDate.Date
+                })
+                .ToListAsync();
+
+            if (!rawData.Any())
+            {
+                return new
+                {
+                    Period = period,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Data = new List<object>(),
+                    Total = 0
+                };
+            }
+
+            var groupedData = rawData
+                .GroupBy(a => new { a.Year, a.Month, a.Week, a.Day })
+                .Select(g => new
+                {
+                    Period = period.ToLower() switch
+                    {
+                        "day" => g.Key.Day.ToString("yyyy-MM-dd"),
+                        "week" => $"Week {g.Key.Week}",
+                        "month" => $"{g.Key.Year}-{g.Key.Month:D2}",
+                        "year" => g.Key.Year.ToString(),
+                        _ => $"{g.Key.Year}-{g.Key.Month:D2}"
+                    },
+                    Total = g.Count(),
+                    ByStatus = new
+                    {
+                        Pending = g.Count(a => a.Status == (int)ApplicationStatus.Pending),
+                        Reviewed = g.Count(a => a.Status == (int)ApplicationStatus.Reviewed),
+                        Interviewing = g.Count(a => a.Status == (int)ApplicationStatus.Interviewing),
+                        Accepted = g.Count(a => a.Status == (int)ApplicationStatus.Accepted),
+                        Rejected = g.Count(a => a.Status == (int)ApplicationStatus.Rejected)
+                    }
+                })
+                .OrderBy(x => x.Period)
+                .ToList();
+
+            return new
+            {
+                Period = period,
+                StartDate = startDate,
+                EndDate = endDate,
+                Data = groupedData,
+                Total = groupedData.Sum(x => x.Total),
+                Summary = new
+                {
+                    TotalApplications = groupedData.Sum(x => x.Total),
+                    ByStatus = new
+                    {
+                        Pending = groupedData.Sum(x => x.ByStatus.Pending),
+                        Reviewed = groupedData.Sum(x => x.ByStatus.Reviewed),
+                        Interviewing = groupedData.Sum(x => x.ByStatus.Interviewing),
+                        Accepted = groupedData.Sum(x => x.ByStatus.Accepted),
+                        Rejected = groupedData.Sum(x => x.ByStatus.Rejected)
+                    }
+                }
+            };
         }
     }
 }

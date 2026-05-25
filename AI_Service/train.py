@@ -6,13 +6,13 @@ from data_loader import fetch_and_process_data
 from model import GCNNet, LinkPredictor
 
 def train_gnn():
-    print("Bắt đầu quy trình huấn luyện GNN...")
+    print("Starting GNN training...")
 
     # 1. Load data từ API
     graph_data, _, _, _ = fetch_and_process_data()
 
     if graph_data is None or graph_data.num_nodes == 0:
-        print("Không có dữ liệu để học!")
+        print("Have no data to train!")
         return
 
     x = graph_data.x
@@ -68,7 +68,7 @@ def train_gnn():
             print(f'Epoch {epoch:03d}, Loss: {loss.item():.4f}')
 
     torch.save(encoder.state_dict(), 'gnn_encoder.pth')
-    print("Đã lưu model!")
+    print("Saved model!")
 
 if __name__ == "__main__":
     train_gnn()

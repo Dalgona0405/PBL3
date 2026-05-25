@@ -1,4 +1,5 @@
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Enums;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -30,7 +31,7 @@ namespace JobSeekingAPI.Controllers
         //}
 
         // GET: api/recruiters/{id}
-        [Authorize(Roles = "Admin, Recruiter")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetRecruiterById(int id)
         {
@@ -41,7 +42,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/recruiters/company/{companyId}
-        [Authorize(Roles = "Admin, Recruiter")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpGet("company/{companyId}")]
         public async Task<IActionResult> GetRecruitersByCompany(int companyId)
         {
@@ -61,7 +62,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/recruiters/{id}
-        [Authorize(Roles = "Recruiter")]
+        [Authorize(Roles = UserRoles.Recruiter)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateRecruiter(int id, [FromBody] UpdateRecruiterDTO dto)
         {

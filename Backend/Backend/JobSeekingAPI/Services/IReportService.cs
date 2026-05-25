@@ -20,5 +20,6 @@ namespace JobSeekingAPI.Services
         Task<List<TopCompanyDTO>> GetTopCompaniesAsync(int limit);
         Task<List<SimpleStatDTO>> GetJobDistributionByLevelAsync();
         Task<List<TrendStatDTO>> GetHiringTrendsAndForecastAsync();
+        Task<object> GetApplicationTimelineAsync(string period, int months);
     }
 }

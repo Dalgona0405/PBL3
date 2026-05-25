@@ -31,36 +31,53 @@ namespace JobSeekingAPI.Workers
                     {
                         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                        // 1. Lấy dữ liệu thô từ Postgres
-                        var rawSalaries = await context.Jobs
-                            .Where(j => j.DeletedAt == null && j.Status == 1)
-                            .Select(j => new { salary_min = j.SalaryMin ?? 0, salary_max = j.SalaryMax ?? 0 })
+                        _logger.LogInformation("Worker: Đang tính toán lương trung bình theo kỹ năng bằng C#...");
+
+                        // 1. C# TỰ TÍNH TOÁN LƯƠNG TRUNG BÌNH (Rất nhanh nhờ EF Core)
+                        var skillsData = await context.Tags
+                            .Where(t => t.Type == "Skill" || t.Type == "Language")
+                            .Select(t => new
+                            {
+                                skill_id = t.TagId,
+                                skill_name = t.TagName,
+                                // Tính lương trung bình của các Job có chứa Tag này
+                                current_avg_salary = t.JobTags
+                                    .Where(jt => jt.Job != null && jt.Job.DeletedAt == null && (jt.Job.SalaryMin > 0 || jt.Job.SalaryMax > 0))
+                                    .Average(jt => (decimal?)((jt.Job.SalaryMin + jt.Job.SalaryMax) / 2)) ?? 0
+                            })
+                            .Where(x => x.current_avg_salary > 0) // Chỉ lấy những kỹ năng có data lương
                             .ToListAsync(stoppingToken);
 
-                        _logger.LogInformation($"Worker: Lấy được {rawSalaries.Count} công việc để gửi sang Python.");
+                        _logger.LogInformation($"Worker: Đã tính xong {skillsData.Count} kỹ năng. Gửi sang Python AI để dự báo...");
 
-                        if (rawSalaries.Count > 0)
+                        if (skillsData.Count > 0)
                         {
-                            // ====================================================
-                            // LẤY BIỂU ĐỒ LƯƠNG
-                            // ====================================================
-                            var chartResponse = await _httpClient.PostAsJsonAsync($"{_pythonBaseUrl}/api/analytics/salary-chart", new { jobs = rawSalaries }, stoppingToken);
-                            if (chartResponse.IsSuccessStatusCode)
+                            // 2. GỬI SANG PYTHON ĐỂ DỰ BÁO (Match với API mới)
+                            var payload = new { skills = skillsData };
+                            var response = await _httpClient.PostAsJsonAsync($"{_pythonBaseUrl}/api/analytics/salary-forecast", payload, stoppingToken);
+
+                            if (response.IsSuccessStatusCode)
                             {
-                                var chartResult = await chartResponse.Content.ReadFromJsonAsync<object>(cancellationToken: stoppingToken);
-                                _cache.Set("CachedSalaryChart", chartResult, TimeSpan.FromHours(1));
-                                _logger.LogInformation("Worker: Đã cập nhật biểu đồ lương mới vào cache.");
+                                var forecastResult = await response.Content.ReadFromJsonAsync<object>(cancellationToken: stoppingToken);
+
+                                // 3. LƯU KẾT QUẢ DỰ BÁO VÀO RAM
+                                _cache.Set("SalaryForecastAI", forecastResult, TimeSpan.FromHours(2));
+                                _logger.LogInformation("Worker: Đã nhận kết quả dự báo từ AI và lưu vào Cache thành công!");
+                            }
+                            else
+                            {
+                                _logger.LogWarning($"Worker: Python AI trả về lỗi {response.StatusCode}");
                             }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Worker: Đã xảy ra lỗi khi xử lý dữ liệu lương.");
+                    _logger.LogError(ex, "Worker: Đã xảy ra lỗi khi xử lý dữ liệu dự báo lương.");
                 }
 
-                // Chạy lại sau mỗi 30 phút để cập nhật số liệu mới nhất
-                await Task.Delay(TimeSpan.FromMinutes(30), stoppingToken);
+                // Chạy lại sau mỗi 1 tiếng
+                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
             }
         }
     }

@@ -153,7 +153,7 @@ namespace JobSeekingAPI.Data
                 entity.Property(j => j.SalaryMax).HasPrecision(18, 2);
                 entity.Property(j => j.ExpYear);
                 entity.Property(j => j.Level).HasMaxLength(50);
-                entity.Property(j => j.PostedDate).HasDefaultValueSql("GETDATE()");
+                entity.Property(j => j.PostedDate).HasDefaultValueSql("now()");
                 entity.Property(j => j.Deadline);
                 entity.Property(j => j.Description).HasColumnType("nvarchar(max)");
                 entity.Property(j => j.Requirement).HasColumnType("nvarchar(max)");
@@ -230,7 +230,7 @@ namespace JobSeekingAPI.Data
                     .HasForeignKey(a => a.JobId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.Property(a => a.AppliedDate).HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.AppliedDate).HasDefaultValueSql("now()");
                 entity.Property(a => a.Status).HasDefaultValue(1);
                 entity.Property(a => a.CVUrl).HasMaxLength(500);
                 entity.Property(a => a.DeletedAt);
@@ -238,7 +238,7 @@ namespace JobSeekingAPI.Data
                 entity.HasIndex(a => new { a.UserId, a.JobId })
                     .IsUnique()
                     .HasDatabaseName("IX_Applications_UserId_JobId_Unique")
-                    .HasFilter("[DeletedAt] IS NULL");
+                    .HasFilter("deletedat IS NULL");
 
                 entity.HasIndex(a => a.Status).HasDatabaseName("IX_Applications_Status");
 

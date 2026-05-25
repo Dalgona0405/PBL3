@@ -22,7 +22,7 @@ namespace JobSeekingAPI.Services
         public async Task<JobMatchResultDTO> GetJobMatchScoreAsync(int jobId, int candidateId)
         {
             // 1. Lấy danh sách TagId của Job
-            var job = await _jobRepo.GetJobEntityByIdAsync(jobId);
+            var job = await _jobRepo.GetJobDetailByIdAsync(jobId);
             if (job == null)
                 throw new ArgumentException("Job not found");
 
@@ -62,14 +62,14 @@ namespace JobSeekingAPI.Services
         }
         public async Task<List<JobSuggestionDTO>> GetTopJobSuggestionsForCandidateAsync(int candidateId, int topN = 6)
         {
-            var recentJobs = await _jobRepo.GetRecentJobsAsync(20); // Lấy 20 job mới nhất để đánh giá
-            var taskList = recentJobs.Select(async job =>
+            var recentJobs = await _jobRepo.GetRecentJobsAsync(20);
+            var suggestedJobs = new List<JobSuggestionDTO>();
+            foreach (var job in recentJobs)
             {
                 try
                 {
                     var matchResult = await GetJobMatchScoreAsync(job.JobId, candidateId);
-
-                    return new JobSuggestionDTO
+                    suggestedJobs.Add(new JobSuggestionDTO
                     {
                         Job = new JobSummaryDTO
                         {
@@ -89,26 +89,15 @@ namespace JobSeekingAPI.Services
                         MatchScore = matchResult.MatchScore,
                         MissingSkills = matchResult.MissingSkills,
                         Advice = matchResult.Advice
-                    };
+                    });
                 }
                 catch
                 {
-                    // Nếu AI lỗi ở 1 Job nào đó, bỏ qua Job đó luôn
                     return null;
                 }
-            });
+            }
 
-            // 3. Chạy TẤT CẢ các nhiệm vụ CÙNG LÚC (Chạy song song)
-            var results = await Task.WhenAll(taskList);
-
-            // 4. Lọc bỏ các Job bị lỗi (null), sắp xếp điểm từ Cao -> Thấp và lấy Top N
-            var suggestedJobs = results
-                .Where(r => r != null)
-                .OrderByDescending(r => r.MatchScore)
-                .Take(topN)
-                .ToList();
-
-            return suggestedJobs!;
+            return suggestedJobs.OrderByDescending(r => r.MatchScore).Take(topN).ToList();
         }
     }
 }

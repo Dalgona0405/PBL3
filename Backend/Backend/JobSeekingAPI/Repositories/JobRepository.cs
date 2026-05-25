@@ -12,7 +12,7 @@ namespace JobSeekingAPI.Repositories
         }
 
         // CRUD ĐẶC THÙ
-       public async Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync()
+        public async Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync()
         {
             return await _context.Jobs
                 .AsNoTracking()
@@ -40,7 +40,7 @@ namespace JobSeekingAPI.Repositories
         public async Task<Job?> GetJobEntityByIdAsync(int id) //dùng cho UPDATE
         {
             return await _context.Jobs
-                .Include(j => j.JobTags) //để không trùng lập tag thì mỗi lần sửa/xóa sẽ kéo theo bảng Tag để sửa/xóa
+                .Include(j => j.JobTags)
                 .FirstOrDefaultAsync(j => j.JobId == id && j.DeletedAt == null);
         }
 

@@ -2,7 +2,7 @@ import torch
 import requests
 from torch_geometric.data import Data
 
-def fetch_and_process_data(api_url="http://localhost:5000/api/reports/graph-skills"):
+def fetch_and_process_data(api_url="http://localhost:5000/api/reports/graph-skills?limit=200"):
     try:
         response = requests.get(api_url)
         response.raise_for_status()

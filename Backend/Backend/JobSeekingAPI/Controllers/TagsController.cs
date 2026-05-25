@@ -1,4 +1,5 @@
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Enums;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -27,6 +28,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/tags/{id}
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTagById(int id)
         {
@@ -82,7 +84,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // POST: api/tags
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpPost]
         public async Task<IActionResult> CreateTag([FromBody] CreateTagDTO dto)
         {
@@ -110,7 +112,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/tags/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTag(int id, [FromBody] UpdateTagDTO dto)
         {
@@ -137,7 +139,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // DELETE: api/tags/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTag(int id)
         {

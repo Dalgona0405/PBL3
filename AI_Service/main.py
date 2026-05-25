@@ -12,21 +12,23 @@ app = FastAPI(title="AI Job System: GNN & Analytics")
 
 # --- PHẦN 1: ĐỊNH NGHĨA MODEL DỮ LIỆU (PYDANTIC) ---
 
-# Model cho Analytics Lương
-class JobSalaryData(BaseModel):
-    salary_min: float = 0
-    salary_max: float = 0
-
-class SalaryChartRequest(BaseModel):
-    jobs: List[JobSalaryData]
-
 # Model cho Gợi ý Kỹ năng[cite: 1, 2]
 class SkillRequest(BaseModel):
     current_skills: List[int]
 
+# Model cho Tính điểm Matching giữa Candidate và Job[cite: 1, 2]
 class MatchScoreRequest(BaseModel):
     candidate_skills: List[int]
     job_skills: List[int]
+
+# Model cho Dự báo lương theo Kỹ năng
+class SkillSalaryData(BaseModel):
+    skill_id: int
+    skill_name: str
+    current_avg_salary: float # Lương trung bình hiện tại (triệu VNĐ)
+
+class SalaryForecastRequest(BaseModel):
+    skills: List[SkillSalaryData]
 
 # --- PHẦN 2: BIẾN TOÀN CỤC VÀ KHỞI TẠO HỆ THỐNG ---
 
@@ -40,67 +42,29 @@ node_embeddings = None
 @app.on_event("startup")
 def load_system():
     global graph_data, sql_to_idx, idx_to_sql, idx_to_name, model, node_embeddings
-    
-    # Tải dữ liệu đồ thị từ PostgreSQL thông qua data_loader[cite: 1, 2]
+    print("Đang khởi động AI, thử kết nối với C#...")
     graph_data, sql_to_idx, idx_to_sql, idx_to_name = fetch_and_process_data()
     
-    if graph_data is not None:
-        # Khởi tạo GCNNet (đảm bảo file model.py của bạn dùng tên class này)
+    if graph_data is not None and graph_data.num_nodes > 0: # Thêm check an toàn
         model = GCNNet(in_channels=1) 
-        
-        # Load trọng số nếu bạn đã có file train (bỏ comment dòng dưới nếu cần)
-        model.load_state_dict(torch.load('gnn_encoder.pth'))
-        
-        model.eval() 
-        with torch.no_grad():
-            # Tạo bộ Embeddings cho toàn bộ kỹ năng ngay khi khởi động[cite: 1, 2]
-            node_embeddings = model(graph_data.x, graph_data.edge_index)
-        print("🚀 Hệ thống AI (GNN & Analytics) đã sẵn sàng!")
+        try:
+            model.load_state_dict(torch.load('gnn_encoder.pth'))
+            model.eval() 
+            with torch.no_grad():
+                node_embeddings = model(graph_data.x, graph_data.edge_index)
+            print("🚀 System initialized successfully!")
+        except Exception as e:
+            print(f"⚠️ Chưa có file model train sẵn: {e}")
+    else:
+        print("⚠️ Không lấy được data từ C#. AI sẽ chạy ở chế độ chờ (Standby).")
 
-# --- PHẦN 3: API PHÂN TÍCH BIỂU ĐỒ LƯƠNG ---
 
-@app.post("/api/analytics/salary-chart")
-def generate_salary_chart(request: SalaryChartRequest):
-    categories = {
-        "negotiable": 0, "under_10": 0, "10_to_20": 0,
-        "20_to_30": 0, "30_to_50": 0, "over_50": 0
-    }
-    
-    for job in request.jobs:
-        min_sal = job.salary_min or 0
-        max_sal = job.salary_max or 0
-        
-        if min_sal == 0 and max_sal == 0:
-            categories["negotiable"] += 1
-            continue
-            
-        # Tính mức lương đại diện (trung bình cộng)[cite: 2]
-        ref_salary = (min_sal + max_sal) / 2 if (min_sal > 0 and max_sal > 0) else max(min_sal, max_sal)
-        
-        # Phân loại vào ma trận tần suất[cite: 2]
-        if ref_salary < 10: categories["under_10"] += 1
-        elif 10 <= ref_salary < 20: categories["10_to_20"] += 1
-        elif 20 <= ref_salary < 30: categories["20_to_30"] += 1
-        elif 30 <= ref_salary <= 50: categories["30_to_50"] += 1
-        else: categories["over_50"] += 1
-            
-    # Trả về cấu trúc mảng cho Recharts (Frontend)[cite: 2]
-    chart_data = [
-        {"label": "Lương thỏa thuận", "value": categories["negotiable"]},
-        {"label": "Dưới 10 Triệu", "value": categories["under_10"]},
-        {"label": "10 - 20 Triệu", "value": categories["10_to_20"]},
-        {"label": "20 - 30 Triệu", "value": categories["20_to_30"]},
-        {"label": "30 - 50 Triệu", "value": categories["30_to_50"]},
-        {"label": "Trên 50 Triệu", "value": categories["over_50"]}
-    ]
-    return {"status": "success", "chart_data": chart_data}
-
-# --- PHẦN 4: API GỢI Ý KỸ NĂNG (GNN) ---
+# --- PHẦN 3: API GỢI Ý KỸ NĂNG (GNN) ---
 
 @app.post("/api/predict")
 def predict_skills(request: SkillRequest):
     if node_embeddings is None:
-        return JSONResponse(status_code=400, content={"status": "error", "message": "Model GNN chưa sẵn sàng."})
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Model GNN have not been loaded. Please run train.py first."})
     
     # Chuyển đổi ID từ SQL sang Index của đồ thị[cite: 1, 2]
     current_indices = [sql_to_idx[s] for s in request.current_skills if s in sql_to_idx]
@@ -143,7 +107,7 @@ def get_predicted_edges():
     try:
         if node_embeddings is None:
             # Trả về 400 Bad Request nếu model chưa train, thay vì để sập
-            return JSONResponse(status_code=400, content={"message": "Model GNN chưa được nạp. Vui lòng chạy train.py trước."})
+            return JSONResponse(status_code=400, content={"message": "Model GNN have not been loaded. Please run train.py first."})
         
         predicted_edges = []
         for i in range(len(idx_to_sql)):
@@ -158,14 +122,18 @@ def get_predicted_edges():
                     })
         return predicted_edges
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": f"Lỗi khi dự đoán cạnh: {str(e)}"})
-    
+        return JSONResponse(status_code=500, content={"error": f"Error occurred while predicting edges: {str(e)}"})
+
+# -- PHẦN 4: API TÍNH ĐIỂM MATCHING (GNN) ---    
 @app.post("/api/matching/score")
 def get_matching_score(request: MatchScoreRequest):
     if node_embeddings is None:
-        return JSONResponse(status_code=400, content={"message": "Model GNN chưa được nạp. Vui lòng chạy train.py trước."})
+        return JSONResponse(status_code=400, content={"message": "Model GNN have not been loaded. Please run train.py first."})
     
     try:
+        print(f"👉 C# gửi sang - Candidate Skills: {request.candidate_skills}")
+        print(f"👉 C# gửi sang - Job Skills: {request.job_skills}")
+
         candidate_skills = request.candidate_skills
         job_skills = request.job_skills
 
@@ -186,10 +154,17 @@ def get_matching_score(request: MatchScoreRequest):
             if j_idx in candidate_indices:
                 total_score += 1.0
             else:
-                max_sim = 0
-            total_score += max_sim
-            if max_sim < 0.5:
+                # 1. Chắc chắn là thiếu kỹ năng này rồi, ghi vào danh sách luôn!
                 missing_skills_names.append(idx_to_name.get(j_idx, "Unknown Skill"))
+                
+                # 2. Nhờ AI tìm xem có kỹ năng nào tương đồng để "vớt vát" điểm số không
+                max_sim = 0.0
+                for c_idx in candidate_indices:
+                    sim_score = calculate_score(node_embeddings, c_idx, j_idx)
+                    if sim_score > max_sim:
+                        max_sim = sim_score
+                
+                total_score += max_sim
         
         match_score = round((total_score / len(job_indices)) * 100, 1)
 
@@ -207,4 +182,53 @@ def get_matching_score(request: MatchScoreRequest):
     
     except Exception as e:
         # Bắt mọi lỗi thuật toán và trả về 500 kèm thông báo rõ ràng cho C# đọc
-        return JSONResponse(status_code=500, content={"error": f"Lỗi tính toán AI: {str(e)}"})
+        return JSONResponse(status_code=500, content={"error": f"Error occurred while calculating AI score: {str(e)}"})
+    
+# --- PHẦN 5: API DỰ BÁO LƯƠNG (HYBRID FORECAST) ---
+
+@app.post("/api/analytics/salary-forecast")
+def forecast_salary(request: SalaryForecastRequest):
+    if graph_data is None:
+        return JSONResponse(status_code=400, content={"message": "Dữ liệu đồ thị chưa sẵn sàng."})
+    
+    # 1. Tìm "Hành tinh có lực hấp dẫn mạnh nhất" (Max Degree) để làm chuẩn 100%
+    # graph_data.x chứa số lượng kết nối (bậc) của từng kỹ năng
+    max_degree = torch.max(graph_data.x).item()
+    if max_degree == 0: 
+        max_degree = 1.0 # Tránh lỗi chia cho 0
+        
+    results = []
+    
+    for item in request.skills:
+        # 2. Tìm tọa độ của kỹ năng này trong bản đồ sao
+        idx = sql_to_idx.get(item.skill_id)
+        
+        if idx is not None:
+            # Lấy số lượng kết nối của kỹ năng này
+            degree = graph_data.x[idx].item()
+            # Tính độ "Hot" (từ 0.0 đến 1.0)
+            hotness = degree / max_degree
+        else:
+            # Nếu kỹ năng quá mới, chưa có trên bản đồ -> Độ Hot = 0
+            hotness = 0.0 
+            
+        # 3. Công thức dự báo lai (Hybrid Formula)
+        # Giả định: Kỹ năng Hot nhất sẽ tăng tối đa 20% lương vào năm sau
+        max_growth_rate = 0.20 
+        growth_rate = hotness * max_growth_rate
+        
+        # Tính lương dự báo
+        forecasted_salary = item.current_avg_salary * (1 + growth_rate)
+        
+        results.append({
+            "skill_id": item.skill_id,
+            "skill_name": item.skill_name,
+            "current_salary": round(item.current_avg_salary, 1),
+            "forecasted_salary": round(forecasted_salary, 1),
+            "growth_percent": round(growth_rate * 100, 1) # Trả về % tăng trưởng để Frontend vẽ màu xanh/đỏ
+        })
+        
+    # 4. Sắp xếp từ tăng trưởng cao nhất xuống thấp nhất
+    results.sort(key=lambda x: x["growth_percent"], reverse=True)
+    
+    return {"status": "success", "forecast": results}

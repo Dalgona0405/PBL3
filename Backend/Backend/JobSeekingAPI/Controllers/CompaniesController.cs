@@ -1,4 +1,5 @@
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Enums;
 using JobSeekingAPI.Helpers;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
@@ -12,12 +13,9 @@ namespace JobSeekingAPI.Controllers
     public class CompaniesController : ControllerBase
     {
         private readonly ICompanyRepository _companyRepo;
-        private readonly IJobRepository _jobRepository;
-
-        public CompaniesController(ICompanyRepository companyRepo, IJobRepository jobRepository)
+        public CompaniesController(ICompanyRepository companyRepo)
         {
             _companyRepo = companyRepo;
-            _jobRepository = jobRepository;
         }
 
         // GET: api/companies
@@ -41,12 +39,12 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/companies/recruiters/{recruiterId}
-        [Authorize(Roles = "Admin, Recruiter")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpGet("recruiters/{recruiterId}")]
         public async Task<IActionResult> GetCompanyIdByRecruiterId(int recruiterId)
         {
             var userId = User.GetUserIdFromToken();
-            if (User.IsInRole("Recruiter") && userId != recruiterId)
+            if (User.IsInRole(UserRoles.Recruiter) && userId != recruiterId)
                 return Forbid();
 
             var companyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(recruiterId);
@@ -57,7 +55,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // POST: api/companies
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpPost]
         public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyDTO dto)
         {
@@ -73,7 +71,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/companies/{id}
-        [Authorize(Roles = "Admin, Recruiter")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCompany(int id, [FromBody] UpdateCompanyDTO dto)
         {
@@ -98,7 +96,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // DELETE: api/companies/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCompany(int id)
         {

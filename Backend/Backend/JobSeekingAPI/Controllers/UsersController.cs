@@ -1,4 +1,5 @@
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Enums;
 using JobSeekingAPI.Helpers;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
@@ -19,7 +20,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/users
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpGet]
         public async Task<IActionResult> GetAllUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 100)
         {
@@ -41,7 +42,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/users/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
@@ -90,7 +91,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // DELETE: api/users/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
@@ -106,7 +107,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/users/search
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpGet("search")]
         public async Task<IActionResult> SearchUsers([FromQuery] string? keyword,
                                                      [FromQuery] string? role,

@@ -32,9 +32,11 @@ builder.Services.AddScoped<IExperienceRepository, ExperienceRepository>();
 builder.Services.AddScoped<ICompanyJoinRequestRepository, CompanyJoinRequestRepository>();
 
 builder.Services.AddScoped<JwtService>();
-builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IApplicationService, ApplicationService>();
+builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<ICompanyRequestService, CompanyRequestService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMatchingService, MatchingService>();
 
 // Đăng ký HttpClient để C# có thể gửi request đi các server khác (như server Python)

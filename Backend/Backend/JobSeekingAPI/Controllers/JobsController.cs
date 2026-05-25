@@ -1,4 +1,5 @@
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Enums;
 using JobSeekingAPI.Helpers;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
@@ -13,16 +14,16 @@ namespace JobSeekingAPI.Controllers
     public class JobsController : ControllerBase
     {
         private readonly IJobRepository _jobRepository;
-        private readonly ICompanyRepository _companyRepo;
         private readonly IMatchingService _matchingService;
-        public JobsController(IJobRepository jobRepository, ICompanyRepository companyRepo, IMatchingService matchingService)
+        private readonly IJobService _jobService;
+
+        public JobsController(IJobRepository jobRepository, IMatchingService matchingService, IJobService jobService)
         {
             _jobRepository = jobRepository;
-            _companyRepo = companyRepo;
             _matchingService = matchingService;
+            _jobService = jobService;
         }
 
-        // GET: api/jobs/{id}
         [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetJobById(int id)
@@ -34,7 +35,6 @@ namespace JobSeekingAPI.Controllers
             return Ok(MapToDTO(job));
         }
 
-        //GET: api/jobs/"search"
         [AllowAnonymous]
         [HttpGet("search")]
         public async Task<IActionResult> SearchJobs([FromQuery] JobSearchDTO searchParams)
@@ -51,7 +51,6 @@ namespace JobSeekingAPI.Controllers
             });
         }
 
-        //GET: api/jobs/"recent" => Cân nhắc vì GetAllJobs đã có sắp xếp theo PostedDate desc rồi, nếu muốn lấy recent thì chỉ cần gọi GetAllJobs và lấy 8 phần tử đầu tiên là được, nhưng nếu muốn có endpoint riêng để tối ưu query thì cũng được
         [AllowAnonymous]
         [HttpGet("recent")]
         public async Task<IActionResult> GetRecentJobs([FromQuery] int count = 8)
@@ -61,7 +60,6 @@ namespace JobSeekingAPI.Controllers
             return Ok(jobDTOs);
         }
 
-        //GET: api/jobs/company/{companyId}
         [AllowAnonymous]
         [HttpGet("company/{companyId}")]
         public async Task<IActionResult> GetJobsByCompany(int companyId)
@@ -71,150 +69,62 @@ namespace JobSeekingAPI.Controllers
             return Ok(jobDTOs);
         }
 
-        //POST: api/jobs
-        [Authorize(Roles = "Admin, Recruiter")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpPost]
         public async Task<IActionResult> CreateJob([FromBody] CreateJobDTO dto)
         {
-            if (dto.Deadline.HasValue && dto.Deadline.Value < DateTime.UtcNow)
-            {
-                return BadRequest(new { message = "Deadline cannot be in the past!" });
-            }
-
-            var job = new Job
-            {
-                CompanyId = dto.CompanyId,
-                LocationId = dto.LocationId,
-                Title = dto.Title,
-                SalaryMin = dto.SalaryMin,
-                SalaryMax = dto.SalaryMax,
-                ExpYear = dto.ExpYear,
-                Level = dto.Level,
-                Deadline = dto.Deadline,
-                Description = dto.Description,
-                Requirement = dto.Requirement,
-                Benefits = dto.Benefits,
-                Address = dto.Address,
-                JobTags = dto.TagIds?.Select(tagId => new JobTag { TagId = tagId }).ToList() ?? new List<JobTag>()
-            };
-
-            var createdJob = await _jobRepository.CreateJobWithDefaultsAsync(job);
-            return CreatedAtAction(nameof(GetJobById), new { id = createdJob.JobId }, MapToDTO(createdJob));
+                var createdJob = await _jobService.CreateJobAsync(dto);
+                return CreatedAtAction(nameof(GetJobById), new { id = createdJob.JobId }, MapToDTO(createdJob));
         }
 
-        //PUT: api/jobs/{id}
-        [Authorize(Roles = "Admin, Recruiter")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateJob(int id, [FromBody] UpdateJobDTO dto)
         {
-            var existingJob = await _jobRepository.GetJobEntityByIdAsync(id);
-            if (existingJob == null) return NotFound(new { message = "Job not found" });
+                var userId = User.GetUserIdFromToken();
+                bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
 
-            var userId = User.GetUserIdFromToken();
-            if (User.IsInRole("Recruiter"))
-            {
-                var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
-                if (recruiterCompanyId == null || recruiterCompanyId != existingJob.CompanyId)
-                {
-                    return Forbid();
-                }
-            }
-
-            existingJob.Title = dto.Title ?? existingJob.Title;
-            existingJob.LocationId = dto.LocationId ?? existingJob.LocationId;
-            existingJob.SalaryMin = dto.SalaryMin ?? existingJob.SalaryMin;
-            existingJob.SalaryMax = dto.SalaryMax ?? existingJob.SalaryMax;
-            existingJob.ExpYear = dto.ExpYear ?? existingJob.ExpYear;
-            existingJob.Level = dto.Level ?? existingJob.Level;
-            existingJob.Deadline = dto.Deadline ?? existingJob.Deadline;
-            existingJob.Description = dto.Description ?? existingJob.Description;
-            existingJob.Requirement = dto.Requirement ?? existingJob.Requirement;
-            existingJob.Benefits = dto.Benefits ?? existingJob.Benefits;
-            existingJob.Address = dto.Address ?? existingJob.Address;
-            existingJob.Status = dto.Status ?? existingJob.Status;
-
-            await _jobRepository.UpdateJobWithTagsAsync(existingJob, dto.TagIds);
-            return Ok(new { message = "Update Success" });
+                await _jobService.UpdateJobAsync(id, dto, userId, isRecruiter);
+                return Ok(new { message = "Update Success" });
         }
 
-        //PATCH: api/jobs/{id}/status
-        [Authorize(Roles = "Admin, Recruiter")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateJobStatus(int id, [FromBody] JobUpdateStatusDTO dto)
         {
-            var existingJob = await _jobRepository.GetJobEntityByIdAsync(id);
-            if (existingJob == null)
-                return NotFound(new { message = "Job not found" });
-            var userId = User.GetUserIdFromToken();
-            if (User.IsInRole("Recruiter"))
-            {
-                var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
-                if (recruiterCompanyId == null || recruiterCompanyId != existingJob.CompanyId)
-                {
-                    return Forbid();
-                }
-            }
-            existingJob.Status = dto.Status;
-            await _jobRepository.UpdateAsync(existingJob);
-            return Ok(new { message = "Status update success" });
+                var userId = User.GetUserIdFromToken();
+                bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
+
+                await _jobService.UpdateJobStatusAsync(id, dto, userId, isRecruiter);
+                return Ok(new { message = "Status update success" });
         }
 
-        //DELETE: api/jobs/id
-        [Authorize(Roles = "Admin, Recruiter")]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteJob(int id)
         {
-            var existingJob = await _jobRepository.GetJobEntityByIdAsync(id);
-            if (existingJob == null) return NotFound(new { message = "Job not found" });
+                var userId = User.GetUserIdFromToken();
+                bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
 
-            var userId = User.GetUserIdFromToken();
-            if (User.IsInRole("Recruiter"))
-            {
-                var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
-                if (recruiterCompanyId == null || recruiterCompanyId != existingJob.CompanyId)
-                {
-                    return Forbid();
-                }
-            }
-            await _jobRepository.SoftDeleteJobAsync(id);
-            return Ok(new { message = "Delete success" });
+                await _jobService.DeleteJobAsync(id, userId, isRecruiter);
+                return Ok(new { message = "Delete success" });
         }
 
-        // GET: api/jobs/{jobId}/match/{candidateId}
-        [Authorize(Roles = "Candidate, Admin")]
+        [Authorize(Roles = UserRoles.Candidate + ", " + UserRoles.Admin)]
         [HttpGet("{jobId}/match/{candidateId}")]
         public async Task<IActionResult> GetJobMatchScore(int jobId, int candidateId)
         {
-            try
-            {
-                var result = await _matchingService.GetJobMatchScoreAsync(jobId, candidateId);
-                return Ok(result);
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = ex.Message });
-            }
+            var result = await _matchingService.GetJobMatchScoreAsync(jobId, candidateId);
+            return Ok(result);
         }
 
-        // GET: api/jobs/suggested
-        [Authorize(Roles = "Candidate")]
+        [Authorize(Roles = UserRoles.Candidate + ", " + UserRoles.Admin)]
         [HttpGet("suggested")]
         public async Task<IActionResult> GetSuggestedJobs([FromQuery] int topN = 6)
         {
-            try
-            {
-                int userId = User.GetUserIdFromToken();
-                var suggestions = await _matchingService.GetTopJobSuggestionsForCandidateAsync(userId, topN);
-                return Ok(suggestions);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error to get suggested jobs: " + ex.Message });
-            }
+            int userId = User.GetUserIdFromToken();
+            var suggestions = await _matchingService.GetTopJobSuggestionsForCandidateAsync(userId, topN);
+            return Ok(suggestions);
         }
 
         private JobDetailDTO MapToDTO(Job j)

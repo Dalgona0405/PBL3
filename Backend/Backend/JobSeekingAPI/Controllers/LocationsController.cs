@@ -1,4 +1,5 @@
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Enums;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -38,7 +39,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // POST: api/locations
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpPost]
         public async Task<IActionResult> CreateLocation([FromBody] CreateLocationDTO dto)
         {
@@ -58,7 +59,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/locations/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateLocation(int id, [FromBody] UpdateLocationDTO dto)
         {
@@ -74,7 +75,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // DELETE: api/locations/{id}
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteLocation(int id)
         {
