@@ -4,6 +4,7 @@ import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import CandidateDetailModal from '../components/CandidateDetailModal';
 
 function JobApplicationsPage() {
     const { jobId } = useParams(); // Lấy ID của Job từ trên thanh địa chỉ (URL) xuống
@@ -13,6 +14,7 @@ function JobApplicationsPage() {
     const [applications, setApplications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [selectedCandidateId, setSelectedCandidateId] = useState(null);
 
     // 1. LẤY DANH SÁCH CV CỦA JOB NÀY
     useEffect(() => {
@@ -124,10 +126,26 @@ function JobApplicationsPage() {
                                             {new Date(app.appliedDate).toLocaleDateString('vi-VN')}
                                         </td>
                                         <td className="py-4 px-6">
+                                            <div className="flex flex-col gap-2 items-start">
+                                                {/* Nút xem Popup */}
+                                                <button
+                                                    onClick={() => setSelectedCandidateId(app.candidate?.userId || app.candidate?.id)}
+                                                    className="inline-flex items-center gap-2 bg-earth text-white hover:bg-olive px-4 py-1.5 rounded-lg font-bold text-sm transition-colors shadow-sm"
+                                                >
+                                                    👁️ Xem Hồ sơ
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-6">
                                             {app.candidate?.cvUrl ? (
-                                                <a href={app.candidate.cvUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-xl font-bold text-sm transition-colors">
-                                                    📄 Xem CV
-                                                </a>
+                                                <>
+                                                    <a href={app.candidate.cvUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-xl font-bold text-sm transition-colors">
+                                                        📄 Xem CV
+                                                    </a>
+                                                    <a href={app.candidate.cvUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-blue-500 hover:text-blue-700 font-medium text-sm transition-colors underline">
+                                                        📄 Tải CV PDF
+                                                    </a>
+                                                </>
                                             ) : <span className="text-gray-400 text-sm italic">Chưa có CV</span>}
                                         </td>
                                         <td className="py-4 px-6">
@@ -152,6 +170,12 @@ function JobApplicationsPage() {
                         </table>
                     </div>
                 </div>
+            )}
+            {selectedCandidateId && (
+                <CandidateDetailModal 
+                    candidateId={selectedCandidateId} 
+                    onClose={() => setSelectedCandidateId(null)} 
+                />
             )}
         </div>
     );

@@ -1,3 +1,7 @@
+// ==========================================
+// File: src/components/JobList.jsx
+// ==========================================
+
 import React, { useState, useEffect } from 'react';
 import JobCard from './JobCard';
 import { API_URLS } from '../api/api';
@@ -21,17 +25,26 @@ const JobCardSkeleton = () => (
     </div>
 );
 
-// 🛠️ ĐỔI PROPS: Nhận 'filters' thay vì 'keyword'
-function JobList({ filters = {}, companyId }) {
+// 1. BỎ cái default = {} đi nha Trúc, chỉ để { filters, companyId } thôi
+function JobList({ filters, companyId }) {
     const [jobs, setJobs] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [isFetching, setIsFetching] = useState(true); 
 
+    // 2. Tách các giá trị nhỏ ra để React dễ so sánh (Tránh vòng lặp vô tận)
+    // Dùng dấu chấm hỏi (?.) để lỡ filters không có thì nó không bị lỗi
+    const keyword = filters?.keyword;
+    const locationId = filters?.locationId;
+    const tagId = filters?.tagId;
+    const minSalary = filters?.minSalary;
+    const maxSalary = filters?.maxSalary;
+
     // Reset về trang 1 nếu bộ lọc thay đổi
     useEffect(() => {
         setCurrentPage(1);
-    }, [filters, companyId]);
+    // 3. Lắng nghe các giá trị nhỏ thay vì lắng nghe cả cục 'filters'
+    }, [keyword, locationId, tagId, minSalary, maxSalary, companyId]);
 
     useEffect(() => {
         setIsFetching(true); 
@@ -40,35 +53,34 @@ function JobList({ filters = {}, companyId }) {
             axiosClient.get(`${API_URLS.JOBS}/company/${companyId}`)
                 .then(response => {
                     const fetchedJobs = response.items || response.Items || response.data || response;
-                    setJobs(Array.isArray(fetchedJobs) ? fetchedJobs :[]);
+                    setJobs(Array.isArray(fetchedJobs) ? fetchedJobs : []);
                 })
                 .catch(error => console.error('Lỗi lấy dữ liệu công ty:', error))
                 .finally(() => setIsFetching(false)); 
         } else {
-            // 🛠️ TUYỆT CHIÊU URLSearchParams: Tự động nối chuỗi API chuẩn xác
             const params = new URLSearchParams();
             params.append('page', currentPage);
             params.append('pageSize', 9);
 
-            // Nếu có filter nào thì mới nhét vào URL
-            if (filters.keyword) params.append('Keyword', filters.keyword);
-            if (filters.locationId) params.append('LocationId', filters.locationId);
-            if (filters.tagId) params.append('TagId', filters.tagId);
-            if (filters.minSalary) params.append('MinSalary', filters.minSalary);
-            if (filters.maxSalary) params.append('MaxSalary', filters.maxSalary);
+            if (keyword) params.append('Keyword', keyword);
+            if (locationId) params.append('LocationId', locationId);
+            if (tagId) params.append('TagId', tagId);
+            if (minSalary) params.append('MinSalary', minSalary);
+            if (maxSalary) params.append('MaxSalary', maxSalary);
 
             const url = `${API_URLS.SEARCH}?${params.toString()}`;
 
             axiosClient.get(url)
                 .then(response => {
                     const fetchedJobs = response.items || response.Items || response.data || response;
-                    setJobs(Array.isArray(fetchedJobs) ? fetchedJobs :[]);
+                    setJobs(Array.isArray(fetchedJobs) ? fetchedJobs : []);
                     setTotalPages(response.totalPages || 1);
                 })
                 .catch(error => console.error('Lỗi lấy dữ liệu:', error))
                 .finally(() => setIsFetching(false)); 
         }
-    }, [filters, companyId, currentPage]);
+    // 4. Lắng nghe các giá trị nhỏ ở đây luôn
+    }, [keyword, locationId, tagId, minSalary, maxSalary, companyId, currentPage]);
 
     const handleNextPage = () => setCurrentPage(prev => prev + 1);
     const handlePrevPage = () => setCurrentPage(prev => prev - 1);

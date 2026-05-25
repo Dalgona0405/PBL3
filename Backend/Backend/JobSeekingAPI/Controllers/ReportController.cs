@@ -9,7 +9,6 @@ namespace JobSeekingAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = UserRoles.Admin)]
     public class ReportsController : ControllerBase
     {
         private readonly IReportService _reportService;

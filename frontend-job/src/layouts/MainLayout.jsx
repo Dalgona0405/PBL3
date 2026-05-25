@@ -38,15 +38,25 @@ const MainLayout = () => {
           )}
 
           {user?.role === 'Candidate' && (
-            <button onClick={() => navigate('/history-applied')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
-              📤 <span className="ml-3 font-medium">Đã ứng tuyển</span>
-            </button>
+            <>
+              <div className="pt-4 pb-2 px-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Người tìm việc</p>
+              </div>
+              <button onClick={() => navigate('/history-applied')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+                📤 <span className="ml-3 font-medium">Lịch sử ứng tuyển</span>
+              </button>
+            </>
           )}
 
           {user?.role === 'Recruiter' && (
-            <button onClick={() => navigate('/recruiter-dashboard')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
-              🏢 <span className="ml-3 font-medium">Quản lý tuyển dụng</span>
-            </button>
+            <>
+              <div className="pt-4 pb-2 px-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nhà tuyển dụng</p>
+              </div>
+              <button onClick={() => navigate('/recruiter-dashboard')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+                🏢 <span className="ml-3 font-medium">Quản lý tuyển dụng</span>
+              </button>
+            </>
           )}
 
           {user?.role === 'Admin' && (

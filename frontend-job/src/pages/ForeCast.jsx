@@ -52,12 +52,12 @@ function ForeCast() {
                     compRes,
                     aiRes
                 ] = await Promise.all([
-                    axiosClient.get(`${API_URLS.STATISTICS}/dashboard`).catch(() => null),
+                    axiosClient.get(`${API_URLS.REPORTS}/dashboard-summary`).catch(() => null),
                     axiosClient.get(`${API_URLS.REPORTS}/market-trend?limit=10`).catch(() => null),
                     axiosClient.get(`${API_URLS.REPORTS}/salary-by-location`).catch(() => null),
                     axiosClient.get(`${API_URLS.REPORTS}/application-timeline?period=month&months=6`).catch(() => null),
                     axiosClient.get(`${API_URLS.REPORTS}/top-companies?limit=5`).catch(() => null),
-                    axiosClient.get(`${API_URLS.STATISTICS}/salary-chart-from-ai`).catch(() => null)
+                    axiosClient.get(`${API_URLS.REPORTS}/salary-forecast-ai`).catch(() => null)
                 ]);
 
                 // HÀM MẸO: Lục tìm cái Hộp (Array) bên trong cái Khay (Object) do Backend C# trả về
