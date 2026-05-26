@@ -24,6 +24,7 @@ namespace JobSeekingAPI.Controllers
             _jobService = jobService;
         }
 
+        // GET: api/jobs/{id}
         [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetJobById(int id)
@@ -35,6 +36,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(MapToDTO(job));
         }
 
+        // GET: api/jobs/search
         [AllowAnonymous]
         [HttpGet("search")]
         public async Task<IActionResult> SearchJobs([FromQuery] JobSearchDTO searchParams)
@@ -51,6 +53,7 @@ namespace JobSeekingAPI.Controllers
             });
         }
 
+        // GET: api/jobs/recent?count=8
         [AllowAnonymous]
         [HttpGet("recent")]
         public async Task<IActionResult> GetRecentJobs([FromQuery] int count = 8)
@@ -60,6 +63,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(jobDTOs);
         }
 
+        // GET: api/jobs/company/{companyId}
         [AllowAnonymous]
         [HttpGet("company/{companyId}")]
         public async Task<IActionResult> GetJobsByCompany(int companyId)
@@ -69,6 +73,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(jobDTOs);
         }
 
+        // POST: api/jobs
         [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpPost]
         public async Task<IActionResult> CreateJob([FromBody] CreateJobDTO dto)
@@ -77,6 +82,7 @@ namespace JobSeekingAPI.Controllers
                 return CreatedAtAction(nameof(GetJobById), new { id = createdJob.JobId }, MapToDTO(createdJob));
         }
 
+        // PUT: api/jobs/{id}
         [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateJob(int id, [FromBody] UpdateJobDTO dto)
@@ -88,6 +94,7 @@ namespace JobSeekingAPI.Controllers
                 return Ok(new { message = "Update Success" });
         }
 
+        // PATCH: api/jobs/{id}/status
         [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateJobStatus(int id, [FromBody] JobUpdateStatusDTO dto)
@@ -99,6 +106,7 @@ namespace JobSeekingAPI.Controllers
                 return Ok(new { message = "Status update success" });
         }
 
+        // DELETE: api/jobs/{id}
         [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteJob(int id)
@@ -110,6 +118,7 @@ namespace JobSeekingAPI.Controllers
                 return Ok(new { message = "Delete success" });
         }
 
+        // GET: api/jobs/{jobId}/match/{candidateId}
         [Authorize(Roles = UserRoles.Candidate + ", " + UserRoles.Admin)]
         [HttpGet("{jobId}/match/{candidateId}")]
         public async Task<IActionResult> GetJobMatchScore(int jobId, int candidateId)
@@ -118,6 +127,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(result);
         }
 
+        // GET: api/jobs/suggested?topN=6
         [Authorize(Roles = UserRoles.Candidate + ", " + UserRoles.Admin)]
         [HttpGet("suggested")]
         public async Task<IActionResult> GetSuggestedJobs([FromQuery] int topN = 6)
@@ -145,6 +155,7 @@ namespace JobSeekingAPI.Controllers
                 Requirement = j.Requirement,
                 Benefits = j.Benefits,
                 Address = j.Address,
+                Status = j.Status,
                 ViewCount = j.ViewCount ?? 0,
                 Company = j.Company != null ? new CompanySummaryDTO
                 {

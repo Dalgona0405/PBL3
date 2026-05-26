@@ -10,12 +10,15 @@ import DetailJobPage from "./pages/DetailJobPage";
 import DetailCompanyPage from "./pages/DetailCompanyPage";
 import ProfilePage from "./pages/ProfilePage";
 import HistoryAppliedPage from "./pages/HistoryAppliedPage";
+import SuggestedJobs from "./pages/SuggestedJobs";
 import RecruiterDashboardPage from "./pages/RecruiterDashboardPage";
 import JobApplicationsPage from "./pages/JobApplicationsPage";
 import JobFormPage from "./pages/JobFormPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
 import CompanyRequestsPage from "./pages/CompanyRequestsPage";
 import ManageTagsPage from "./pages/ManageTags";
 import ManageUsersPage from "./pages/ManageUsersPage";
+import ManageCompaniesPage from "./pages/ManageCompaniesPage";
 import ForeCast from "./pages/ForeCast";
 
 // Component con để bảo vệ các trang bắt buộc đăng nhập (Route Guard)
@@ -42,12 +45,14 @@ function AppRoutes() {
 
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/history-applied" element={<ProtectedRoute allowedRole="Candidate"><HistoryAppliedPage /></ProtectedRoute>} />
-                
+                <Route path="/suggested-jobs" element={<ProtectedRoute allowedRole="Candidate"><SuggestedJobs /></ProtectedRoute>} />
                 <Route path="/recruiter-dashboard" element={<ProtectedRoute allowedRole="Recruiter"><RecruiterDashboardPage /></ProtectedRoute>} />
                 <Route path="/recruiter/jobs/:jobId/applications" element={<ProtectedRoute allowedRole="Recruiter"><JobApplicationsPage /></ProtectedRoute>} />
                 <Route path="/recruiter/jobs/create" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />
                 <Route path="/recruiter/jobs/edit/:jobId" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />
+                <Route path="/admin/dashboard" element={<ProtectedRoute allowedRole="Admin"><AdminDashboardPage /></ProtectedRoute>} />
                 <Route path="/admin/company-requests" element={<ProtectedRoute allowedRole="Admin"><CompanyRequestsPage /></ProtectedRoute>} />
+                <Route path="/admin/companies" element={<ProtectedRoute allowedRole="Admin"><ManageCompaniesPage /></ProtectedRoute>} />
                 <Route path="/admin/tags" element={<ProtectedRoute allowedRole="Admin"><ManageTagsPage /></ProtectedRoute>} />
                 <Route path="/admin/users" element={<ProtectedRoute allowedRole="Admin"><ManageUsersPage /></ProtectedRoute>} />
             </Route>
@@ -62,7 +67,7 @@ function App() {
         <AuthProvider>
             <BrowserRouter>
                 <Toaster
-                    position="top-right"
+                    position="bottom-right"
                     toastOptions={{
                         duration: 3000,
                         style: {

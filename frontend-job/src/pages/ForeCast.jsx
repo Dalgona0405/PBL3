@@ -38,7 +38,6 @@ function ForeCast() {
     const COLORS = ['#8A9A86', '#C19A6B', '#D4C4B7', '#A3B19B', '#E6D5C3', '#d9b382'];
 
     // 2. EFFECT: Tuyệt chiêu Promise.all - Gọi 6 anh bồi bàn chạy cùng lúc
-    // 2. EFFECT: Tuyệt chiêu Promise.all - Gọi 6 anh bồi bàn chạy cùng lúc
     useEffect(() => {
         const fetchAllReports = async () => {
             try {

@@ -31,7 +31,7 @@ namespace JobSeekingAPI.Workers
                     {
                         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                        _logger.LogInformation("Worker: Đang tính toán lương trung bình theo kỹ năng bằng C#...");
+                        _logger.LogInformation("Worker: Calculating average salary by skill level using C#...");
 
                         // 1. C# TỰ TÍNH TOÁN LƯƠNG TRUNG BÌNH (Rất nhanh nhờ EF Core)
                         var skillsData = await context.Tags
@@ -48,7 +48,7 @@ namespace JobSeekingAPI.Workers
                             .Where(x => x.current_avg_salary > 0) // Chỉ lấy những kỹ năng có data lương
                             .ToListAsync(stoppingToken);
 
-                        _logger.LogInformation($"Worker: Đã tính xong {skillsData.Count} kỹ năng. Gửi sang Python AI để dự báo...");
+                        _logger.LogInformation($"Worker: Calculated average salary for {skillsData.Count} skills. Sending to Python AI for forecasting...");
 
                         if (skillsData.Count > 0)
                         {
@@ -62,18 +62,18 @@ namespace JobSeekingAPI.Workers
 
                                 // 3. LƯU KẾT QUẢ DỰ BÁO VÀO RAM
                                 _cache.Set("SalaryForecastAI", forecastResult, TimeSpan.FromHours(2));
-                                _logger.LogInformation("Worker: Đã nhận kết quả dự báo từ AI và lưu vào Cache thành công!");
+                                _logger.LogInformation("Worker: Got forecast results from AI and saved to Cache successfully!");
                             }
                             else
                             {
-                                _logger.LogWarning($"Worker: Python AI trả về lỗi {response.StatusCode}");
+                                _logger.LogWarning($"Worker: Python AI returned error {response.StatusCode}");
                             }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Worker: Đã xảy ra lỗi khi xử lý dữ liệu dự báo lương.");
+                    _logger.LogError(ex, "Worker: An error occurred while processing salary forecast data.");
                 }
 
                 // Chạy lại sau mỗi 1 tiếng

@@ -56,7 +56,7 @@ namespace JobSeekingAPI.DTOs
         public string LocationName { get; set; } = string.Empty;
         public DateTime PostedDate { get; set; }
         public DateTime? Deadline { get; set; }
-        public string? Status { get; set; }
+        public int? Status { get; set; }
     }
 
     public class CreateJobDTO

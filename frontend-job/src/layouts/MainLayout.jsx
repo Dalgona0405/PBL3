@@ -42,6 +42,9 @@ const MainLayout = () => {
               <div className="pt-4 pb-2 px-4">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Người tìm việc</p>
               </div>
+              <button onClick={() => navigate('/suggested-jobs')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+                🎯 <span className="ml-3 font-medium">Việc làm gợi ý</span>
+              </button>
               <button onClick={() => navigate('/history-applied')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
                 📤 <span className="ml-3 font-medium">Lịch sử ứng tuyển</span>
               </button>
@@ -64,8 +67,14 @@ const MainLayout = () => {
               <div className="pt-4 pb-2 px-4">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Quản trị viên</p>
               </div>
+              <button onClick={() => navigate('/admin/dashboard')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+                🎯 <span className="ml-3 font-medium">Bảng điều khiển</span>
+              </button>
               <button onClick={() => navigate('/admin/company-requests')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
                 🛡️ <span className="ml-3 font-medium">Duyệt Công ty</span>
+              </button>
+              <button onClick={() => navigate('/admin/companies')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+                🏢 <span className="ml-3 font-medium">Quản lý Công ty</span>
               </button>
               <button onClick={() => navigate('/admin/tags')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
                 🏷️ <span className="ml-3 font-medium">Quản lý Kỹ năng</span>
@@ -82,15 +91,14 @@ const MainLayout = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         <header className="h-20 bg-white shadow-sm flex items-center justify-between px-8">
-          <div className="text-gray-400 text-sm">
-            Hệ thống dự báo và môi giới việc làm IT
+          <div className="text-gray-400 text-sm">              
           </div>
 
           <div>
             {user ? (
               <div className="flex items-center gap-4">
                 <span className="font-medium text-earth">Chào {user.name || user.fullName}!</span>
-                <button onClick={handleLogout} className="px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                <button onClick={handleLogout} className="px-5 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-all">
                   Đăng xuất
                 </button>
               </div>

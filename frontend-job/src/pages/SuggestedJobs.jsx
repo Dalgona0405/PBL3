@@ -20,7 +20,6 @@ function SuggestedJobs() {
                 setIsLoading(true);
                 const jobsData = await axiosClient.get(`${API_URLS.JOBS}/suggested?topN=6`);
                 
-                // Bộ lọc "Khay lấy Hộp" quen thuộc
                 const jobs = jobsData.items || jobsData.Items || jobsData.data || jobsData;
                 setSuggestedJobs(Array.isArray(jobs) ? jobs : []);
                 

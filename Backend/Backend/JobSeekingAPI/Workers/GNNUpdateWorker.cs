@@ -21,13 +21,13 @@ namespace JobSeekingAPI.Workers
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("GNN AI Worker đã khởi động.");
+            _logger.LogInformation("GNN AI Worker started.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    _logger.LogInformation("Worker : Đang kiểm tra kết nối và lấy dữ liệu Đồ thị Kỹ năng từ Python AI...");
+                    _logger.LogInformation("Worker : Checking connection and fetching skill graph data from Python AI...");
                     
                     var response = await _httpClient.GetAsync($"{_pythonBaeseUrl}/api/graph/predict-edges", stoppingToken);
 
@@ -54,17 +54,17 @@ namespace JobSeekingAPI.Workers
                             _cache.Set("GnnSkillEdges", filteredEdges, cacheOptions);
                             
                             // Cập nhật lại Log để biết hệ thống đã lọc bớt bao nhiêu
-                            _logger.LogInformation($"AI trả về {aiEdges.Count} liên kết. Đã lọc và lưu Top {filteredEdges.Count} vào RAM thành công.");
+                            _logger.LogInformation($"AI returned {aiEdges.Count} connections. Filtered and saved Top {filteredEdges.Count} to RAM successfully.");
                         }
                         else
                         {
-                            _logger.LogWarning($"[CẢNH BÁO] Python AI trả về mã lỗi: {response.StatusCode}. Hệ thống vẫn tiếp tục dùng dữ liệu cũ.");
+                            _logger.LogWarning($"[CẢNH BÁO] Python AI returned error code: {response.StatusCode}. System will continue using old data.");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"[LỖI CHƯA XÁC ĐỊNH] GNN Worker gặp sự cố: {ex.Message}");
+                    _logger.LogError($"[UNKNOWN ERROR] GNN Worker encountered a problem: {ex.Message}");
                 }
                 
                 await Task.Delay(TimeSpan.FromHours(1), stoppingToken);

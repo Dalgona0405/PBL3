@@ -2,13 +2,12 @@ from fastapi.responses import JSONResponse
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List
+from contextlib import asynccontextmanager
 import torch
 
 # CHÚ Ý: Sử dụng GCNNet từ model.py và logic từ data_loader.py
 from data_loader import fetch_and_process_data 
 from model import GCNNet, calculate_score 
-
-app = FastAPI(title="AI Job System: GNN & Analytics")
 
 # --- PHẦN 1: ĐỊNH NGHĨA MODEL DỮ LIỆU (PYDANTIC) ---
 
@@ -30,6 +29,7 @@ class SkillSalaryData(BaseModel):
 class SalaryForecastRequest(BaseModel):
     skills: List[SkillSalaryData]
 
+
 # --- PHẦN 2: BIẾN TOÀN CỤC VÀ KHỞI TẠO HỆ THỐNG ---
 
 graph_data = None
@@ -39,24 +39,27 @@ idx_to_name = {}
 model = None
 node_embeddings = None
 
-@app.on_event("startup")
-def load_system():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global graph_data, sql_to_idx, idx_to_sql, idx_to_name, model, node_embeddings
-    print("Đang khởi động AI, thử kết nối với C#...")
+    
+    print("⏳ Loading graph data and AI model...")
     graph_data, sql_to_idx, idx_to_sql, idx_to_name = fetch_and_process_data()
     
-    if graph_data is not None and graph_data.num_nodes > 0: # Thêm check an toàn
+    if graph_data is not None:
         model = GCNNet(in_channels=1) 
-        try:
-            model.load_state_dict(torch.load('gnn_encoder.pth'))
-            model.eval() 
-            with torch.no_grad():
-                node_embeddings = model(graph_data.x, graph_data.edge_index)
-            print("🚀 System initialized successfully!")
-        except Exception as e:
-            print(f"⚠️ Chưa có file model train sẵn: {e}")
-    else:
-        print("⚠️ Không lấy được data từ C#. AI sẽ chạy ở chế độ chờ (Standby).")
+        model.load_state_dict(torch.load('gnn_encoder.pth'))
+        model.eval() 
+        with torch.no_grad():
+            node_embeddings = model(graph_data.x, graph_data.edge_index)
+        print("🚀 System initialized successfully!")
+        
+    yield  # Server sẽ dừng ở đây và bắt đầu phục vụ các API request
+    
+    print("🛑 Cleaning up resources...")
+    # (Hiện tại AI của mình chưa cần dọn dẹp gì phức tạp, nên chỉ cần in ra log)
+
+app = FastAPI(title="AI Job System: GNN & Analytics", lifespan=lifespan)
 
 
 # --- PHẦN 3: API GỢI Ý KỸ NĂNG (GNN) ---
@@ -189,7 +192,7 @@ def get_matching_score(request: MatchScoreRequest):
 @app.post("/api/analytics/salary-forecast")
 def forecast_salary(request: SalaryForecastRequest):
     if graph_data is None:
-        return JSONResponse(status_code=400, content={"message": "Dữ liệu đồ thị chưa sẵn sàng."})
+        return JSONResponse(status_code=400, content={"message": "Graph data have not been loaded. Please run train.py first."})
     
     # 1. Tìm "Hành tinh có lực hấp dẫn mạnh nhất" (Max Degree) để làm chuẩn 100%
     # graph_data.x chứa số lượng kết nối (bậc) của từng kỹ năng

@@ -84,7 +84,7 @@ namespace JobSeekingAPI.Services
                             LocationName = job.Location?.LocationName ?? "Unknown",
                             PostedDate = job.PostedDate,
                             Deadline = job.Deadline,
-                            Status = job.Status.ToString()
+                            Status = job.Status
                         },
                         MatchScore = matchResult.MatchScore,
                         MissingSkills = matchResult.MissingSkills,
