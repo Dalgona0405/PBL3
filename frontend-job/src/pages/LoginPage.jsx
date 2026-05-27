@@ -30,13 +30,23 @@ function LoginPage() {
       toast.success("Đăng nhập thành công! Đang chuyển hướng... 🌿", { id: toastId });
 
       setTimeout(() => {
-        if (data.user.role === 'Recruiter') {
-          navigate('/recruiter-dashboard');
+        // 1. Kiểm tra xem khách có gửi kèm cái "địa chỉ bàn cũ" (from) không?
+        const from = location.state?.from;
+
+        if (from) {
+          // Nếu có, dẫn khách về đúng cái bàn đó
+          navigate(from);
         } else {
-          navigate('/');
+          // Nếu không có (khách mới vào thẳng trang login), thì phân loại theo Role như cũ
+          if (data.user.role === 'Recruiter') {
+            navigate('/recruiter-dashboard');
+          } else if (data.user.role === 'Admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/');
+          }
         }
       }, 1000);
-
   } catch (error) {
     console.error("Lỗi đăng nhập:", error);
     const errorMsg = error.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";

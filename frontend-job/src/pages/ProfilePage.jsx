@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
+import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
 // COMPONENT CON: FORM SỬA THÔNG TIN
@@ -65,10 +66,10 @@ function EditProfileForm({ formData, setFormData }) {
             const data = await axiosClient.post(API_URLS.COMPANY_REQUESTS, payload);
             setSelectedNewCompany(null);
             setSearchTerm('');
-            alert("⚠️ " + data.message);
+            toast.success("⚠️ " + data.message);
         } catch (err) {
             const errorMessage = err.response?.data?.message || "⚠️ Có lỗi xảy ra khi gửi yêu cầu.";
-            alert(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsSendingRequest(false);
         }
@@ -155,7 +156,7 @@ function EditProfileForm({ formData, setFormData }) {
                                             const file = e.target.files[0];
                                             if (!file) return;
                                             if (file.type !== 'application/pdf') {
-                                                alert("Chỉ chấp nhận file PDF nha Trúc ơi! 🌿");
+                                                toast.error("Chỉ chấp nhận file PDF nha Trúc ơi! 🌿");
                                                 e.target.value = null;
                                                 return;
                                             }
@@ -177,9 +178,9 @@ function EditProfileForm({ formData, setFormData }) {
                                                     ...prev,
                                                     candidate: { ...prev.candidate, cvUrl: newCvUrl }
                                                 }));
-                                                alert("🎉 Cập nhật CV mặc định thành công!");
+                                                toast.success("🎉 Cập nhật CV mặc định thành công!");
                                             } catch (err) {
-                                                alert("⚠️ Lỗi khi tải CV lên. Vui lòng thử lại!");
+                                                toast.error("⚠️ Lỗi khi tải CV lên. Vui lòng thử lại!");
                                             }
                                         }}
                                     />
@@ -318,11 +319,11 @@ function ExperienceSection({ userId }) {
             if (editId) {
                 // Nếu có editId -> Gọi API Sửa (PUT)
                 await axiosClient.put(`${API_URLS.CANDIDATE_EXP}/${editId}`, payload);
-                alert("🎉 Đã cập nhật kinh nghiệm thành công!");
+                toast.success("🎉 Đã cập nhật kinh nghiệm thành công!");
             } else {
                 // Nếu không có editId -> Gọi API Thêm mới (POST)
                 await axiosClient.post(API_URLS.CANDIDATE_EXP, payload);
-                alert("🎉 Đã thêm kinh nghiệm mới!");
+                toast.success("🎉 Đã thêm kinh nghiệm mới!");
             }
 
             // Reset form và tải lại danh sách
@@ -332,7 +333,7 @@ function ExperienceSection({ userId }) {
             fetchExperiences();
 
         } catch (error) {
-            alert("⚠️ Có lỗi xảy ra khi lưu. Vui lòng kiểm tra lại!");
+            toast.error("⚠️ Có lỗi xảy ra khi lưu. Vui lòng kiểm tra lại!");
         }
     };
 
@@ -355,9 +356,10 @@ function ExperienceSection({ userId }) {
         if (!window.confirm("Bạn có chắc muốn xóa kinh nghiệm này không? 🌿")) return;
         try {
             await axiosClient.delete(`${API_URLS.CANDIDATE_EXP}/${expId}`);
+            toast.success("🎉 Đã xóa kinh nghiệm thành công!");
             setExperiences(experiences.filter(e => (e.id || e.experienceId) !== expId));
         } catch (error) {
-            alert("⚠️ Không thể xóa. Vui lòng thử lại!");
+            toast.error("⚠️ Không thể xóa. Vui lòng thử lại!");
         }
     };
 
@@ -459,6 +461,101 @@ function ExperienceSection({ userId }) {
     );
 }
 
+// COMPONENT CON: ĐỔI MẬT KHẨU (Dùng chung cho mọi Role)
+function ChangePasswordForm({ userId }) {
+    const [formData, setFormData] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        // 1. Validate Frontend (Đỡ tốn công anh bồi bàn chạy xuống bếp)
+        if (formData.newPassword !== formData.confirmPassword) {
+            toast.error("⚠️ Mật khẩu mới và xác nhận không khớp nhau nha Trúc ơi!");
+            return;
+        }
+        if (formData.newPassword.length < 6) {
+            toast.error("⚠️ Mật khẩu mới phải có ít nhất 6 ký tự cho an toàn nhé!");
+            return;
+        }
+
+        // 2. Gọi API
+        setIsLoading(true);
+        try {
+            await axiosClient.put(`${API_URLS.USERS}/${userId}/change-password`, {
+                currentPassword: formData.currentPassword,
+                newPassword: formData.newPassword,
+                confirmPassword: formData.confirmPassword
+            });
+            
+            toast.success("🎉 Đổi mật khẩu thành công! Lần đăng nhập sau nhớ dùng mật khẩu mới nha.");
+            // Xóa trắng form sau khi đổi thành công
+            setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (error) {
+            const msg = error.response?.data?.message || "Mật khẩu hiện tại không đúng hoặc có lỗi xảy ra.";
+            toast.error(`⚠️ Lỗi: ${msg}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="bg-white rounded-3xl shadow-sm p-8 mt-8 border-t-8 border-gray-200">
+            <h3 className="text-xl font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100 flex items-center gap-2">
+                🔒 Đổi mật khẩu
+            </h3>
+            
+            <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+                <div>
+                    <label className="block text-sm font-bold text-gray-600 mb-1">Mật khẩu hiện tại <span className="text-red-500">*</span></label>
+                    <input 
+                        type="password" name="currentPassword" required 
+                        value={formData.currentPassword} onChange={handleChange} 
+                        placeholder="Nhập mật khẩu đang dùng..." 
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-bold text-gray-600 mb-1">Mật khẩu mới <span className="text-red-500">*</span></label>
+                    <input 
+                        type="password" name="newPassword" required 
+                        value={formData.newPassword} onChange={handleChange} 
+                        placeholder="Ít nhất 6 ký tự..." 
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-bold text-gray-600 mb-1">Xác nhận mật khẩu mới <span className="text-red-500">*</span></label>
+                    <input 
+                        type="password" name="confirmPassword" required 
+                        value={formData.confirmPassword} onChange={handleChange} 
+                        placeholder="Nhập lại mật khẩu mới..." 
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
+                    />
+                </div>
+                
+                <div className="pt-2">
+                    <button 
+                        type="submit" 
+                        disabled={isLoading}
+                        className={`px-6 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-700 hover:bg-gray-900 hover:-translate-y-0.5'}`}
+                    >
+                        {isLoading ? 'Đang xử lý...' : 'Cập nhật mật khẩu'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
 // COMPONENT CHÍNH: PROFILE PAGE
 function ProfilePage() {
     const navigate = useNavigate();
@@ -514,7 +611,7 @@ function ProfilePage() {
     const handleAddSkill = () => {
         if (!selectedTagId) return;
         if (userTags.some(t => t.tagId === parseInt(selectedTagId))) {
-            alert("Bạn đã có kỹ năng này rồi nhé!");
+            toast.error("Bạn đã có kỹ năng này rồi nhé!");
             return;
         }
 
@@ -527,6 +624,7 @@ function ProfilePage() {
 
     const handleRemoveSkill = (tagId) => {
         setUserTags(userTags.filter(t => t.tagId !== tagId));
+        toast.success("Kỹ năng đã được xóa!");
     };
 
     const handleSave = async () => {
@@ -565,10 +663,10 @@ function ProfilePage() {
             }
 
             const responses = await Promise.all(apiCalls);
-            alert("🎉 Đã lưu thông tin thành công! 🌿");
+            toast.success("🎉 Đã lưu thông tin thành công! 🌿");
         } catch (err) {
             const errorMessage = err.response?.data?.message || "Có lỗi xảy ra khi lưu thông tin.";
-            alert(errorMessage);
+            toast.error(errorMessage);
         }
     };
     if (isLoading) return <div className="flex justify-center items-center h-64 text-olive text-xl animate-pulse">Đang tải hồ sơ của bạn... 🌿</div>;
@@ -653,6 +751,7 @@ function ProfilePage() {
                             <ExperienceSection userId={user.id} />
                         </>
                     )}
+                    <ChangePasswordForm userId={user.id} />
                 </div>
             </div>
         </div>

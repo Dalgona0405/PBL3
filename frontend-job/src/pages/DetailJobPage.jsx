@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { API_URLS } from "../api/api";
 import axiosClient from "../api/axiosClient";
 import { useAuth } from "../contexts/AuthContext";
@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 
 function DetailJobPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { id } = useParams();
     const [jobDetail, setJobDetail] = useState(null);
     const { user } = useAuth(); // Lấy thông tin user từ AuthContext
@@ -48,11 +49,13 @@ function DetailJobPage() {
     // Hàm mở Modal
     const handleOpenModal = () => {
         if (!user) {
-            navigate('/login');
+            // Gói thêm cái địa chỉ hiện tại (location.pathname) gửi sang trang Login
+            toast.error("Bạn cần đăng nhập để ứng tuyển nha! 🌿");
+            navigate('/login', { state: { from: location.pathname } });
             return;
         }
         if (user.role !== 'Candidate') {
-            toast.error("Bạn là nhà tuyển dụng mà, sao lại tự đi xin việc? 😆", { id: toastId });
+            toast.error("Bạn là nhà tuyển dụng mà, sao lại tự đi xin việc? 😆");
             return;
         }
         setShowModal(true);

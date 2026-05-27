@@ -6,25 +6,17 @@ import {
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 
-// Ép chữ nằm thẳng 1 dòng, cấm rớt dòng
 const CustomYAxisTick = ({ x, y, payload }) => {
     return (
-        <text
-            x={x - 10}
-            y={y}
-            dy={4} // Căn chỉnh cho chữ nằm ngay giữa thanh ngang
-            textAnchor="end" // Neo chữ về bên phải cho sát vào trục
-            fill="#666"
-            fontSize={13}
-        >
+        <text x={x - 10} y={y} dy={4} textAnchor="end" fill="#666" fontSize={13}>
             {payload.value}
         </text>
     );
 };
 
 function ForeCast() {
-    // 1. STATE: Chuẩn bị các "cái mâm" để đựng dữ liệu từ 6 API khác nhau
-    const [overview, setOverview] = useState(null);
+    // 1. STATE: 
+    const [overview, setOverview] = useState({});
     const [marketTrend, setMarketTrend] = useState([]);
     const [salaryLocation, setSalaryLocation] = useState([]);
     const [timeline, setTimeline] = useState([]);
@@ -34,48 +26,29 @@ function ForeCast() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Bảng màu chuẩn "Soft Autumn" của Trúc
     const COLORS = ['#8A9A86', '#C19A6B', '#D4C4B7', '#A3B19B', '#E6D5C3', '#d9b382'];
 
-    // 2. EFFECT: Tuyệt chiêu Promise.all - Gọi 6 anh bồi bàn chạy cùng lúc
     useEffect(() => {
         const fetchAllReports = async () => {
             try {
                 setIsLoading(true);
 
-                const [
-                    dashRes,
-                    trendRes,
-                    salLocRes,
-                    timeRes,
-                    compRes,
-                    aiRes
-                ] = await Promise.all([
+                const [dashRes, trendRes, salLocRes, timeRes, compRes, aiRes] = await Promise.all([
                     axiosClient.get(`${API_URLS.REPORTS}/dashboard-summary`).catch(() => null),
-                    axiosClient.get(`${API_URLS.REPORTS}/market-trend?limit=10`).catch(() => null),
-                    axiosClient.get(`${API_URLS.REPORTS}/salary-by-location`).catch(() => null),
-                    axiosClient.get(`${API_URLS.REPORTS}/application-timeline?period=month&months=6`).catch(() => null),
-                    axiosClient.get(`${API_URLS.REPORTS}/top-companies?limit=5`).catch(() => null),
-                    axiosClient.get(`${API_URLS.REPORTS}/salary-forecast-ai`).catch(() => null)
+                    axiosClient.get(`${API_URLS.REPORTS}/market-trend?limit=10`).catch(() => []),
+                    axiosClient.get(`${API_URLS.REPORTS}/salary-by-location`).catch(() => []),
+                    axiosClient.get(`${API_URLS.REPORTS}/application-timeline?period=month&months=6`).catch(() => ({})),
+                    axiosClient.get(`${API_URLS.REPORTS}/top-companies?limit=5`).catch(() => []),
+                    axiosClient.get(`${API_URLS.REPORTS}/salary-forecast-ai`).catch(() => ({}))
                 ]);
 
-                // HÀM MẸO: Lục tìm cái Hộp (Array) bên trong cái Khay (Object) do Backend C# trả về
-                const extractArray = (res) => {
-                    if (!res) return []; // Nếu lỗi hoặc không có data thì trả về mảng rỗng
-                    if (Array.isArray(res)) return res; // Nếu đã là mảng rồi thì lấy luôn
-                    if (Array.isArray(res.items)) return res.items; // Nếu C# bọc trong chữ 'items'
-                    if (Array.isArray(res.Items)) return res.Items; // Nếu C# bọc trong chữ 'Items'
-                    if (Array.isArray(res.data)) return res.data;   // Nếu C# bọc trong chữ 'data'
-                    return []; // Nếu tìm hoài không thấy mảng nào thì trả về mảng rỗng cho an toàn
-                };
-
-                // Đổ thức ăn vào đúng từng mâm (Đã qua màng lọc an toàn)
-                setOverview(dashRes?.overview || dashRes || null);
-                setMarketTrend(extractArray(trendRes));
-                setSalaryLocation(extractArray(salLocRes));
-                setTimeline(extractArray(timeRes));
-                setTopCompanies(extractArray(compRes));
-                setAiSalary(extractArray(aiRes));
+                const summaryData = dashRes?.data || dashRes?.items || dashRes || {};
+                setOverview(summaryData.overview || summaryData.Overview || {});
+                setMarketTrend(Array.isArray(trendRes) ? trendRes : []); 
+                setSalaryLocation(Array.isArray(salLocRes) ? salLocRes : []); 
+                setTimeline(timeRes?.data || []); 
+                setTopCompanies(Array.isArray(compRes) ? compRes : []); 
+                setAiSalary(aiRes?.forecast || []); 
 
             } catch (err) {
                 console.error("Lỗi tổng:", err);
@@ -95,7 +68,7 @@ function ForeCast() {
         <div className="max-w-7xl mx-auto w-full pb-12">
 
             {/* HEADER */}
-            <div className="mb-8 border-b-2 border-olive pb-4 flex justify-between items-end">
+            <div className="mb-10 border-b-2 border-olive pb-4 flex justify-between items-end">
                 <div>
                     <h2 className="text-3xl font-bold text-textmain mb-2">📊 Báo Cáo & Dự Báo Thị Trường IT</h2>
                     <p className="text-gray-500">Dữ liệu được tổng hợp và phân tích theo thời gian thực.</p>
@@ -105,29 +78,32 @@ function ForeCast() {
                 </span>
             </div>
 
-            {/* KHỐI 1: TỔNG QUAN (Từ API /Statistics/dashboard) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            {/* KHỐI 1: 4 THẺ TỔNG QUAN */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border-t-8 border-olive transform transition-transform hover:-translate-y-1">
                     <p className="text-gray-500 font-medium mb-1">Tổng Việc Làm</p>
-                    <h3 className="text-4xl font-bold text-textmain">{overview?.totalJobs || 0}</h3>
+                    <h3 className="text-4xl font-bold text-textmain">{overview.totalJobs || overview.TotalJobs || 0}</h3>
                 </div>
                 <div className="bg-white p-6 rounded-3xl shadow-sm border-t-8 border-earth transform transition-transform hover:-translate-y-1">
                     <p className="text-gray-500 font-medium mb-1">Ứng Viên Đăng Ký</p>
-                    <h3 className="text-4xl font-bold text-textmain">{overview?.totalCandidates || 0}</h3>
+                    <h3 className="text-4xl font-bold text-textmain">{overview.totalCandidates || overview.TotalCandidates || 0}</h3>
                 </div>
                 <div className="bg-white p-6 rounded-3xl shadow-sm border-t-8 border-olive transform transition-transform hover:-translate-y-1">
                     <p className="text-gray-500 font-medium mb-1">Công Ty Đối Tác</p>
-                    <h3 className="text-4xl font-bold text-textmain">{overview?.totalCompanies || 0}</h3>
+                    <h3 className="text-4xl font-bold text-textmain">{overview.totalCompanies || overview.TotalCompanies || 0}</h3>
                 </div>
                 <div className="bg-white p-6 rounded-3xl shadow-sm border-t-8 border-earth transform transition-transform hover:-translate-y-1">
                     <p className="text-gray-500 font-medium mb-1">Tỉ Lệ Ứng Tuyển</p>
-                    <h3 className="text-4xl font-bold text-textmain">{overview?.applicationRate || 0}%</h3>
+                    <h3 className="text-4xl font-bold text-textmain">
+                        {overview.applicationRate || overview.ApplicationRate || 0}%
+                    </h3>
                 </div>
             </div>
 
-            {/* KHỐI 2: CÁC BIỂU ĐỒ CHI TIẾT */}
+            {/* KHỐI 2: KHU VỰC BIỂU ĐỒ */}
             <div className="flex flex-col gap-12">
-                {/* 1. XU HƯỚNG KỸ NĂNG (Từ API /Reports/market-trend) */}
+                
+                {/* 1. XU HƯỚNG KỸ NĂNG */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                     <h3 className="text-xl font-bold text-olive mb-6">🔥 Top Kỹ Năng Đang Hot (Market Trend)</h3>
                     <div className="h-[400px] w-full">
@@ -135,14 +111,7 @@ function ForeCast() {
                             <BarChart data={marketTrend} layout="vertical" margin={{ left: 20, right: 80, top: 20, bottom: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={true} vertical={false} />
                                 <XAxis type="number" stroke="#8A9A86" />
-                                <YAxis
-                                    dataKey="skillName"
-                                    type="category"
-                                    stroke="#8A9A86"
-                                    width={160}
-                                    tick={<CustomYAxisTick />}
-                                />
-
+                                <YAxis dataKey="skillName" type="category" stroke="#8A9A86" width={160} tick={<CustomYAxisTick />} />
                                 <Tooltip cursor={{ fill: '#f9f9f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
                                 <Bar dataKey="jobCount" name="Số lượng Job" fill="#8A9A86" radius={[0, 8, 8, 0]} />
                             </BarChart>
@@ -150,19 +119,16 @@ function ForeCast() {
                     </div>
                 </div>
 
-                {/* 2. MỨC LƯƠNG THEO KHU VỰC (Từ API /Reports/salary-by-location) */}
+                {/* 2. MỨC LƯƠNG THEO KHU VỰC */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                     <h3 className="text-xl font-bold text-olive mb-6">💰 Mức Lương Theo Khu Vực (Triệu VNĐ)</h3>
                     <div className="h-[400px] w-full">
                         <ResponsiveContainer width="99%" height="100%">
-                            {/* MẸO: Tăng margin bottom lên 60 để có chỗ cho chữ nghiêng */}
                             <BarChart data={salaryLocation} margin={{ bottom: 20, top: 20, right: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                {/* MẸO: Xoay chữ nghiêng -45 độ, neo ở đuôi chữ (textAnchor="end") */}
                                 <XAxis dataKey="locationName" stroke="#8A9A86" angle={-45} textAnchor="end" tick={{ fontSize: 12, fill: '#666' }} height={60} />
                                 <YAxis stroke="#8A9A86" tick={{ fontSize: 12 }} />
                                 <Tooltip cursor={{ fill: '#f9f9f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                                {/* MẸO: Đưa Legend (chú thích) lên trên cùng cho thoáng phần dưới */}
                                 <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: '20px' }} />
                                 <Bar dataKey="averageMinSalary" name="Lương Tối Thiểu (TB)" fill="#D4C4B7" radius={[4, 4, 0, 0]} barSize={24} />
                                 <Bar dataKey="averageMaxSalary" name="Lương Tối Đa (TB)" fill="#C19A6B" radius={[4, 4, 0, 0]} barSize={24} />
@@ -171,7 +137,7 @@ function ForeCast() {
                     </div>
                 </div>
 
-                {/* 3. LƯỢNG ỨNG TUYỂN THEO THỜI GIAN (Từ API /Reports/application-timeline) */}
+                {/* 3. LƯỢNG ỨNG TUYỂN THEO THỜI GIAN */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 lg:col-span-2">
                     <h3 className="text-xl font-bold text-olive mb-6">📈 Lưu Lượng Ứng Tuyển (Timeline)</h3>
                     <div className="h-80 min-h-[300px] w-full">
@@ -187,13 +153,13 @@ function ForeCast() {
                                 <XAxis dataKey="period" stroke="#8A9A86" />
                                 <YAxis stroke="#8A9A86" />
                                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                                <Area type="monotone" dataKey="count" name="Số lượt nộp CV" stroke="#8A9A86" fillOpacity={1} fill="url(#colorCount)" />
+                                <Area type="monotone" dataKey="total" name="Số lượt nộp CV" stroke="#8A9A86" fillOpacity={1} fill="url(#colorCount)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* 4. TOP CÔNG TY TUYỂN DỤNG (Từ API /Reports/top-companies) */}
+                {/* 4. TOP CÔNG TY TUYỂN DỤNG */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                     <h3 className="text-xl font-bold text-olive mb-6 text-center">🏢 Top Công Ty Tuyển Dụng</h3>
                     <div className="h-80 min-h-[300px] w-full">
@@ -221,23 +187,29 @@ function ForeCast() {
                     </div>
                 </div>
 
-                {/* 5. DỰ BÁO LƯƠNG TỪ AI (Từ API /Statistics/salary-chart-from-ai) */}
+                {/* 5. DỰ BÁO LƯƠNG TỪ AI */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border-t-8 border-earth">
                     <h3 className="text-xl font-bold text-earth mb-6 flex items-center gap-2">
                         ✨ Dự Báo Mức Lương (AI Forecast)
                     </h3>
                     <div className="h-80 min-h-[300px] w-full">
-                        <ResponsiveContainer width="99%" height="100%">
-                            <LineChart data={aiSalary}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="label" stroke="#C19A6B" />
-                                <YAxis stroke="#C19A6B" />
-                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                                <Legend />
-                                <Line type="monotone" dataKey="actual" name="Thực tế" stroke="#8A9A86" strokeWidth={3} />
-                                <Line type="monotone" dataKey="predicted" name="AI Dự báo" stroke="#C19A6B" strokeWidth={3} strokeDasharray="5 5" activeDot={{ r: 8 }} />
-                            </LineChart>
-                        </ResponsiveContainer>
+                        {aiSalary.length > 0 ? (
+                            <ResponsiveContainer width="99%" height="100%">
+                                <LineChart data={aiSalary}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                    <XAxis dataKey="skill_name" stroke="#C19A6B" />
+                                    <YAxis stroke="#C19A6B" />
+                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="current_salary" name="Lương hiện tại" stroke="#8A9A86" strokeWidth={3} />
+                                    <Line type="monotone" dataKey="forecasted_salary" name="AI Dự báo" stroke="#C19A6B" strokeWidth={3} strokeDasharray="5 5" activeDot={{ r: 8 }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-gray-400 italic">
+                                Hệ thống AI đang thu thập thêm dữ liệu để đưa ra dự báo chính xác nhất... 🌿
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

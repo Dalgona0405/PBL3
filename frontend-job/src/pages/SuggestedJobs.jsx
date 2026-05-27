@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
-import JobCard from './JobCard';
+import JobCard from '../components/JobCard';
 
 function SuggestedJobs() {
     const { user } = useAuth();
