@@ -8,7 +8,6 @@ import toast from 'react-hot-toast';
 function RegisterPage() {
     const navigate = useNavigate();
     const location = useLocation();
-
     const { login } = useAuth();
 
     const [formData, setFormData] = useState({
@@ -45,8 +44,13 @@ function RegisterPage() {
                 toast.success('🎉 Đăng ký thành công! Đang tự động đăng nhập...', { id: toastId });
 
                 setTimeout(() => {
-                    if (userInfo.role === 'Recruiter') navigate('/recruiter-dashboard');
-                    else navigate('/');
+                    const from = location.state?.from;
+                    if (from) {
+                        navigate(from);
+                    } else {
+                        if (userInfo.role === 'Recruiter') navigate('/recruiter-dashboard');
+                        else navigate('/');
+                    }
                 }, 1500);
 
             }
@@ -68,7 +72,7 @@ function RegisterPage() {
                     🌿 IT Job Hunter
                 </h1>
                 <div className="flex gap-3">
-                    <button onClick={() => navigate('/login')} className={`px-5 py-2 font-medium rounded-full transition-all ${location.pathname === '/login' ? 'bg-olive text-white shadow-md' : 'bg-earth text-white shadow-md hover:bg-olive hover:-translate-y-1'}`}>
+                    <button onClick={() => navigate('/login', { state: { from: location.state?.from } })} className={`px-5 py-2 font-medium rounded-full transition-all ${location.pathname === '/login' ? 'bg-olive text-white shadow-md' : 'bg-earth text-white shadow-md hover:bg-olive hover:-translate-y-1'}`}>
                         Đăng nhập
                     </button>
                     <button onClick={() => navigate('/register')} className={`px-5 py-2 font-medium rounded-full transition-all ${location.pathname === '/register' ? 'bg-olive text-white shadow-md' : 'bg-earth text-white shadow-md hover:bg-olive hover:-translate-y-1'}`}>
@@ -121,7 +125,9 @@ function RegisterPage() {
 
                     <p className="text-center mt-8 text-gray-500">
                         Đã có tài khoản?{' '}
-                        <span className="text-earth font-bold cursor-pointer hover:text-olive hover:underline transition-colors" onClick={() => navigate('/login')}>
+                        <span
+                            className="text-earth font-bold cursor-pointer hover:text-olive hover:underline transition-colors"
+                            onClick={() => navigate('/login', { state: { from: location.state?.from } })}>
                             Đăng nhập tại đây
                         </span>
                     </p>

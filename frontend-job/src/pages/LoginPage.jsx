@@ -8,7 +8,6 @@ import toast from 'react-hot-toast';
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation(); // Dùng để biết đang ở trang nào
-
   const { login } = useAuth();
 
   const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -78,7 +77,7 @@ return (
           Đăng nhập
         </button>
         <button
-          onClick={() => navigate('/register')}
+          onClick={() => navigate('/register', { state: { from: location.state?.from } })} // Giữ nguyên "địa chỉ bàn cũ" khi chuyển sang trang đăng ký
           className={`px-5 py-2 font-medium rounded-full transition-all ${location.pathname === '/register' ? 'bg-olive text-white shadow-md' : 'bg-earth text-white shadow-md hover:bg-olive hover:-translate-y-1'}`}
         >
           Đăng ký
@@ -112,7 +111,9 @@ return (
 
         <p className="text-center mt-8 text-gray-500">
           Chưa có tài khoản?{' '}
-          <span className="text-earth font-bold cursor-pointer hover:text-olive hover:underline transition-colors" onClick={() => navigate('/register')}>
+          <span 
+          className="text-earth font-bold cursor-pointer hover:text-olive hover:underline transition-colors" 
+          onClick={() => navigate('/register', { state: { from: location.state?.from } })}>
             Đăng ký tại đây
           </span>
         </p>
