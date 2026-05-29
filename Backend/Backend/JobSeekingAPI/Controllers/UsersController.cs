@@ -114,55 +114,17 @@ namespace JobSeekingAPI.Controllers
                                                      [FromQuery] int page = 1,
                                                      [FromQuery] int pageSize = 20)
         {
-            var allUsers = await _userRepository.GetAllAsync();
-            var query = allUsers
-                .Where(u => u.DeletedAt == null)
-                .AsQueryable();
+            var result = await _userRepository.SearchUsersAsync(keyword, role, page, pageSize);
 
-            if (!string.IsNullOrWhiteSpace(keyword))
+            // Trả về đúng format mà Frontend ReactJS của Trúc đang mong đợi
+            return Ok(new
             {
-                query = query.Where(u =>
-                    (u.Email != null && u.Email.Contains(keyword)) ||
-                    (u.Candidate != null && u.FullName != null && u.FullName.Contains(keyword)) ||
-                    (u.Recruiter != null && u.Recruiter.User != null && u.FullName != null && u.FullName.Contains(keyword)) ||
-                    (u.Candidate != null && u.Candidate.Phone != null && u.Candidate.Phone.Contains(keyword)));
-            }
-
-            if (!string.IsNullOrWhiteSpace(role))
-            {
-                query = query.Where(u => u.Role == role);
-            }
-
-            var totalCount = query.Count();
-            var users = query
-                .OrderBy(u => u.Candidate != null ? u.FullName :
-                            (u.Recruiter != null && u.Recruiter.User != null ? u.FullName : ""))
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(u => new UserListDTO
-                {
-                    UserId = u.UserId,
-                    Email = u.Email,
-                    FullName = u.Candidate != null ? u.FullName :
-                              (u.Recruiter != null && u.Recruiter.User != null ? u.FullName : ""),
-                    Role = u.Role,
-                    Avatar = u.Candidate != null ? u.Candidate.User != null ? u.Candidate.User.Avatar : null : (u.Recruiter != null ? u.Recruiter.User != null ? u.Recruiter.User.Avatar : null : null),
-                    CompanyName = u.Recruiter != null && u.Recruiter.Company != null
-                                ? u.Recruiter.Company.CompanyName : null,
-                    LastLogin = u.LastLogin
-                })
-                .ToList();
-
-            var result = new
-            {
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize,
-                TotalPages = (int)System.Math.Ceiling(totalCount / (double)pageSize),
-                Data = users
-            };
-
-            return Ok(result);
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize,
+                TotalPages = result.TotalPages,
+                Data = result.Items
+            });
         }
 
         // GET: api/users/profile

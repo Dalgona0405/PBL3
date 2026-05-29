@@ -20,5 +20,8 @@ namespace JobSeekingAPI.Repositories
         // PROFILE
         Task<Candidate?> GetCandidateProfileAsync(int userId);
         Task<Recruiter?> GetRecruiterProfileAsync(int userId);
+
+        // SEARCH
+        Task<PagedResultDTO<UserListDTO>> SearchUsersAsync(string? keyword, string? role, int page, int pageSize);
     }
 }

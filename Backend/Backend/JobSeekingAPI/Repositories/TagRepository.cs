@@ -32,8 +32,6 @@ namespace JobSeekingAPI.Repositories
 
         public async Task SoftDeleteTagAsync(int id)
         {
-            // Bảng Tag thường ít khi xóa mềm, nhưng nếu cần có thể implement sau.
-            // Tạm thời dùng hàm DeleteAsync của BaseRepository (Xóa cứng)
             await DeleteAsync(id);
         }
 

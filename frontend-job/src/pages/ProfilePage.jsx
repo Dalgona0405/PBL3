@@ -26,7 +26,6 @@ function ProfilePage() {
         const fetchData = async () => {
             try {
                 setIsLoading(true);
-                // Chỉ cần lấy Profile thôi, Tags để SkillSection tự lo
                 const profileData = await axiosClient.get(`${API_URLS.USERS}/profile`);
 
                 if (profileData.role === 'Candidate') {
@@ -101,7 +100,7 @@ function ProfilePage() {
                         {formData.fullName || "Người dùng ẩn danh"}
                     </h2>
                     <span className="bg-earth text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">
-                        {formData.role === 'Candidate' ? 'Ứng Viên' : 'Nhà Tuyển Dụng'}
+                        {formData.role === 'Candidate' ? "Ứng viên" : formData.role === 'Recruiter' ? "Nhà tuyển dụng" : "Quản trị viên"}
                     </span>
                 </div>
 

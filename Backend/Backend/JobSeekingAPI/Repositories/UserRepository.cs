@@ -113,7 +113,10 @@ namespace JobSeekingAPI.Repositories
 
         public async Task<User?> GetUserDetailByIdAsync(int id)
         {
-            return await _context.Users.Include(u => u.Candidate).Include(u => u.Recruiter).FirstOrDefaultAsync(u => u.UserId == id && u.DeletedAt == null);
+            return await _context.Users
+                .Include(u => u.Candidate)
+                .Include(u => u.Recruiter)
+                .FirstOrDefaultAsync(u => u.UserId == id && u.DeletedAt == null);
         }
 
         public async Task SoftDeleteUserAsync(int id)
@@ -128,12 +131,71 @@ namespace JobSeekingAPI.Repositories
 
         public async Task<Candidate?> GetCandidateProfileAsync(int userId)
         {
-            return await _context.Candidates.Include(c => c.User).Include(c => c.Experiences).Include(c => c.CandidateTags).ThenInclude(ct => ct.Tag).FirstOrDefaultAsync(c => c.UserId == userId);
+            return await _context.Candidates
+                .Include(c => c.User)
+                .Include(c => c.Experiences)
+                .Include(c => c.CandidateTags).ThenInclude(ct => ct.Tag)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
         }
 
         public async Task<Recruiter?> GetRecruiterProfileAsync(int userId)
         {
             return await _context.Recruiters.Include(r => r.User).Include(r => r.Company).FirstOrDefaultAsync(r => r.UserId == userId);
+        }
+
+        public async Task<PagedResultDTO<UserListDTO>> SearchUsersAsync(string? keyword, string? role, int page, int pageSize)
+        {
+            // 1. Tạo câu truy vấn (Chưa chạy ngay) và Include các bảng cần thiết
+            var query = _context.Users
+                .AsNoTracking()
+                .Include(u => u.Candidate)
+                .Include(u => u.Recruiter).ThenInclude(r => r.Company)
+                .Where(u => u.DeletedAt == null);
+
+            // 2. Lọc theo từ khóa
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var lowerKeyword = keyword.ToLower();
+                query = query.Where(u =>
+                    (u.Email != null && u.Email.ToLower().Contains(lowerKeyword)) ||
+                    (u.FullName != null && u.FullName.ToLower().Contains(lowerKeyword)) ||
+                    (u.Candidate != null && u.Candidate.Phone != null && u.Candidate.Phone.Contains(lowerKeyword)));
+            }
+
+            // 3. Lọc theo Role
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                query = query.Where(u => u.Role == role);
+            }
+
+            // 4. Đếm tổng số lượng (Để phân trang)
+            var totalCount = await query.CountAsync();
+
+            // 5. Phân trang và Map ra DTO (Lấy trực tiếp FullName và Avatar)
+            var users = await query
+                .OrderBy(u => u.FullName)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new UserListDTO
+                {
+                    UserId = u.UserId,
+                    Email = u.Email,
+                    FullName = u.FullName, // Lấy trực tiếp, không cần check lằng nhằng nữa!
+                    Role = u.Role,
+                    Avatar = u.Avatar,     // Lấy trực tiếp luôn!
+                    CompanyName = u.Recruiter != null && u.Recruiter.Company != null ? u.Recruiter.Company.CompanyName : null,
+                    LastLogin = u.LastLogin
+                })
+                .ToListAsync(); // Lúc này mới thực sự chạy xuống Database lấy data lên
+
+            return new PagedResultDTO<UserListDTO>
+            {
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                Items = users
+            };
         }
     }
 }

@@ -10,60 +10,62 @@ function ManageUsersPage() {
     const [keyword, setKeyword] = useState('');
     const [roleFilter, setRoleFilter] = useState(''); 
 
-    const fetchUsers = async () => {
-        setIsLoading(true);
-        try {
-            let url = `${API_URLS.USERS}/search?page=1&pageSize=50`;
-            if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
-            if (roleFilter) url += `&role=${roleFilter}`;
+    // 🌟 STATE CHO PHÂN TRANG
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
-            const data = await axiosClient.get(url);
-            
-            // In ra console để Trúc xem Backend trả về cái thùng hình gì nha
-            console.log("Dữ liệu User từ Backend:", data); 
-            
-            // Tìm đúng cái hộp chứa danh sách (Array). Tùy Backend C# của Trúc viết mà nó nằm ở data.items, data.data, hoặc chính là data.
-            const userList = data.items || data.Items || data.data || data;
-            
-            // Kiểm tra chắc chắn nó là Array (danh sách) thì mới đưa vào State
-            if (Array.isArray(userList)) {
-                setUsers(userList);
-            } else {
-                console.error("Backend không trả về danh sách Array hợp lệ!");
-                setUsers([]); // Trả về mảng rỗng để không bị lỗi .map
-            }
-
-        } catch (error) {
-            console.error("Lỗi lấy danh sách user:", error);
-            setUsers([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
+    // 🌟 EFFECT 1: Nếu Admin gõ tìm kiếm hoặc đổi Role, tự động lật về Trang 1
     useEffect(() => {
-        fetchUsers();
-    }, [roleFilter]);
+        setCurrentPage(1);
+    }, [keyword, roleFilter]);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        fetchUsers();
-    };
+    // 🌟 EFFECT 2: Gọi API
+    useEffect(() => {
+        const fetchUsers = async () => {
+            setIsLoading(true);
+            try {
+                let url = '';
+                // Nếu có gõ từ khóa hoặc chọn Role -> Gọi API Search
+                if (keyword || roleFilter) {
+                    url = `${API_URLS.USERS}/search?page=${currentPage}&pageSize=10`;
+                    if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+                    if (roleFilter) url += `&role=${roleFilter}`;
+                } 
+                // Nếu để trống -> Gọi API Get All (API này Backend trả về FullName đầy đủ)
+                else {
+                    url = `${API_URLS.USERS}?page=${currentPage}&pageSize=10`;
+                }
 
-    // 🛠️ TÍNH NĂNG MỚI: XÓA MỀM (SOFT DELETE)
+                const data = await axiosClient.get(url);
+                
+                const userList = data.data;
+                if (Array.isArray(userList)) {
+                    setUsers(userList);
+                } else {
+                    setUsers([]);
+                }
+
+                setTotalPages(data.totalPages || data.TotalPages || 1);
+
+            } catch (error) {
+                console.error("Lỗi lấy danh sách user:", error);
+                setUsers([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchUsers();
+    }, [currentPage, keyword, roleFilter]);
+
     const handleDeleteUser = async (userId, userName) => {
-        // Hỏi lại cho chắc chắn (Confirm dialog)
         if (!window.confirm(`Bạn có chắc chắn muốn xóa tài khoản "${userName}" không? (Hành động này là xóa mềm)`)) {
             return;
         }
 
         try {
-            // Gọi API Delete của Backend
             await axiosClient.delete(`${API_URLS.USERS}/${userId}`);
-            
-            // Xóa thành công thì lọc (filter) user đó ra khỏi danh sách hiện tại trên màn hình
             setUsers(prevUsers => prevUsers.filter(u => (u.id || u.userId) !== userId));
-            
             toast.success(`Đã xóa tài khoản ${userName} thành công! 🌿`);
         } catch (error) {
             const errorMsg = error.response?.data?.message || "Không thể xóa người dùng này. Vui lòng thử lại!";
@@ -88,7 +90,7 @@ function ManageUsersPage() {
             </div>
 
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4">
-                <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+                <div className="flex-1 flex gap-2">
                     <input 
                         type="text" 
                         placeholder="Tìm theo tên hoặc email..." 
@@ -96,10 +98,7 @@ function ManageUsersPage() {
                         onChange={(e) => setKeyword(e.target.value)}
                         className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white"
                     />
-                    <button type="submit" className="bg-earth hover:bg-olive text-white px-6 py-2.5 rounded-xl font-bold transition-colors">
-                        🔍 Tìm
-                    </button>
-                </form>
+                </div>
 
                 <select 
                     value={roleFilter} 
@@ -131,7 +130,6 @@ function ManageUsersPage() {
                             </thead>
                             <tbody>
                                 {users.map(u => {
-                                    // Đảm bảo lấy đúng ID (tùy Backend trả về id hay userId)
                                     const currentId = u.id || u.userId; 
                                     return (
                                         <tr key={currentId} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
@@ -146,7 +144,6 @@ function ManageUsersPage() {
                                             <td className="py-4 px-6 text-gray-600">{u.email}</td>
                                             <td className="py-4 px-6">{getRoleBadge(u.role)}</td>
                                             <td className="py-4 px-6 text-center">
-                                                {/* Nút Xóa Mềm */}
                                                 <button 
                                                     onClick={() => handleDeleteUser(currentId, u.fullName || u.email)}
                                                     className="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-4 py-1.5 rounded-lg font-bold text-sm transition-colors border border-red-100"
@@ -162,6 +159,31 @@ function ManageUsersPage() {
                     </div>
                 )}
             </div>
+
+            {/* 🌟 KHU VỰC NÚT PHÂN TRANG */}
+            {!isLoading && totalPages > 1 && (
+                <div className="flex justify-center items-center mt-8 gap-4">
+                    <button 
+                        onClick={() => setCurrentPage(prev => prev - 1)} 
+                        disabled={currentPage === 1}
+                        className={`px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-olive border border-olive hover:bg-olive hover:text-white'}`}
+                    >
+                        ⬅ Trang trước
+                    </button>
+                    
+                    <span className="font-bold text-textmain bg-white px-5 py-2.5 rounded-xl shadow-sm border border-gray-100">
+                        Trang {currentPage} / {totalPages}
+                    </span>
+
+                    <button 
+                        onClick={() => setCurrentPage(prev => prev + 1)} 
+                        disabled={currentPage === totalPages}
+                        className={`px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm ${currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-olive border border-olive hover:bg-olive hover:text-white'}`}
+                    >
+                        Trang sau ➡
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

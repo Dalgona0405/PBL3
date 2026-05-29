@@ -77,7 +77,7 @@ const MainLayout = () => {
                 🏢 <span className="ml-3 font-medium">Quản lý Công ty</span>
               </button>
               <button onClick={() => navigate('/admin/tags')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
-                🏷️ <span className="ml-3 font-medium">Quản lý Kỹ năng</span>
+                🏷️ <span className="ml-3 font-medium">Quản lý Tags</span>
               </button>
               <button onClick={() => navigate('/admin/users')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
                 👥 <span className="ml-3 font-medium">Quản lý Người dùng</span>

@@ -7,12 +7,13 @@ function ManageTagsPage() {
     const [tags, setTags] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     
-    // 🛠️ STATE MỚI: Dành cho thanh tìm kiếm
+    // 🛠️ STATE: Dành cho thanh tìm kiếm
     const [searchKeyword, setSearchKeyword] = useState('');
 
     const [formData, setFormData] = useState({ tagName: '', type: 'Skill' });
     const [editingId, setEditingId] = useState(null); 
     const [isSaving, setIsSaving] = useState(false);
+    const toastId = React.useRef(null);
 
     // 🛠️ CẬP NHẬT HÀM FETCH: Hỗ trợ tìm kiếm
     const fetchTags = async (keyword = '') => {
@@ -24,9 +25,8 @@ function ManageTagsPage() {
                 : API_URLS.TAGS;
                 
             const data = await axiosClient.get(url);
-            
-            // Đề phòng lỗi .map giống bên User
-            const tagList = data.items || data.Items || data.data || data;
+            const tagList = data;
+
             setTags(Array.isArray(tagList) ? tagList :[]);
         } catch (error) {
             error_message = error.response?.data?.message || "Lỗi kết nối máy chủ. Vui lòng thử lại sau!";
@@ -95,7 +95,7 @@ function ManageTagsPage() {
     return (
         <div className="max-w-6xl mx-auto w-full pb-12">
             <div className="mb-8 border-b-2 border-olive pb-4">
-                <h2 className="text-3xl font-bold text-textmain mb-2">🏷️ Quản lý Kỹ năng (Tags)</h2>
+                <h2 className="text-3xl font-bold text-textmain mb-2">🏷️ Quản lý Tags</h2>
                 <p className="text-gray-500">Thêm, sửa, xóa và tìm kiếm các từ khóa kỹ năng IT.</p>
             </div>
 
@@ -125,7 +125,11 @@ function ManageTagsPage() {
                                 >
                                     <option value="Skill">Kỹ năng chuyên môn</option>
                                     <option value="Language">Ngoại ngữ</option>
-                                    <option value="SoftSkill">Kỹ năng mềm</option>
+                                    <option value="Benefit">Phúc lợi</option>
+                                    <option value="Role">Vai trò</option>
+                                    <option value="Experience">Kinh nghiệm</option>
+                                    <option value="Domain">Lĩnh vực</option>
+                                    <option value="Demographic">Nhân khẩu học</option>
                                 </select>
                             </div>
                             

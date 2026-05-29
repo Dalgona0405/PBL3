@@ -16,7 +16,7 @@ import JobApplicationsPage from "./pages/JobApplicationsPage";
 import JobFormPage from "./pages/JobFormPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import CompanyRequestsPage from "./pages/CompanyRequestsPage";
-import ManageTagsPage from "./pages/ManageTags";
+import ManageTagsPage from "./pages/ManageTagsPage";
 import ManageUsersPage from "./pages/ManageUsersPage";
 import ManageCompaniesPage from "./pages/ManageCompaniesPage";
 import ForeCast from "./pages/ForeCast";

@@ -1,3 +1,4 @@
+// File: src/components/profile/ChangePasswordForm.jsx
 import React, { useState } from 'react';
 import { API_URLS } from '../../api/api';
 import axiosClient from '../../api/axiosClient';
@@ -18,9 +19,8 @@ function ChangePasswordForm({ userId }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // 1. Validate Frontend
         if (formData.newPassword !== formData.confirmPassword) {
-            toast.error("⚠️ Mật khẩu mới và xác nhận không khớp nhau!");
+            toast.error("⚠️ Mật khẩu mới và xác nhận không khớp nhau nha Trúc ơi!");
             return;
         }
         if (formData.newPassword.length < 6) {
@@ -28,7 +28,6 @@ function ChangePasswordForm({ userId }) {
             return;
         }
 
-        // 2. Gọi API
         setIsLoading(true);
         try {
             await axiosClient.put(`${API_URLS.USERS}/${userId}/change-password`, {
@@ -38,7 +37,6 @@ function ChangePasswordForm({ userId }) {
             });
             
             toast.success("🎉 Đổi mật khẩu thành công! Lần đăng nhập sau nhớ dùng mật khẩu mới nha.");
-            // Xóa trắng form sau khi đổi thành công
             setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (error) {
             const msg = error.response?.data?.message || "Mật khẩu hiện tại không đúng hoặc có lỗi xảy ra.";
@@ -54,9 +52,12 @@ function ChangePasswordForm({ userId }) {
                 🔒 Đổi mật khẩu
             </h3>
             
-            <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+            {/* 🌟 Đã bỏ max-w-md và tăng khoảng cách các dòng (space-y-5) */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+                
+                {/* Dòng 1: Mật khẩu hiện tại (Full width) */}
                 <div>
-                    <label className="block text-sm font-bold text-gray-600 mb-1">Mật khẩu hiện tại <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-bold text-gray-600 mb-2">Mật khẩu hiện tại <span className="text-red-500">*</span></label>
                     <input 
                         type="password" name="currentPassword" required 
                         value={formData.currentPassword} onChange={handleChange} 
@@ -64,30 +65,35 @@ function ChangePasswordForm({ userId }) {
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
                     />
                 </div>
-                <div>
-                    <label className="block text-sm font-bold text-gray-600 mb-1">Mật khẩu mới <span className="text-red-500">*</span></label>
-                    <input 
-                        type="password" name="newPassword" required 
-                        value={formData.newPassword} onChange={handleChange} 
-                        placeholder="Ít nhất 6 ký tự..." 
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-bold text-gray-600 mb-1">Xác nhận mật khẩu mới <span className="text-red-500">*</span></label>
-                    <input 
-                        type="password" name="confirmPassword" required 
-                        value={formData.confirmPassword} onChange={handleChange} 
-                        placeholder="Nhập lại mật khẩu mới..." 
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
-                    />
+                
+                {/* Dòng 2: Mật khẩu mới & Xác nhận (Chia 2 cột trên màn hình lớn) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-600 mb-2">Mật khẩu mới <span className="text-red-500">*</span></label>
+                        <input 
+                            type="password" name="newPassword" required 
+                            value={formData.newPassword} onChange={handleChange} 
+                            placeholder="Ít nhất 6 ký tự..." 
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-600 mb-2">Xác nhận mật khẩu mới <span className="text-red-500">*</span></label>
+                        <input 
+                            type="password" name="confirmPassword" required 
+                            value={formData.confirmPassword} onChange={handleChange} 
+                            placeholder="Nhập lại mật khẩu mới..." 
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
+                        />
+                    </div>
                 </div>
                 
-                <div className="pt-2">
+                {/* Dòng 3: Nút bấm (Đẩy sang phải cho cân đối với form trên) */}
+                <div className="pt-4 flex justify-end">
                     <button 
                         type="submit" 
                         disabled={isLoading}
-                        className={`px-6 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-700 hover:bg-gray-900 hover:-translate-y-0.5'}`}
+                        className={`px-8 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-700 hover:bg-gray-900 hover:-translate-y-0.5'}`}
                     >
                         {isLoading ? 'Đang xử lý...' : 'Cập nhật mật khẩu'}
                     </button>
