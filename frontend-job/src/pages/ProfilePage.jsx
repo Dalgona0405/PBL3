@@ -80,7 +80,7 @@ function ProfilePage() {
         <div className="max-w-6xl mx-auto w-full pb-12">
             <div className="flex justify-end mb-6">
                 <button
-                    className="bg-earth hover:bg-olive text-white font-bold py-2.5 px-6 rounded-full shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-2"
+                    className="bg-olive hover:bg-earth text-white font-bold py-2.5 px-6 rounded-full shadow-md hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center gap-2"
                     onClick={handleSave}
                 >
                     💾 Lưu thay đổi
@@ -89,7 +89,7 @@ function ProfilePage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="bg-white rounded-3xl shadow-sm border-t-8 border-olive p-8 flex flex-col items-center text-center h-fit">
-                    <div className="w-32 h-32 rounded-full bg-cream border-4 border-earth flex items-center justify-center overflow-hidden mb-6 shadow-inner">
+                    <div className="w-32 h-32 rounded-full bg-cream border-4 border-olive flex items-center justify-center overflow-hidden mb-6 shadow-inner">
                         {formData.avatar ? (
                             <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
@@ -99,7 +99,7 @@ function ProfilePage() {
                     <h2 className="text-2xl font-bold text-textmain mb-3">
                         {formData.fullName || "Người dùng ẩn danh"}
                     </h2>
-                    <span className="bg-earth text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">
+                    <span className="bg-olive text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">
                         {formData.role === 'Candidate' ? "Ứng viên" : formData.role === 'Recruiter' ? "Nhà tuyển dụng" : "Quản trị viên"}
                     </span>
                 </div>

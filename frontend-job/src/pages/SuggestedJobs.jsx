@@ -1,3 +1,4 @@
+// File: src/pages/SuggestedJobs.jsx
 import React, { useState, useEffect } from 'react';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
@@ -33,13 +34,10 @@ function SuggestedJobs() {
         fetchSuggestions();
     }, [user]);
 
-    // Ẩn khối này nếu không phải Candidate
     if (!user || user.role !== 'Candidate') return null;
     
-    // Hiệu ứng loading nhẹ nhàng
     if (isLoading) return <div className="animate-pulse bg-cream p-8 rounded-3xl mb-10 text-olive font-medium">Hệ thống đang phân tích hồ sơ để tìm việc phù hợp nhất với bạn... 🌿</div>;
     
-    // Nếu Backend không tìm ra việc nào match, ẩn luôn cho gọn Gamen
     if (suggestedJobs.length === 0) return null; 
 
     return (
@@ -55,20 +53,34 @@ function SuggestedJobs() {
                 </div>
             </div>
 
-            {/* Đổ danh sách việc làm ra các khối Lego JobCard */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {suggestedJobs.map((job) => (
-                    <JobCard
-                        key={job.jobId}
-                        jobId={job.jobId}
-                        title={job.title}
-                        company={job.company}
-                        location={job.location}
-                        salaryMin={job.salaryMin}
-                        salaryMax={job.salaryMax}
-                    />
-                ))}
+            
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {suggestedJobs.map((item, index) => {
+                    const actualJob = item.job || item.Job || item;
+                    const currentJobId = actualJob.jobId || actualJob.JobId || actualJob.id || actualJob.Id;
+                    const companyInfo = actualJob.company || actualJob.Company || {
+                        companyName: actualJob.companyName || actualJob.CompanyName,
+                        logoImg: actualJob.logoImg || actualJob.LogoImg || actualJob.companyLogo || actualJob.CompanyLogo
+                    };
+
+                    const locationInfo = actualJob.location || actualJob.Location || {
+                        locationName: actualJob.locationName || actualJob.LocationName
+                    };
+
+                    return (
+                        <JobCard
+                            key={currentJobId || index}
+                            jobId={currentJobId}
+                            title={actualJob.title || actualJob.Title}
+                            company={companyInfo}
+                            location={locationInfo}
+                            salaryMin={actualJob.salaryMin || actualJob.SalaryMin}
+                            salaryMax={actualJob.salaryMax || actualJob.SalaryMax}
+                        />
+                    );
+                })}
             </div>
+
         </div>
     );
 }

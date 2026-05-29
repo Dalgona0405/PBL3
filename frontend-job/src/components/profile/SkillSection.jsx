@@ -6,9 +6,9 @@ import toast from 'react-hot-toast';
 
 // 🌟 NHẬN userId TỪ PROFILE PAGE TRUYỀN VÀO
 function SkillSection({ userId }) {
-    const [allTags, setAllTags] = useState([]); 
-    const [userTags, setUserTags] = useState([]); 
-    
+    const [allTags, setAllTags] = useState([]);
+    const [userTags, setUserTags] = useState([]);
+
     const [selectedTagId, setSelectedTagId] = useState('');
     const [selectedProficiency, setSelectedProficiency] = useState('Khá');
     const [isLoading, setIsLoading] = useState(true);
@@ -20,16 +20,16 @@ function SkillSection({ userId }) {
         const fetchSkillsData = async () => {
             try {
                 setIsLoading(true);
-                
+
                 const [tagsData, userSkillsData] = await Promise.all([
-                    axiosClient.get(API_URLS.TAGS), 
+                    axiosClient.get(API_URLS.TAGS),
                     // 🌟 GỌI API GET THEO ĐÚNG ID CỦA USER
-                    axiosClient.get(`/Candidates/${userId}/skills`).catch(() => []) 
+                    axiosClient.get(`/Candidates/${userId}/skills`).catch(() => [])
                 ]);
 
                 // Lọc chỉ lấy Skill và Language
                 const validTags = (tagsData || []).filter(
-                    tag => tag.type === 'Skill' || tag.type === 'Language'
+                    tag => tag.type === 'Skill' || tag.type === 'Language' || tag.type === 'Domain'
                 );
 
                 setAllTags(validTags);
@@ -56,10 +56,10 @@ function SkillSection({ userId }) {
         }
 
         const tagToAdd = allTags.find(t => t.tagId === parseInt(selectedTagId));
-        
+
         if (tagToAdd) {
             const updatedSkills = [
-                ...userTags, 
+                ...userTags,
                 { tagId: tagToAdd.tagId, tagName: tagToAdd.tagName, proficiency: selectedProficiency }
             ];
 
@@ -72,9 +72,9 @@ function SkillSection({ userId }) {
 
                 // 🌟 GỌI API PUT ĐỂ CẬP NHẬT (Dùng /me/skills theo Swagger)
                 await axiosClient.put('/Candidates/me/skills', payload);
-                
+
                 setUserTags(updatedSkills);
-                setSelectedTagId(''); 
+                setSelectedTagId('');
                 toast.success("Đã thêm kỹ năng thành công!", { id: toastId });
             } catch (error) {
                 toast.error("Lỗi khi thêm kỹ năng. Vui lòng thử lại!", { id: toastId });
@@ -94,7 +94,7 @@ function SkillSection({ userId }) {
 
             // 🌟 GỌI API PUT ĐỂ CẬP NHẬT
             await axiosClient.put('/Candidates/me/skills', payload);
-            
+
             setUserTags(updatedSkills);
             toast.success("Đã xóa kỹ năng!", { id: toastId });
         } catch (error) {
@@ -109,7 +109,7 @@ function SkillSection({ userId }) {
             <h3 className="text-xl font-bold text-olive mb-6 pb-3 border-b border-gray-100 flex items-center gap-2">
                 🧩 Kỹ năng chuyên môn
             </h3>
-            
+
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
                 <select
                     className="flex-[2] px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 text-gray-700 font-medium"
@@ -134,7 +134,7 @@ function SkillSection({ userId }) {
                 </select>
 
                 <button
-                    className="bg-earth hover:bg-olive text-white font-bold py-2.5 px-6 rounded-xl transition-colors shadow-sm"
+                    className="bg-olive hover:bg-earth text-white font-bold py-2.5 px-6 rounded-xl transition-colors shadow-sm"
                     onClick={handleAddSkill}
                 >
                     + Thêm
@@ -145,7 +145,7 @@ function SkillSection({ userId }) {
                 {userTags.length > 0 ? (
                     userTags.map((tag) => (
                         <div key={tag.tagId} className="flex items-center bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group">
-                            <span className="px-4 py-2 text-textmain font-bold bg-gray-50 border-r border-gray-200">
+                            <span className="px-4 py-2 text-textmain font-bold bg-tan border-r border-gray-200">
                                 {tag.tagName}
                             </span>
                             <span className="px-4 py-2 text-earth font-medium text-sm">

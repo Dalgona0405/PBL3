@@ -7,14 +7,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        cream: '#FAF9F6',     // Màu nền kem ấm áp (Màu nền chính)
-        olive: '#8A9A86',     // Xanh lá mạ dịu nhẹ (Màu chủ đạo)
-        earth: '#C19A6B',     // Nâu đất ấm áp (Màu nhấn, nút bấm)
-        textmain: '#4A4A4A',  // Xám đậm (Dùng cho chữ để đọc không bị chói như màu đen tuyền)
-      },
-      // ĐỊNH NGHĨA FONT CHỮ
-      fontFamily: {
-        sans: ['Nunito', 'sans-serif'], // Font chữ bo tròn, thân thiện, chuẩn Omotenashi
+        olive: '#7A8266',    // Xanh rêu nhạt (Màu chủ đạo)
+        earth: '#5C634A',    // Xanh rêu đậm (Màu nhấn/Hover)
+        cream: '#EAE6DF',    // Be xám nhạt (Màu nền)
+        textmain: '#333331', // Xám than (Màu chữ)
       }
     },
   },

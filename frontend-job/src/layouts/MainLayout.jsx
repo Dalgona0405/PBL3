@@ -16,23 +16,23 @@ const MainLayout = () => {
     <div className="flex h-screen bg-cream font-sans">
 
       {/* SIDEBAR */}
-      <aside className="w-64 bg-white shadow-lg flex flex-col">
-        <div className="h-20 flex items-center justify-center border-b border-gray-100">
-          <h1 className="text-2xl font-bold text-olive cursor-pointer" onClick={() => navigate('/')}>
+      <aside className="w-64 bg-olive shadow-lg flex flex-col">
+        <div className="h-20 flex items-center justify-center">
+          <h1 className="text-2xl font-bold text-cream cursor-pointer" onClick={() => navigate('/')}>
             🌿 IT Job Hunter
           </h1>
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2">
-          <button onClick={() => navigate('/')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+          <button onClick={() => navigate('/')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
             🏠 <span className="ml-3 font-medium">Trang chủ</span>
           </button>
-          <button onClick={() => navigate('/forecast')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+          <button onClick={() => navigate('/forecast')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
             📊 <span className="ml-3 font-medium">Dự báo thị trường</span>
           </button>
 
           {user && (
-            <button onClick={() => navigate('/profile')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+            <button onClick={() => navigate('/profile')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
               👤 <span className="ml-3 font-medium">Hồ sơ của tôi</span>
             </button>
           )}
@@ -40,12 +40,12 @@ const MainLayout = () => {
           {user?.role === 'Candidate' && (
             <>
               <div className="pt-4 pb-2 px-4">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Người tìm việc</p>
+                <p className="text-xs font-bold text-cream uppercase tracking-wider">Người tìm việc</p>
               </div>
-              <button onClick={() => navigate('/suggested-jobs')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+              <button onClick={() => navigate('/suggested-jobs')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 🎯 <span className="ml-3 font-medium">Việc làm gợi ý</span>
               </button>
-              <button onClick={() => navigate('/history-applied')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+              <button onClick={() => navigate('/history-applied')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 📤 <span className="ml-3 font-medium">Lịch sử ứng tuyển</span>
               </button>
             </>
@@ -54,9 +54,9 @@ const MainLayout = () => {
           {user?.role === 'Recruiter' && (
             <>
               <div className="pt-4 pb-2 px-4">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nhà tuyển dụng</p>
+                <p className="text-xs font-bold text-cream uppercase tracking-wider">Nhà tuyển dụng</p>
               </div>
-              <button onClick={() => navigate('/recruiter-dashboard')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+              <button onClick={() => navigate('/recruiter-dashboard')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 🏢 <span className="ml-3 font-medium">Quản lý tuyển dụng</span>
               </button>
             </>
@@ -65,21 +65,21 @@ const MainLayout = () => {
           {user?.role === 'Admin' && (
             <>
               <div className="pt-4 pb-2 px-4">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Quản trị viên</p>
+                <p className="text-xs font-bold text-cream uppercase tracking-wider">Quản trị viên</p>
               </div>
-              <button onClick={() => navigate('/admin/dashboard')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+              <button onClick={() => navigate('/admin/dashboard')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 🎯 <span className="ml-3 font-medium">Bảng điều khiển</span>
               </button>
-              <button onClick={() => navigate('/admin/company-requests')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+              <button onClick={() => navigate('/admin/company-requests')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 🛡️ <span className="ml-3 font-medium">Duyệt Công ty</span>
               </button>
-              <button onClick={() => navigate('/admin/companies')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+              <button onClick={() => navigate('/admin/companies')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 🏢 <span className="ml-3 font-medium">Quản lý Công ty</span>
               </button>
-              <button onClick={() => navigate('/admin/tags')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+              <button onClick={() => navigate('/admin/tags')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 🏷️ <span className="ml-3 font-medium">Quản lý Tags</span>
               </button>
-              <button onClick={() => navigate('/admin/users')} className="w-full flex items-center px-4 py-3 text-textmain hover:bg-olive hover:text-white rounded-xl transition-all">
+              <button onClick={() => navigate('/admin/users')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 👥 <span className="ml-3 font-medium">Quản lý Người dùng</span>
               </button>
             </>
@@ -98,7 +98,7 @@ const MainLayout = () => {
             {user ? (
               <div className="flex items-center gap-4">
                 <span className="font-medium text-earth">Chào {user.name || user.fullName}!</span>
-                <button onClick={handleLogout} className="px-5 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                <button onClick={handleLogout} className="px-5 py-2 text-sm bg-olive text-white hover:bg-red-500 rounded-lg transition-all">
                   Đăng xuất
                 </button>
               </div>
@@ -115,7 +115,7 @@ const MainLayout = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 bg-white overflow-y-auto p-8">
           <Outlet />
         </main>
       </div>

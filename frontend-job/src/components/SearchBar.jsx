@@ -77,7 +77,7 @@ function SearchBar({ onSearch }) {
             
             {/* THANH TÌM KIẾM CHÍNH */}
             <div className="flex items-center bg-white rounded-full shadow-md p-2 w-full max-w-4xl border border-gray-100 relative z-10">
-                <span className="pl-4 pr-2 text-gray-400 text-xl">🔍</span>
+                <span className="pl-4 pr-2 text-textmain text-xl">🔍</span>
                 <input 
                     type="text"
                     placeholder="Nhập từ khóa (Java, React, BA...)"
@@ -96,7 +96,7 @@ function SearchBar({ onSearch }) {
                 </button>
 
                 <button 
-                    className="bg-earth hover:bg-olive text-white font-medium py-2.5 px-8 rounded-full transition-colors duration-300 ml-2 shadow-sm"
+                    className="bg-olive hover:bg-earth text-white font-medium py-2.5 px-8 rounded-full transition-colors duration-300 ml-2 shadow-sm"
                     onClick={handleSearch}
                 >
                     Tìm kiếm

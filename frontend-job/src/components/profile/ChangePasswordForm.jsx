@@ -47,7 +47,7 @@ function ChangePasswordForm({ userId }) {
     };
 
     return (
-        <div className="bg-white rounded-3xl shadow-sm p-8 mt-8 border-t-8 border-gray-200">
+        <div className="bg-white rounded-3xl shadow-sm p-8 mt-8 border-t-8 border-olive">
             <h3 className="text-xl font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100 flex items-center gap-2">
                 🔒 Đổi mật khẩu
             </h3>
@@ -93,7 +93,7 @@ function ChangePasswordForm({ userId }) {
                     <button 
                         type="submit" 
                         disabled={isLoading}
-                        className={`px-8 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-700 hover:bg-gray-900 hover:-translate-y-0.5'}`}
+                        className={`px-8 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-olive hover:bg-earth hover:-translate-y-0.5'}`}
                     >
                         {isLoading ? 'Đang xử lý...' : 'Cập nhật mật khẩu'}
                     </button>

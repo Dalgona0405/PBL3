@@ -1,7 +1,3 @@
-// ==========================================
-// File: src/components/JobList.jsx
-// ==========================================
-
 import React, { useState, useEffect } from 'react';
 import JobCard from './JobCard';
 import { API_URLS } from '../api/api';
@@ -26,11 +22,11 @@ const JobCardSkeleton = () => (
 );
 
 // 1. BỎ cái default = {} đi nha Trúc, chỉ để { filters, companyId } thôi
-function JobList({ filters, companyId }) {
+function JobList({ filters, companyId, companyInfo }) {
     const [jobs, setJobs] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [isFetching, setIsFetching] = useState(true); 
+    const [isFetching, setIsFetching] = useState(true);
 
     // 2. Tách các giá trị nhỏ ra để React dễ so sánh (Tránh vòng lặp vô tận)
     // Dùng dấu chấm hỏi (?.) để lỡ filters không có thì nó không bị lỗi
@@ -43,11 +39,11 @@ function JobList({ filters, companyId }) {
     // Reset về trang 1 nếu bộ lọc thay đổi
     useEffect(() => {
         setCurrentPage(1);
-    // 3. Lắng nghe các giá trị nhỏ thay vì lắng nghe cả cục 'filters'
+        // 3. Lắng nghe các giá trị nhỏ thay vì lắng nghe cả cục 'filters'
     }, [keyword, locationId, tagId, minSalary, maxSalary, companyId]);
 
     useEffect(() => {
-        setIsFetching(true); 
+        setIsFetching(true);
 
         if (companyId) {
             axiosClient.get(`${API_URLS.JOBS}/company/${companyId}`)
@@ -56,7 +52,7 @@ function JobList({ filters, companyId }) {
                     setJobs(Array.isArray(fetchedJobs) ? fetchedJobs : []);
                 })
                 .catch(error => console.error('Lỗi lấy dữ liệu công ty:', error))
-                .finally(() => setIsFetching(false)); 
+                .finally(() => setIsFetching(false));
         } else {
             const params = new URLSearchParams();
             params.append('page', currentPage);
@@ -77,9 +73,9 @@ function JobList({ filters, companyId }) {
                     setTotalPages(response.totalPages || 1);
                 })
                 .catch(error => console.error('Lỗi lấy dữ liệu:', error))
-                .finally(() => setIsFetching(false)); 
+                .finally(() => setIsFetching(false));
         }
-    // 4. Lắng nghe các giá trị nhỏ ở đây luôn
+        // 4. Lắng nghe các giá trị nhỏ ở đây luôn
     }, [keyword, locationId, tagId, minSalary, maxSalary, companyId, currentPage]);
 
     const handleNextPage = () => setCurrentPage(prev => prev + 1);
@@ -105,7 +101,7 @@ function JobList({ filters, companyId }) {
                     ))}
                 </div>
             ) : jobs.length === 0 ? (
-                <div className="bg-white rounded-2xl p-10 text-center shadow-sm border border-gray-50">
+                <div className="bg-floral rounded-2xl p-10 text-center shadow-sm border border-gray-100">
                     <p className="text-gray-500 text-lg">Không tìm thấy công việc nào phù hợp với bộ lọc 🌿</p>
                 </div>
             ) : (
@@ -116,31 +112,31 @@ function JobList({ filters, companyId }) {
                                 key={job.jobId}
                                 jobId={job.jobId}
                                 title={job.title}
-                                company={job.company}
+                                company={job.company || companyInfo}
                                 location={job.location}
                                 salaryMin={job.salaryMin}
                                 salaryMax={job.salaryMax}
-                                priority={index < 6} 
+                                priority={index < 6}
                             />
                         ))}
                     </div>
 
                     {totalPages > 1 && (
                         <div className="flex justify-center items-center mt-10 gap-4">
-                            <button 
-                                onClick={handlePrevPage} 
+                            <button
+                                onClick={handlePrevPage}
                                 disabled={currentPage === 1 || isFetching}
                                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${currentPage === 1 || isFetching ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-olive text-white hover:bg-opacity-90'}`}
                             >
                                 ⬅ Trước
                             </button>
-                            
+
                             <span className="font-medium text-textmain bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100">
                                 {currentPage} / {totalPages}
                             </span>
 
-                            <button 
-                                onClick={handleNextPage} 
+                            <button
+                                onClick={handleNextPage}
                                 disabled={currentPage === totalPages || isFetching}
                                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${currentPage === totalPages || isFetching ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-olive text-white hover:bg-opacity-90'}`}
                             >

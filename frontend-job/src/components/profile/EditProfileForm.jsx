@@ -89,7 +89,7 @@ function EditProfileForm({ formData, setFormData }) {
     };
 
     return (
-        <div className="bg-white rounded-3xl shadow-sm p-8 mb-6">
+        <div className="bg-white rounded-3xl shadow-sm p-8 mb-6 border-t-8 border-olive">
             <h3 className="text-xl font-bold text-olive mb-6 pb-3 border-b border-gray-100">
                 📝 Thông tin cá nhân
             </h3>

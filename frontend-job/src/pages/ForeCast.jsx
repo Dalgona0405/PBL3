@@ -1,7 +1,8 @@
+// File: src/pages/ForeCast.jsx
 import React, { useState, useEffect } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area
+    LineChart, Line, PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
@@ -19,9 +20,11 @@ function ForeCast() {
     const [overview, setOverview] = useState({});
     const [marketTrend, setMarketTrend] = useState([]);
     const [salaryLocation, setSalaryLocation] = useState([]);
-    const [timeline, setTimeline] = useState([]);
     const [topCompanies, setTopCompanies] = useState([]);
     const [aiSalary, setAiSalary] = useState([]);
+    
+    // 🌟 STATE MỚI: Chứa dữ liệu Phân bổ lương thay cho Timeline
+    const [salaryDistribution, setSalaryDistribution] = useState([]);
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -33,20 +36,24 @@ function ForeCast() {
             try {
                 setIsLoading(true);
 
-                const [dashRes, trendRes, salLocRes, timeRes, compRes, aiRes] = await Promise.all([
+                // Gọi các API (Đã bỏ API timeline đi cho nhẹ máy)
+                const [dashRes, trendRes, salLocRes, compRes, aiRes] = await Promise.all([
                     axiosClient.get(`${API_URLS.REPORTS}/dashboard-summary`).catch(() => null),
                     axiosClient.get(`${API_URLS.REPORTS}/market-trend?limit=10`).catch(() => []),
                     axiosClient.get(`${API_URLS.REPORTS}/salary-by-location`).catch(() => []),
-                    axiosClient.get(`${API_URLS.REPORTS}/application-timeline?period=month&months=6`).catch(() => ({})),
                     axiosClient.get(`${API_URLS.REPORTS}/top-companies?limit=5`).catch(() => []),
                     axiosClient.get(`${API_URLS.REPORTS}/salary-forecast-ai`).catch(() => ({}))
                 ]);
 
                 const summaryData = dashRes?.data || dashRes?.items || dashRes || {};
                 setOverview(summaryData.overview || summaryData.Overview || {});
+                
+                // 🌟 LOGIC MỚI: Lấy dữ liệu Phân bổ lương từ API dashboard-summary
+                const charts = summaryData.charts || summaryData.Charts || {};
+                setSalaryDistribution(charts.salaryRanges || charts.SalaryRanges || []);
+
                 setMarketTrend(Array.isArray(trendRes) ? trendRes : []); 
                 setSalaryLocation(Array.isArray(salLocRes) ? salLocRes : []); 
-                setTimeline(timeRes?.data || []); 
                 setTopCompanies(Array.isArray(compRes) ? compRes : []); 
                 setAiSalary(aiRes?.forecast || []); 
 
@@ -73,7 +80,7 @@ function ForeCast() {
                     <h2 className="text-3xl font-bold text-textmain mb-2">📊 Báo Cáo & Dự Báo Thị Trường IT</h2>
                     <p className="text-gray-500">Dữ liệu được tổng hợp và phân tích theo thời gian thực.</p>
                 </div>
-                <span className="bg-earth text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-sm flex items-center gap-2">
+                <span className="bg-olive text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-sm flex items-center gap-2">
                     ✨ AI Powered
                 </span>
             </div>
@@ -110,7 +117,7 @@ function ForeCast() {
                         <ResponsiveContainer width="99%" height="100%">
                             <BarChart data={marketTrend} layout="vertical" margin={{ left: 20, right: 80, top: 20, bottom: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={true} vertical={false} />
-                                <XAxis type="number" stroke="#8A9A86" />
+                                <XAxis type="number" stroke="#8A9A86" allowDecimals={false} />
                                 <YAxis dataKey="skillName" type="category" stroke="#8A9A86" width={160} tick={<CustomYAxisTick />} />
                                 <Tooltip cursor={{ fill: '#f9f9f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
                                 <Bar dataKey="jobCount" name="Số lượng Job" fill="#8A9A86" radius={[0, 8, 8, 0]} />
@@ -137,72 +144,87 @@ function ForeCast() {
                     </div>
                 </div>
 
-                {/* 3. LƯỢNG ỨNG TUYỂN THEO THỜI GIAN */}
+                {/* 🌟 3. PHÂN BỔ MỨC LƯƠNG TRÊN HỆ THỐNG (Thay thế cho Timeline) */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 lg:col-span-2">
-                    <h3 className="text-xl font-bold text-olive mb-6">📈 Lưu Lượng Ứng Tuyển (Timeline)</h3>
+                    <h3 className="text-xl font-bold text-olive mb-6">📊 Phân Bổ Mức Lương Trên Hệ Thống</h3>
                     <div className="h-80 min-h-[300px] w-full">
                         <ResponsiveContainer width="99%" height="100%">
-                            <AreaChart data={timeline}>
-                                <defs>
-                                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#8A9A86" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#8A9A86" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="period" stroke="#8A9A86" />
-                                <YAxis stroke="#8A9A86" />
-                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                                <Area type="monotone" dataKey="total" name="Số lượt nộp CV" stroke="#8A9A86" fillOpacity={1} fill="url(#colorCount)" />
-                            </AreaChart>
+                            <BarChart data={salaryDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                                <XAxis dataKey="label" stroke="#8A9A86" tick={{ fontSize: 12 }} />
+                                {/* Thêm allowDecimals={false} để trục Y không bị lẻ 0.5 job */}
+                                <YAxis stroke="#8A9A86" tick={{ fontSize: 12 }} allowDecimals={false} />
+                                <Tooltip cursor={{ fill: '#f9f9f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
+                                <Bar dataKey="value" name="Số lượng Job" fill="#C19A6B" radius={[6, 6, 0, 0]} barSize={40} />
+                            </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* 4. TOP CÔNG TY TUYỂN DỤNG */}
+{/* 🌟 4. TOP CÔNG TY TUYỂN DỤNG (Đã dàn lại Layout: Bánh bên trái, Chữ bên phải) */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                     <h3 className="text-xl font-bold text-olive mb-6 text-center">🏢 Top Công Ty Tuyển Dụng</h3>
                     <div className="h-80 min-h-[300px] w-full">
-                        <ResponsiveContainer width="99%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
                                     data={topCompanies}
-                                    cx="50%"
+                                    cx="60%" /* Đẩy cái bánh lệch sang trái 35% */
                                     cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={100}
+                                    innerRadius={70}
+                                    outerRadius={110}
                                     paddingAngle={5}
                                     dataKey="jobCount"
                                     nameKey="companyName"
-                                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                                 >
                                     {topCompanies.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
                                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                                <Legend verticalAlign="bottom" height={36} />
+                                {/* Xếp danh sách công ty thành cột dọc bên phải */}
+                                <Legend 
+                                    layout="vertical" 
+                                    verticalAlign="middle" 
+                                    align="right" 
+                                    wrapperStyle={{ width: '55%', fontSize: '16px', lineHeight: '24px' }}
+                                />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* 5. DỰ BÁO LƯƠNG TỪ AI */}
+                {/* 🌟 5. DỰ BÁO LƯƠNG TỪ AI (Đã bẻ nghiêng chữ và đưa Legend lên top) */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border-t-8 border-earth">
                     <h3 className="text-xl font-bold text-earth mb-6 flex items-center gap-2">
                         ✨ Dự Báo Mức Lương (AI Forecast)
                     </h3>
-                    <div className="h-80 min-h-[300px] w-full">
+                    <div className="h-96 min-h-[350px] w-full"> {/* Tăng chiều cao lên chút để chứa chữ nghiêng */}
                         {aiSalary.length > 0 ? (
-                            <ResponsiveContainer width="99%" height="100%">
-                                <LineChart data={aiSalary}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                    <XAxis dataKey="skill_name" stroke="#C19A6B" />
-                                    <YAxis stroke="#C19A6B" />
+                            <ResponsiveContainer width="100%" height="100%">
+                                {/* Thêm margin bottom để chữ không bị cắt mất */}
+                                <LineChart data={aiSalary} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                                    
+                                    {/* Bẻ nghiêng chữ 45 độ và neo ở đuôi chữ (textAnchor="end") */}
+                                    <XAxis 
+                                        dataKey="skill_name" 
+                                        stroke="#8A9A86" 
+                                        angle={-45} 
+                                        textAnchor="end" 
+                                        tick={{ fontSize: 12 }} 
+                                        height={60} 
+                                    />
+                                    
+                                    <YAxis stroke="#8A9A86" tick={{ fontSize: 12 }} />
                                     <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="current_salary" name="Lương hiện tại" stroke="#8A9A86" strokeWidth={3} />
-                                    <Line type="monotone" dataKey="forecasted_salary" name="AI Dự báo" stroke="#C19A6B" strokeWidth={3} strokeDasharray="5 5" activeDot={{ r: 8 }} />
+                                    
+                                    {/* Đưa chú thích lên trên cùng */}
+                                    <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: '20px' }} />
+                                    
+                                    <Line type="monotone" dataKey="current_salary" name="Lương hiện tại" stroke="#C19A6B" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+                                    <Line type="monotone" dataKey="forecasted_salary" name="AI Dự báo" stroke="#8A9A86" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4 }} activeDot={{ r: 8 }} />
                                 </LineChart>
                             </ResponsiveContainer>
                         ) : (

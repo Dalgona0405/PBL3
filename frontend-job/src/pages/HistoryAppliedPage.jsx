@@ -68,7 +68,7 @@ function HistoryAppliedPage() {
                         const statusInfo = getStatusInfo(app.status);
 
                         return (
-                            <div key={app.applicationId} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-8 border-earth flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div key={app.applicationId} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-8 border-olive flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                 
                                 {/* Cột trái: Thông tin Job */}
                                 <div className="flex-1">

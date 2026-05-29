@@ -82,7 +82,7 @@ function ExperienceSection({ userId }) {
             endDate: exp.endDate ? exp.endDate.split('T')[0] : '',
             description: exp.description || ''
         });
-        setEditId(exp.expId); // Tùy Backend trả về id hay experienceId
+        setEditId(exp.expId);
         setShowForm(true);
     };
 
@@ -99,7 +99,7 @@ function ExperienceSection({ userId }) {
     };
 
     return (
-        <div className="bg-white rounded-3xl shadow-sm p-8 mt-8">
+        <div className="bg-white rounded-3xl shadow-sm p-8 mt-8 border-t-8 border-olive">
             <div className="flex justify-between items-center mb-6 pb-3 border-b border-gray-100">
                 <h3 className="text-xl font-bold text-olive">💼 Kinh nghiệm làm việc</h3>
                 {!showForm && (
@@ -109,7 +109,7 @@ function ExperienceSection({ userId }) {
                             setEditId(null);
                             setShowForm(true);
                         }}
-                        className="bg-earth hover:bg-olive text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors shadow-sm"
+                        className="bg-olive hover:bg-earth text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors shadow-sm"
                     >
                         + Thêm kinh nghiệm
                     </button>
@@ -145,7 +145,7 @@ function ExperienceSection({ userId }) {
                         <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2.5 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">
                             Hủy bỏ
                         </button>
-                        <button type="submit" className="px-6 py-2.5 rounded-xl font-bold text-white bg-earth hover:bg-olive transition-colors shadow-md">
+                        <button type="submit" className="px-6 py-2.5 rounded-xl font-bold text-white bg-olive hover:bg-earth transition-colors shadow-md">
                             {editId ? '💾 Lưu cập nhật' : '✨ Thêm mới'}
                         </button>
                     </div>
@@ -164,7 +164,7 @@ function ExperienceSection({ userId }) {
                     {experiences.map((exp) => {
                         const expId = exp.expId;;
                         return (
-                            <div key={expId} className="group relative bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all border-l-8 border-earth">
+                            <div key={expId} className="group relative bg-white border p-5 rounded-2xl shadow-sm hover:shadow-md transition-all border-l-8 border-olive">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <h4 className="text-lg font-bold text-textmain">{exp.jobTitle}</h4>

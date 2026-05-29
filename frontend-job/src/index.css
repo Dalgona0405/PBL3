@@ -3,6 +3,20 @@
 @tailwind utilities;
 
 body {
-  background-color: #faf9f6;
-  color: #4A4A4A;
+  background-color: #EAE6DF; /* Đổi thành mã màu be xám nhạt mới */
+  color: #333331;            /* Đổi thành mã màu chữ xám than mới */
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #EAE6DF; 
+}
+::-webkit-scrollbar-thumb {
+  background: #7A8266; 
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5C634A; 
 }
