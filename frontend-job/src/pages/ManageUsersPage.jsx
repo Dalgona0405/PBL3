@@ -19,33 +19,27 @@ function ManageUsersPage() {
         setCurrentPage(1);
     }, [keyword, roleFilter]);
 
-    // 🌟 EFFECT 2: Gọi API
+    // 🌟 EFFECT 2: Gọi API mỗi khi Trang, Từ khóa, hoặc Role thay đổi
     useEffect(() => {
         const fetchUsers = async () => {
             setIsLoading(true);
             try {
-                let url = '';
-                // Nếu có gõ từ khóa hoặc chọn Role -> Gọi API Search
-                if (keyword || roleFilter) {
-                    url = `${API_URLS.USERS}/search?page=${currentPage}&pageSize=10`;
-                    if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
-                    if (roleFilter) url += `&role=${roleFilter}`;
-                } 
-                // Nếu để trống -> Gọi API Get All (API này Backend trả về FullName đầy đủ)
-                else {
-                    url = `${API_URLS.USERS}?page=${currentPage}&pageSize=10`;
-                }
+                // Truyền currentPage và pageSize=10 xuống Backend
+                let url = `${API_URLS.USERS}/search?page=${currentPage}&pageSize=10`;
+                if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+                if (roleFilter) url += `&role=${roleFilter}`;
 
                 const data = await axiosClient.get(url);
                 
-                const userList = data.data;
+                const userList = data.items || data.Items || data.data || data;
                 if (Array.isArray(userList)) {
                     setUsers(userList);
                 } else {
                     setUsers([]);
                 }
 
-                setTotalPages(data.totalPages || data.TotalPages || 1);
+                // 🌟 Lấy tổng số trang từ Backend trả về (nếu Backend không trả, mặc định là 1)
+                setTotalPages(data.totalPages || 1);
 
             } catch (error) {
                 console.error("Lỗi lấy danh sách user:", error);
