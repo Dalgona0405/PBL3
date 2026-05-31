@@ -44,9 +44,32 @@ def fetch_and_process_data(api_url="http://localhost:5000/api/reports/graph-skil
                 
         edge_index = torch.tensor([src_indices, tgt_indices], dtype=torch.long)
         
-        # 3. MA TRẬN ĐẶC TRƯNG X (Feature Matrix)
-        # Chuyển list bậc thành tensor cột (Nx1)
-        x = torch.tensor(node_degrees, dtype=torch.float).view(-1, 1)
+        # 3. MA TRẬN ĐẶC TRƯNG X ĐA CHIỀU (6 FEATURES)
+        features = []
+        max_salary = max([n.get('currentAvgSalary') or n.get('CurrentAvgSalary') or 0.0 for n in raw_nodes]) or 1.0
+        max_jobs = max([n.get('jobCount') or n.get('JobCount') or 0.0 for n in raw_nodes]) or 1.0
+        max_size = max([n.get('size') or n.get('Size') or 0.0 for n in raw_nodes]) or 1.0
+        max_deg = max(node_degrees) or 1.0
+        
+        for idx in range(num_nodes):
+            node = raw_nodes[idx]
+            salary_val = node.get('currentAvgSalary') or node.get('CurrentAvgSalary') or 0.0
+            jobs_val = node.get('jobCount') or node.get('JobCount') or 0.0
+            size_val = node.get('size') or node.get('Size') or 0.0
+            
+            salary_norm = float(salary_val) / max_salary
+            jobs_norm = float(jobs_val) / max_jobs
+            size_norm = float(size_val) / max_size
+            deg_norm = node_degrees[idx] / max_deg
+            
+            group = node.get('group') or node.get('Group') or 'Skill'
+            is_skill = 1.0 if group == 'Skill' else 0.0
+            is_lang = 1.0 if group == 'Language' else 0.0
+            
+            # Vector đặc trưng 6 chiều
+            features.append([salary_norm, jobs_norm, is_skill, is_lang, deg_norm, size_norm])
+            
+        x = torch.tensor(features, dtype=torch.float)
         
         # Đóng gói thành object Data chuẩn của PyTorch Geometric
         graph_data = Data(x=x, edge_index=edge_index)

@@ -7,7 +7,7 @@ import torch
 
 # CHÚ Ý: Sử dụng GCNNet từ model.py và logic từ data_loader.py
 from data_loader import fetch_and_process_data 
-from model import GCNNet, calculate_score 
+from model import GCNNet, calculate_score, SalaryRegressor 
 
 # --- PHẦN 1: ĐỊNH NGHĨA MODEL DỮ LIỆU (PYDANTIC) ---
 
@@ -37,19 +37,25 @@ sql_to_idx = {}
 idx_to_sql = {}
 idx_to_name = {}
 model = None
+regressor = None
 node_embeddings = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global graph_data, sql_to_idx, idx_to_sql, idx_to_name, model, node_embeddings
+    global graph_data, sql_to_idx, idx_to_sql, idx_to_name, model, regressor, node_embeddings
     
     print("⏳ Loading graph data and AI model...")
     graph_data, sql_to_idx, idx_to_sql, idx_to_name = fetch_and_process_data()
     
     if graph_data is not None:
-        model = GCNNet(in_channels=1) 
+        model = GCNNet(in_channels=6) 
         model.load_state_dict(torch.load('gnn_encoder.pth'))
         model.eval() 
+        
+        regressor = SalaryRegressor(in_channels=16)
+        regressor.load_state_dict(torch.load('gnn_regressor.pth'))
+        regressor.eval()
+        
         with torch.no_grad():
             node_embeddings = model(graph_data.x, graph_data.edge_index)
         print("🚀 System initialized successfully!")
@@ -191,47 +197,47 @@ def get_matching_score(request: MatchScoreRequest):
 
 @app.post("/api/analytics/salary-forecast")
 def forecast_salary(request: SalaryForecastRequest):
-    if graph_data is None:
-        return JSONResponse(status_code=400, content={"message": "Graph data have not been loaded. Please run train.py first."})
+    if graph_data is None or node_embeddings is None or regressor is None:
+        return JSONResponse(status_code=400, content={"message": "Graph data or GNN models have not been loaded. Please run train.py first."})
     
-    # 1. Tìm "Hành tinh có lực hấp dẫn mạnh nhất" (Max Degree) để làm chuẩn 100%
-    # graph_data.x chứa số lượng kết nối (bậc) của từng kỹ năng
-    max_degree = torch.max(graph_data.x).item()
-    if max_degree == 0: 
-        max_degree = 1.0 # Tránh lỗi chia cho 0
-        
-    results = []
-    
-    for item in request.skills:
-        # 2. Tìm tọa độ của kỹ năng này trong bản đồ sao
-        idx = sql_to_idx.get(item.skill_id)
-        
-        if idx is not None:
-            # Lấy số lượng kết nối của kỹ năng này
-            degree = graph_data.x[idx].item()
-            # Tính độ "Hot" (từ 0.0 đến 1.0)
-            hotness = degree / max_degree
-        else:
-            # Nếu kỹ năng quá mới, chưa có trên bản đồ -> Độ Hot = 0
-            hotness = 0.0 
+    try:
+        with torch.no_grad():
+            # Sử dụng MLP regressor để tính toán điểm tiềm năng lương cho toàn bộ các nút kỹ năng
+            potentials = regressor(node_embeddings).squeeze().tolist()
             
-        # 3. Công thức dự báo lai (Hybrid Formula)
-        # Giả định: Kỹ năng Hot nhất sẽ tăng tối đa 20% lương vào năm sau
-        max_growth_rate = 0.20 
-        growth_rate = hotness * max_growth_rate
+        # Chuẩn hóa các điểm tiềm năng về khoảng [0, 1] trên toàn bộ đồ thị
+        min_p = min(potentials)
+        max_p = max(potentials)
+        range_p = (max_p - min_p) if (max_p - min_p) > 0 else 1.0
         
-        # Tính lương dự báo
-        forecasted_salary = item.current_avg_salary * (1 + growth_rate)
+        results = []
         
-        results.append({
-            "skill_id": item.skill_id,
-            "skill_name": item.skill_name,
-            "current_salary": round(item.current_avg_salary, 1),
-            "forecasted_salary": round(forecasted_salary, 1),
-            "growth_percent": round(growth_rate * 100, 1) # Trả về % tăng trưởng để Frontend vẽ màu xanh/đỏ
-        })
+        for item in request.skills:
+            idx = sql_to_idx.get(item.skill_id)
+            
+            if idx is not None:
+                # Tính độ tăng trưởng dựa trên điểm tiềm năng từ GNN nhúng
+                potential = (potentials[idx] - min_p) / range_p
+                growth_rate = potential * 0.20 # Tối đa 20%
+            else:
+                # Nếu kỹ năng quá mới, chưa có trên bản đồ -> Tăng trưởng mặc định 5%
+                growth_rate = 0.05
+                
+            # Tính lương dự báo
+            forecasted_salary = item.current_avg_salary * (1 + growth_rate)
+            
+            results.append({
+                "skill_id": item.skill_id,
+                "skill_name": item.skill_name,
+                "current_salary": round(item.current_avg_salary, 1),
+                "forecasted_salary": round(forecasted_salary, 1),
+                "growth_percent": round(growth_rate * 100, 1) # Trả về % tăng trưởng để vẽ biểu đồ
+            })
+            
+        # Sắp xếp từ tăng trưởng cao nhất xuống thấp nhất
+        results.sort(key=lambda x: x["growth_percent"], reverse=True)
         
-    # 4. Sắp xếp từ tăng trưởng cao nhất xuống thấp nhất
-    results.sort(key=lambda x: x["growth_percent"], reverse=True)
-    
-    return {"status": "success", "forecast": results}
+        return {"status": "success", "forecast": results}
+        
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Error during AI salary forecasting: {str(e)}"})
