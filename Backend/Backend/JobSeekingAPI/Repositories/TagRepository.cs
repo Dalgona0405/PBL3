@@ -12,17 +12,43 @@ namespace JobSeekingAPI.Repositories
         }
 
         // CRUD ĐẶC THÙ
-        public async Task<Tag?> GetTagDetailByIdAsync(int id)
+        public async Task<TagDetailDTO?> GetTagDetailByIdAsync(int id)
         {
             return await _context.Tags
                 .AsNoTracking()
-                .Include(t => t.JobTags)
-                    .ThenInclude(jt => jt.Job!)
-                    .ThenInclude(j => j.Company)
-                .Include(t => t.CandidateTags)
-                    .ThenInclude(ct => ct.Candidate!)
-                    .ThenInclude(c => c.User)
-                .FirstOrDefaultAsync(t => t.TagId == id);
+                .Where(t => t.TagId == id)
+                .Select(t => new TagDetailDTO
+                {
+                    TagId = t.TagId,
+                    TagName = t.TagName,
+                    Type = t.Type,
+                    JobCount = t.JobTags.Count,
+                    CandidateCount = t.CandidateTags.Count,
+                    TotalUsage = t.JobTags.Count + t.CandidateTags.Count,
+
+                    Jobs = t.JobTags
+                        .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
+                        .OrderByDescending(jt => jt.Job!.PostedDate)
+                        .Take(10)
+                        .Select(jt => new JobSummaryDTO
+                        {
+                            JobId = jt.Job!.JobId,
+                            Title = jt.Job.Title,
+                            SalaryMin = jt.Job.SalaryMin,
+                            SalaryMax = jt.Job.SalaryMax,
+                            CompanyName = jt.Job.Company != null ? jt.Job.Company.CompanyName : "Unknown"
+                        }).ToList(),
+
+                    Candidates = t.CandidateTags
+                        .Where(ct => ct.Candidate != null && ct.Candidate.User != null && ct.Candidate.User.DeletedAt == null)
+                        .Take(10)
+                        .Select(ct => new CandidateSummaryDTO
+                        {
+                            UserId = ct.Candidate!.UserId,
+                            FullName = ct.Candidate.User!.FullName
+                        }).ToList()
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<Tag?> GetTagEntityByIdAsync(int id)
@@ -38,7 +64,6 @@ namespace JobSeekingAPI.Repositories
         // ===== THỐNG KÊ & DỰ BÁO XU HƯỚNG =====
         public async Task<IEnumerable<TagSummaryDTO>> GetAllTagsSummaryAsync()
         {
-            // Bắt SQL tự đếm Count, không kéo cục Data nặng nề về RAM
             return await _context.Tags
                 .AsNoTracking()
                 .Select(t => new TagSummaryDTO

@@ -29,11 +29,12 @@ namespace JobSeekingAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetJobById(int id)
         {
-            var job = await _jobRepository.GetJobDetailByIdAsync(id);
-            if (job == null)
+            var jobDto = await _jobRepository.GetJobDetailByIdAsync(id);
+            if (jobDto == null)
                 return NotFound(new { message = "Job not found" });
+
             await _jobRepository.IncrementViewCountAsync(id);
-            return Ok(MapToDTO(job));
+            return Ok(jobDto);
         }
 
         // GET: api/jobs/search
@@ -74,48 +75,48 @@ namespace JobSeekingAPI.Controllers
         }
 
         // POST: api/jobs
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpPost]
         public async Task<IActionResult> CreateJob([FromBody] CreateJobDTO dto)
         {
-                var createdJob = await _jobService.CreateJobAsync(dto);
-                return CreatedAtAction(nameof(GetJobById), new { id = createdJob.JobId }, MapToDTO(createdJob));
+            var createdJob = await _jobService.CreateJobAsync(dto);
+            return CreatedAtAction(nameof(GetJobById), new { id = createdJob.JobId }, MapToDTO(createdJob));
         }
 
         // PUT: api/jobs/{id}
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateJob(int id, [FromBody] UpdateJobDTO dto)
         {
-                var userId = User.GetUserIdFromToken();
-                bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
+            var userId = User.GetUserIdFromToken();
+            bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
 
-                await _jobService.UpdateJobAsync(id, dto, userId, isRecruiter);
-                return Ok(new { message = "Update Success" });
+            await _jobService.UpdateJobAsync(id, dto, userId, isRecruiter);
+            return Ok(new { message = "Update Success" });
         }
 
         // PATCH: api/jobs/{id}/status
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateJobStatus(int id, [FromBody] JobUpdateStatusDTO dto)
         {
-                var userId = User.GetUserIdFromToken();
-                bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
+            var userId = User.GetUserIdFromToken();
+            bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
 
-                await _jobService.UpdateJobStatusAsync(id, dto, userId, isRecruiter);
-                return Ok(new { message = "Status update success" });
+            await _jobService.UpdateJobStatusAsync(id, dto, userId, isRecruiter);
+            return Ok(new { message = "Status update success" });
         }
 
         // DELETE: api/jobs/{id}
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteJob(int id)
         {
-                var userId = User.GetUserIdFromToken();
-                bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
+            var userId = User.GetUserIdFromToken();
+            bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
 
-                await _jobService.DeleteJobAsync(id, userId, isRecruiter);
-                return Ok(new { message = "Delete success" });
+            await _jobService.DeleteJobAsync(id, userId, isRecruiter);
+            return Ok(new { message = "Delete success" });
         }
 
         // GET: api/jobs/{jobId}/match/{candidateId}
@@ -135,6 +136,29 @@ namespace JobSeekingAPI.Controllers
             int userId = User.GetUserIdFromToken();
             var suggestions = await _matchingService.GetTopJobSuggestionsForCandidateAsync(userId, topN);
             return Ok(suggestions);
+        }
+
+        // POST: api/jobs/{id}/save
+        [Authorize(Roles = UserRoles.Candidate)]
+        [HttpPost("{id}/save")]
+        public async Task<IActionResult> SaveJob(int id)
+        {
+            int userId = User.GetUserIdFromToken();
+            await _jobService.SaveJobAsync(userId, id);
+
+            return Ok(new { message = "Saved job successfully!" });
+        }
+
+        // DELETE: api/jobs/{id}/save
+        [Authorize(Roles = UserRoles.Candidate)]
+        [HttpDelete("{id}/save")]
+        public async Task<IActionResult> UnsaveJob(int id)
+        {
+            int userId = User.GetUserIdFromToken();
+
+            await _jobService.UnsaveJobAsync(userId, id);
+
+            return Ok(new { message = "Unsaved job successfully!" });
         }
 
         private JobDetailDTO MapToDTO(Job j)

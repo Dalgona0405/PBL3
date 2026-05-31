@@ -7,7 +7,7 @@ namespace JobSeekingAPI.Repositories
     {
         // CRUD ĐẶC THÙ
         //Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync();
-        Task<Job?> GetJobDetailByIdAsync(int id);
+        Task<JobDetailDTO?> GetJobDetailByIdAsync(int id);
         Task<Job?> GetJobEntityByIdAsync(int id);
         Task<Job> CreateJobWithDefaultsAsync(Job job);
         Task UpdateJobWithTagsAsync(Job job, List<int>? newTagIds);

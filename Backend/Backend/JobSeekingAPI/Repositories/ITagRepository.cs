@@ -6,7 +6,7 @@ namespace JobSeekingAPI.Repositories
     public interface ITagRepository : IBaseRepository<Tag>
     {
         // CRUD ĐẶC THÙ
-        Task<Tag?> GetTagDetailByIdAsync(int id);
+        Task<TagDetailDTO?> GetTagDetailByIdAsync(int id);
         Task<Tag?> GetTagEntityByIdAsync(int id);
         Task SoftDeleteTagAsync(int id);
         // ===== THỐNG KÊ & DỰ BÁO XU HƯỚNG =====

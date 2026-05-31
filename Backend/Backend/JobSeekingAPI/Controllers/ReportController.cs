@@ -1,5 +1,4 @@
 using JobSeekingAPI.DTOs;
-using JobSeekingAPI.Enums;
 using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +22,12 @@ namespace JobSeekingAPI.Controllers
         [HttpGet("market-trend")]
         public async Task<IActionResult> GetMarketTrend([FromQuery] int limit = 10)
         {
-            var trends = await _reportService.GetMarketTrendAsync(limit);
+            string cacheKey = $"MarketTrend_{limit}";
+            var trends = await _cache.GetOrCreateAsync(cacheKey, async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+                return await _reportService.GetMarketTrendAsync(limit);
+            });
             return Ok(trends);
         }
 
@@ -37,7 +41,12 @@ namespace JobSeekingAPI.Controllers
         [HttpGet("dashboard-summary")]
         public async Task<IActionResult> GetDashboardSummary()
         {
-            var stats = await _reportService.GetDashboardSummaryAsync();
+            string cacheKey = "DashboardSummary";
+            var stats = await _cache.GetOrCreateAsync(cacheKey, async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
+                return await _reportService.GetDashboardSummaryAsync();
+            });
             return Ok(stats);
         }
 

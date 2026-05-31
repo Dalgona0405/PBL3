@@ -22,6 +22,8 @@ namespace JobSeekingAPI.Data
         public DbSet<Application> Applications { get; set; }
         public DbSet<Experience> Experiences { get; set; }
         public DbSet<CompanyJoinRequest> CompanyJoinRequests { get; set; }
+        public DbSet<SavedJob> SavedJobs { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -232,6 +234,9 @@ namespace JobSeekingAPI.Data
 
                 entity.Property(a => a.AppliedDate).HasDefaultValueSql("now()");
                 entity.Property(a => a.Status).HasDefaultValue(1);
+                entity.Property(a => a.Message).HasMaxLength(1000);
+                entity.Property(a => a.InterviewTime);
+                entity.Property(a => a.InterviewLocation).HasMaxLength(500);
                 entity.Property(a => a.CVUrl).HasMaxLength(500);
                 entity.Property(a => a.DeletedAt);
 
@@ -271,7 +276,25 @@ namespace JobSeekingAPI.Data
                                           e.Candidate.User != null &&
                                           e.Candidate.User.DeletedAt == null);
             });
-            
+
+            // =================================================================
+            // 12. SAVED JOBS
+            // =================================================================
+            modelBuilder.Entity<SavedJob>(entity =>
+            {
+                entity.HasKey(sj => new { sj.UserId, sj.JobId });
+
+                entity.HasOne(sj => sj.Candidate)
+                    .WithMany()
+                    .HasForeignKey(sj => sj.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(sj => sj.Job)
+                    .WithMany()
+                    .HasForeignKey(sj => sj.JobId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
             // =================================================================
             // ÉP TẤT CẢ VỀ CHỮ THƯỜNG CHO POSTGRESQL
             // =================================================================

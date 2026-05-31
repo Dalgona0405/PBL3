@@ -26,9 +26,9 @@ namespace JobSeekingAPI.Services
             if (job == null)
                 throw new ArgumentException("Job not found");
 
-            var jobSkills = job.JobTags
-                .Where(jt => jt.Tag != null && (jt.Tag.Type == "Skill" || jt.Tag.Type == "Language"))
-                .Select(jt => jt.TagId)
+            var jobSkills = job.Tags
+                .Where(t => t.Type == "Skill" || t.Type == "Language")
+                .Select(t => t.TagId)
                 .ToList();
 
             // 2. Lấy danh sách TagId của Candidate

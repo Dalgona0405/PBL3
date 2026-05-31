@@ -15,8 +15,6 @@ namespace JobSeekingAPI.Repositories
         {
             return await _context.Companies
                 .AsNoTracking()
-                .Include(c => c.Jobs.Where(j => j.DeletedAt == null))
-                    .ThenInclude(j => j.Location)
                 .Where(c => c.DeletedAt == null)
                 .Select(c => new CompanySummaryDTO
                 {
@@ -44,13 +42,6 @@ namespace JobSeekingAPI.Repositories
         {
             return await _context.Companies
                 .AsNoTracking()
-                .Include(c => c.Jobs.Where(j => j.DeletedAt == null))
-                    .ThenInclude(j => j.Location)
-                .Include(c => c.Jobs)
-                    .ThenInclude(j => j.JobTags)
-                    .ThenInclude(jt => jt.Tag)
-                .Include(c => c.Recruiters)
-                    .ThenInclude(r => r.User)
                 .Where(c => c.CompanyId == id && c.DeletedAt == null)
                 .Select(c => new CompanyDetailDTO
                 {

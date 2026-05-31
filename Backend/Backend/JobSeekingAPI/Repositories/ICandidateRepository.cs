@@ -20,5 +20,10 @@ namespace JobSeekingAPI.Repositories
         Task UpdateCandidateTagsAsync(int candidateId, List<CandidateTagDTO> tags);
         Task<IEnumerable<CandidateTag>> GetTagsByCandidateIdAsync(int candidateId);
 
+        // CÁC HÀM CHO TÍNH NĂNG LƯU VIỆC LÀM
+        Task SaveJobAsync(int userId, int jobId);
+        Task UnsaveJobAsync(int userId, int jobId);
+        Task<bool> IsJobSavedAsync(int userId, int jobId);
+        Task<IEnumerable<JobSummaryDTO>> GetSavedJobsAsync(int userId);
     }
 }

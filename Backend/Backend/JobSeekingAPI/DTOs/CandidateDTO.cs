@@ -21,6 +21,7 @@ namespace JobSeekingAPI.DTOs
         public string? Avatar { get; set; }   // Map -> Users
         public string? Gender { get; set; }   // Map -> Candidates
         public DateTime? Birthday { get; set; }
+        [RegularExpression(@"^(0[3|5|7|8|9])+([0-9]{8})\b", ErrorMessage = "Phone number is invalid")]
         public string? Phone { get; set; }
         [MaxLength(500, ErrorMessage = "Address too long")]
         public string? Address { get; set; }

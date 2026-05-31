@@ -12,7 +12,9 @@ namespace JobSeekingAPI.Models
 
         public DateTime AppliedDate { get; set; }
         public int Status { get; set; }
-
+        public string? Message {get; set; }
+        public DateTime? InterviewTime { get; set; }
+        public string? InterviewLocation { get; set; }
         public string? CVUrl { get; set; }
         public DateTime? DeletedAt { get; set; }
 

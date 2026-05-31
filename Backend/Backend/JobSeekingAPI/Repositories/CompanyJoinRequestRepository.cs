@@ -8,13 +8,23 @@ namespace JobSeekingAPI.Repositories
     {
         public CompanyJoinRequestRepository(ApplicationDbContext context) : base(context) { }
 
-        // Lấy danh sách đang chờ duyệt cho Admin
+        // Lấy danh sách đang chờ duyệt
         public async Task<IEnumerable<CompanyJoinRequest>> GetPendingRequestsAsync()
         {
             return await _context.CompanyJoinRequests
                 .Include(r => r.Recruiter!).ThenInclude(rec => rec.User)
                 .Include(r => r.Company)
                 .Where(r => r.Status == 0) // 0 là Pending
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<CompanyJoinRequest>> GetPendingRequestsByCompanyAsync(int companyId)
+        {
+            return await _context.CompanyJoinRequests
+                .Include(r => r.Recruiter!).ThenInclude(rec => rec.User)
+                .Include(r => r.Company)
+                .Where(r => r.Status == 0 && r.CompanyId == companyId)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync();
         }

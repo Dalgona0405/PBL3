@@ -11,13 +11,15 @@ namespace JobSeekingAPI.Services
         private readonly IJobRepository _jobRepo;
         private readonly ICandidateRepository _candidateRepo;
         private readonly ICompanyRepository _companyRepo;
+        private readonly INotificationRepository _notificationRepo;
 
-        public ApplicationService(IApplicationRepository appRepo, IJobRepository jobRepo, ICandidateRepository candidateRepo, ICompanyRepository companyRepo)
+        public ApplicationService(IApplicationRepository appRepo, IJobRepository jobRepo, ICandidateRepository candidateRepo, ICompanyRepository companyRepo, INotificationRepository notificationRepo)
         {
             _appRepo = appRepo;
             _jobRepo = jobRepo;
             _candidateRepo = candidateRepo;
             _companyRepo = companyRepo;
+            _notificationRepo = notificationRepo;
         }
 
         public async Task<ApplicationDetailDTO> GetApplicationByIdAsync(int id)
@@ -106,7 +108,37 @@ namespace JobSeekingAPI.Services
             await CheckRecruiterOwnershipAsync(existApplication.JobId, userId, role);
 
             existApplication.Status = dto.Status;
+            existApplication.Message = dto.Message ?? existApplication.Message;
+            if (dto.Status == (int)ApplicationStatus.Interviewing)
+            {
+                if (dto.InterviewTime.HasValue && dto.InterviewTime.Value < DateTime.UtcNow)
+                    throw new ArgumentException("Interview time must be in the future!");
+                existApplication.InterviewTime = dto.InterviewTime;
+                existApplication.InterviewLocation = dto.InterviewLocation;
+            }
+            else
+            {
+                existApplication.InterviewTime = null;
+                existApplication.InterviewLocation = null;
+            }
             await _appRepo.UpdateAsync(existApplication);
+            string statusName = dto.Status switch
+            {
+                (int)ApplicationStatus.Pending => "Pending",
+                (int)ApplicationStatus.Reviewed => "Reviewed",
+                (int)ApplicationStatus.Interviewing => "Interviewing",
+                (int)ApplicationStatus.Accepted => "Accepted",
+                (int)ApplicationStatus.Rejected => "Rejected",
+                _ => "Unknown"
+            };
+
+            var notification = new Notification
+            {
+                UserId = existApplication.UserId,
+                Title = $"Update on your application for {existApplication.Job?.Title ?? "a job"}",
+                Content = $"Your application status has been updated to '{statusName}'. Let's see details.",
+            };
+            await _notificationRepo.CreateAsync(notification);
         }
 
         public async Task WithdrawApplicationAsync(int id, int userId)
@@ -166,6 +198,9 @@ namespace JobSeekingAPI.Services
                 JobId = a.JobId,
                 AppliedDate = a.AppliedDate,
                 Status = a.Status,
+                Message = a.Message,
+                InterviewTime = a.InterviewTime,
+                InterviewLocation = a.InterviewLocation,
                 CVUrl = a.CVUrl,
 
                 Candidate = a.Candidate == null ? null : new CandidateSummaryDTO

@@ -3,6 +3,7 @@ using JobSeekingAPI.Enums;
 using JobSeekingAPI.Helpers;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
+using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,11 +15,13 @@ namespace JobSeekingAPI.Controllers
     {
         private readonly ICandidateRepository _candidateRepo;
         private readonly IExperienceRepository _experienceRepo;
+        private readonly IJobService _jobService;
 
-        public CandidatesController(ICandidateRepository candidateRepo, IExperienceRepository experienceRepo)
+        public CandidatesController(ICandidateRepository candidateRepo, IExperienceRepository experienceRepo, IJobService jobService)
         {
             _candidateRepo = candidateRepo;
             _experienceRepo = experienceRepo;
+            _jobService = jobService;
         }
 
         // GET: api/candidates/{id}
@@ -189,6 +192,17 @@ namespace JobSeekingAPI.Controllers
             candidate.CVUrl = dto.CVUrl;
             await _candidateRepo.UpdateAsync(candidate);
             return Ok(new { message = "Default CV updated successfully.", cvUrl = candidate.CVUrl });
+        }
+
+        // GET: api/candidates/me/saved-jobs
+        [Authorize(Roles = UserRoles.Candidate)]
+        [HttpGet("me/saved-jobs")]
+        public async Task<IActionResult> GetMySavedJobs()
+        {
+            int userId = User.GetUserIdFromToken();
+            var savedJobs = await _jobService.GetSavedJobsAsync(userId);
+
+            return Ok(savedJobs);
         }
 
         // === Private Mapping Methods ===

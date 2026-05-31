@@ -8,6 +8,9 @@ namespace JobSeekingAPI.DTOs
         public int JobId { get; set; }
         public DateTime AppliedDate { get; set; }
         public int Status { get; set; }
+        public string? Message { get; set; }
+        public DateTime? InterviewTime { get; set; }
+        public string? InterviewLocation { get; set; }
         public string? CVUrl { get; set; }
         public DateTime? DeletedAt { get; set; }
 
@@ -32,5 +35,8 @@ namespace JobSeekingAPI.DTOs
     public class UpdateApplicationStatusDTO
     {
         public int Status { get; set; } = 0;
+        public string? Message { get; set; }
+        public DateTime? InterviewTime { get; set; }
+        public string? InterviewLocation { get; set; }
     }
 }
