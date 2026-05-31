@@ -71,7 +71,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/companies/{id}
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Company)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCompany(int id, [FromBody] UpdateCompanyDTO dto)
         {

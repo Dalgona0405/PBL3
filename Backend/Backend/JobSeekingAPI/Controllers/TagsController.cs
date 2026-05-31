@@ -32,33 +32,10 @@ namespace JobSeekingAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTagById(int id)
         {
-            var tag = await _tagRepository.GetTagDetailByIdAsync(id);
-            if (tag == null)
+            var tagDetail = await _tagRepository.GetTagDetailByIdAsync(id);
+            if (tagDetail == null)
                 return NotFound(new { message = "Tag not found" });
-            var tagDetail = new TagDetailDTO
-            {
-                TagId = tag.TagId,
-                TagName = tag.TagName,
-                Type = tag.Type,
-                JobCount = tag.JobTags?.Count ?? 0,
-                CandidateCount = tag.CandidateTags?.Count ?? 0,
-                TotalUsage = (tag.JobTags?.Count ?? 0) + (tag.CandidateTags?.Count ?? 0),
 
-                Jobs = tag.JobTags?.Select(jt => new JobSummaryDTO
-                {
-                    JobId = jt.Job!.JobId,
-                    Title = jt.Job.Title,
-                    SalaryMin = jt.Job.SalaryMin,
-                    SalaryMax = jt.Job.SalaryMax,
-                    CompanyName = jt.Job.Company?.CompanyName ?? "Unknown"
-                }).ToList() ?? new List<JobSummaryDTO>(),
-
-                Candidates = tag.CandidateTags?.Select(ct => new CandidateSummaryDTO
-                {
-                    UserId = ct.Candidate!.UserId,
-                    FullName = ct.Candidate.User?.FullName ?? "Unknown"
-                }).ToList() ?? new List<CandidateSummaryDTO>()
-            };
             return Ok(tagDetail);
         }
 

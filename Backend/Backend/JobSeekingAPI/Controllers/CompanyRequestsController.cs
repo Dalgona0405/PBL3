@@ -1,7 +1,7 @@
 ﻿using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Enums;
 using JobSeekingAPI.Helpers;
 using JobSeekingAPI.Services;
-using JobSeekingAPI.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,15 +27,16 @@ namespace JobSeekingAPI.Controllers
             return Ok(new { message = "Successfully sent a request to join the company. Please wait for the Admin to approve!" });
         }
 
-        [Authorize(Roles = UserRoles.Admin)]
+        [Authorize(Roles = UserRoles.Company)]
         [HttpGet("pending")]
         public async Task<IActionResult> GetPendingRequests()
         {
-            var dtos = await _requestService.GetPendingRequestsAsync();
+            int companyOwnerId = User.GetUserIdFromToken();
+            var dtos = await _requestService.GetPendingRequestsAsync(companyOwnerId);
             return Ok(dtos);
         }
 
-        [Authorize(Roles = UserRoles.Admin)]
+        [Authorize(Roles = UserRoles.Company)]
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateRequestStatus(int id, [FromBody] UpdateCompanyRequestStatusDTO dto)
         {

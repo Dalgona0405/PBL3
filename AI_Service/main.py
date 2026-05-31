@@ -1,5 +1,8 @@
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI
+from fastapi import BackgroundTasks
+from train import train_gnn
+from model import GCNNet
 from pydantic import BaseModel
 from typing import List
 from contextlib import asynccontextmanager
@@ -61,6 +64,38 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AI Job System: GNN & Analytics", lifespan=lifespan)
 
+# 1. Viết 1 hàm nhỏ để anh bồi bàn đọc lại sách mới
+def train_and_reload():
+    global node_embeddings, model, graph_data, sql_to_idx, idx_to_sql, idx_to_name
+    
+    print("⏳ AI is starting to retrain...")
+    # Gọi hàm train (lưu xuống ổ cứng)
+    train_gnn() 
+    
+    print("🔄 Updating knowledge in RAM...")
+    # Đọc lại data và model mới nhất
+    graph_data, sql_to_idx, idx_to_sql, idx_to_name = fetch_and_process_data()
+    if graph_data is not None:
+        model = GCNNet(in_channels=1)
+        model.load_state_dict(torch.load('gnn_encoder.pth'))
+        model.eval()
+        with torch.no_grad():
+            node_embeddings = model(graph_data.x, graph_data.edge_index)
+        print("✅ Update completed! Ready to serve.")
+
+# 2. Sửa lại API để gọi hàm mới này
+@app.post("/api/train")
+def trigger_ai_training(background_tasks: BackgroundTasks):
+    try:
+        # Thay vì gọi train_gnn, mình gọi train_and_reload
+        background_tasks.add_task(train_and_reload) 
+        
+        return {
+            "status": "success", 
+            "message": "Command received! AI is training in the background. Please check logs for progress. This may take a few minutes."
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Error occurred while initializing AI: {str(e)}"})
 
 # --- PHẦN 3: API GỢI Ý KỸ NĂNG (GNN) ---
 

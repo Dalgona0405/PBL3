@@ -49,9 +49,6 @@ namespace JobSeekingAPI.Repositories
         {
             var query = _context.Candidates
                 .AsNoTracking()
-                .Include(c => c.User)
-                .Include(c => c.CandidateTags).ThenInclude(ct => ct.Tag)
-                .Include(c => c.Experiences)
                 .Where(c => c.User != null && c.User.DeletedAt == null)
                 .AsQueryable();
 
@@ -130,6 +127,59 @@ namespace JobSeekingAPI.Repositories
             return await _context.CandidateTags
                 .Include(ct => ct.Tag)
                 .Where(ct => ct.UserId == candidateId)
+                .ToListAsync();
+        }
+
+        // =========================================================
+        // TÍNH NĂNG LƯU VIỆC LÀM (BOOKMARK)
+        // =========================================================
+        public async Task SaveJobAsync(int userId, int jobId)
+        {
+            var exists = await IsJobSavedAsync(userId, jobId);
+            if (!exists)
+            {
+                var savedJob = new SavedJob { UserId = userId, JobId = jobId, SavedAt = DateTime.UtcNow };
+                await _context.SavedJobs.AddAsync(savedJob);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task UnsaveJobAsync(int userId, int jobId)
+        {
+            var savedJob = await _context.SavedJobs.FirstOrDefaultAsync(sj => sj.UserId == userId && sj.JobId == jobId);
+            if (savedJob != null)
+            {
+                _context.SavedJobs.Remove(savedJob);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<bool> IsJobSavedAsync(int userId, int jobId)
+        {
+            return await _context.SavedJobs.AnyAsync(sj => sj.UserId == userId && sj.JobId == jobId);
+        }
+
+        public async Task<IEnumerable<JobSummaryDTO>> GetSavedJobsAsync(int userId)
+        {
+            return await _context.SavedJobs
+                .AsNoTracking()
+                .Where(sj => sj.UserId == userId && sj.Job!.DeletedAt == null && sj.Job.Status == 1)
+                .OrderByDescending(sj => sj.SavedAt)
+                .Select(sj => new JobSummaryDTO
+                {
+                    JobId = sj.Job!.JobId,
+                    Title = sj.Job.Title,
+                    SalaryMin = sj.Job.SalaryMin,
+                    SalaryMax = sj.Job.SalaryMax,
+                    ExpYear = sj.Job.ExpYear,
+                    Level = sj.Job.Level,
+                    CompanyName = sj.Job.Company!.CompanyName,
+                    LogoImg = sj.Job.Company.LogoImg,
+                    LocationName = sj.Job.Location!.LocationName,
+                    PostedDate = sj.Job.PostedDate,
+                    Deadline = sj.Job.Deadline,
+                    Status = sj.Job.Status
+                })
                 .ToListAsync();
         }
     }

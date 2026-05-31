@@ -8,11 +8,13 @@ namespace JobSeekingAPI.Services
     {
         private readonly IJobRepository _jobRepo;
         private readonly ICompanyRepository _companyRepo;
+        private readonly ICandidateRepository _candidateRepo;
 
-        public JobService(IJobRepository jobRepo, ICompanyRepository companyRepo)
+        public JobService(IJobRepository jobRepo, ICompanyRepository companyRepo, ICandidateRepository candidateRepo)
         {
             _jobRepo = jobRepo;
             _companyRepo = companyRepo;
+            _candidateRepo = candidateRepo;
         }
 
         public async Task<Job> CreateJobAsync(CreateJobDTO dto)
@@ -87,6 +89,25 @@ namespace JobSeekingAPI.Services
             await CheckRecruiterOwnershipAsync(existingJob.CompanyId, userId, isRecruiter);
 
             await _jobRepo.SoftDeleteJobAsync(id);
+        }
+
+        public async Task SaveJobAsync(int userId, int jobId)
+        {
+            var existingJob = await _jobRepo.GetJobEntityByIdAsync(jobId);
+            if (existingJob == null)
+                throw new KeyNotFoundException("Job not found");
+
+            await _candidateRepo.SaveJobAsync(userId, jobId);
+        }
+
+        public async Task UnsaveJobAsync(int userId, int jobId)
+        {
+            await _candidateRepo.UnsaveJobAsync(userId, jobId);
+        }
+
+        public async Task<IEnumerable<JobSummaryDTO>> GetSavedJobsAsync(int userId)
+        {
+            return await _candidateRepo.GetSavedJobsAsync(userId);
         }
 
         // Hàm dùng chung để kiểm tra xem Recruiter có quyền sửa/xóa Job của công ty này không

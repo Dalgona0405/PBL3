@@ -40,9 +40,14 @@ namespace JobSeekingAPI.Services
             await _requestRepo.CreateAsync(request);
         }
 
-        public async Task<IEnumerable<CompanyRequestSummaryDTO>> GetPendingRequestsAsync()
+        public async Task<IEnumerable<CompanyRequestSummaryDTO>> GetPendingRequestsAsync(int companyOwnerId)
         {
-            var requests = await _requestRepo.GetPendingRequestsAsync();
+            var ownerProfile = await _recruiterRepo.GetRecruiterEntityByIdAsync(companyOwnerId);
+            if (ownerProfile == null)
+                throw new UnauthorizedAccessException("Not found your company information!");
+
+            var requests = await _requestRepo.GetPendingRequestsByCompanyAsync(ownerProfile.CompanyId);
+            
             return requests.Select(r => new CompanyRequestSummaryDTO
             {
                 RequestId = r.RequestId,

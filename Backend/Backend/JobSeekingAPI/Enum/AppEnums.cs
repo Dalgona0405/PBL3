@@ -31,6 +31,7 @@ namespace JobSeekingAPI.Enums
         public const string Admin = "Admin";
         public const string Candidate = "Candidate";
         public const string Recruiter = "Recruiter";
+        public const string Company = "Company";
     }
 
     // Loại Tag

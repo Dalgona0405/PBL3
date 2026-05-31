@@ -1,5 +1,6 @@
 using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
+using JobSeekingAPI.Enums;
 using JobSeekingAPI.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -44,7 +45,7 @@ namespace JobSeekingAPI.Repositories
                 await _context.SaveChangesAsync(); // Lưu để user có UserId
 
                 // Dựa vào Role, tạo profile tương ứng
-                if (user.Role == "Candidate")
+                if (user.Role == UserRoles.Candidate)
                 {
                     var candidate = new Candidate
                     {
@@ -52,7 +53,7 @@ namespace JobSeekingAPI.Repositories
                     };
                     _context.Candidates.Add(candidate);
                 }
-                if (user.Role == "Recruiter")
+                else if (user.Role == UserRoles.Recruiter)
                 {
                     var rectuiter = new Recruiter
                     {
@@ -63,6 +64,21 @@ namespace JobSeekingAPI.Repositories
                         }
                     };
                     _context.Recruiters.Add(rectuiter);
+                }
+                else if (user.Role == UserRoles.Company)
+                {
+                    var newCompany = new Company
+                    {
+                        CompanyName = userDto.FullName + "Company",
+                        Size = "1-50"
+                    };
+                    var companyOwner = new Recruiter
+                    {
+                        UserId = user.UserId,
+                        Company = newCompany,
+                        Position = "CEO / Founder"
+                    };
+                    _context.Recruiters.Add(companyOwner);
                 }
 
                 await _context.SaveChangesAsync();
@@ -80,8 +96,6 @@ namespace JobSeekingAPI.Repositories
         {
             var query = _context.Users
                 .AsNoTracking()
-                .Include(u => u.Candidate)
-                .Include(u => u.Recruiter)
                 .Where(u => u.DeletedAt == null);
 
             var totalCount = await query.CountAsync();
@@ -148,8 +162,6 @@ namespace JobSeekingAPI.Repositories
             // 1. Tạo câu truy vấn (Chưa chạy ngay) và Include các bảng cần thiết
             var query = _context.Users
                 .AsNoTracking()
-                .Include(u => u.Candidate)
-                .Include(u => u.Recruiter).ThenInclude(r => r.Company)
                 .Where(u => u.DeletedAt == null);
 
             // 2. Lọc theo từ khóa

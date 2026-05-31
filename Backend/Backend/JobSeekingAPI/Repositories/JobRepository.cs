@@ -24,17 +24,53 @@ namespace JobSeekingAPI.Repositories
                 .ToListAsync();
         }
 
-        public async Task<Job?> GetJobDetailByIdAsync(int id)
+        public async Task<JobDetailDTO?> GetJobDetailByIdAsync(int id)
         {
             return await _context.Jobs
                 .AsNoTracking()
-                .Include(j => j.Company)
-                .Include(j => j.Location)
-                .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-                .Include(j => j.Applications)
-                .ThenInclude(a => a.Candidate)
-                .ThenInclude(c => c!.User)
-                .FirstOrDefaultAsync(j => j.JobId == id && j.DeletedAt == null);
+                .Where(j => j.JobId == id && j.DeletedAt == null)
+                .Select(j => new JobDetailDTO
+                {
+                    JobId = j.JobId,
+                    CompanyId = j.CompanyId,
+                    OriginalId = j.OriginalId,
+                    Title = j.Title,
+                    SalaryMin = j.SalaryMin,
+                    SalaryMax = j.SalaryMax,
+                    ExpYear = j.ExpYear,
+                    Level = j.Level,
+                    PostedDate = j.PostedDate,
+                    Deadline = j.Deadline,
+                    Description = j.Description,
+                    Requirement = j.Requirement,
+                    Benefits = j.Benefits,
+                    Address = j.Address,
+                    Status = j.Status,
+                    ViewCount = j.ViewCount ?? 0,
+
+                    Company = j.Company != null ? new CompanySummaryDTO
+                    {
+                        CompanyId = j.Company.CompanyId,
+                        CompanyName = j.Company.CompanyName,
+                        LogoImg = j.Company.LogoImg,
+                        Website = j.Company.Website
+                    } : null,
+
+                    Location = j.Location != null ? new LocationSummaryDTO
+                    {
+                        LocationId = j.Location.LocationId,
+                        LocationName = j.Location.LocationName
+                    } : null,
+
+                    Tags = j.JobTags.Where(jt => jt.Tag != null).Select(jt => new TagSummaryDTO
+                    {
+                        TagId = jt.Tag!.TagId,
+                        TagName = jt.Tag.TagName,
+                        Type = jt.Tag.Type
+                    }).ToList(),
+                    ApplicationCount = j.Applications.Count(a => a.DeletedAt == null)
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<Job?> GetJobEntityByIdAsync(int id) //dùng cho UPDATE

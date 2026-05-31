@@ -3,6 +3,7 @@ using System;
 using JobSeekingAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace JobSeekingAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260531122152_AddMessageToApplication")]
+    partial class AddMessageToApplication
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -45,15 +48,6 @@ namespace JobSeekingAPI.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("deletedat");
-
-                    b.Property<string>("InterviewLocation")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("interviewlocation");
-
-                    b.Property<DateTime?>("InterviewTime")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("interviewtime");
 
                     b.Property<int>("JobId")
                         .HasColumnType("integer")
@@ -418,46 +412,6 @@ namespace JobSeekingAPI.Migrations
                     b.ToTable("locations");
                 });
 
-            modelBuilder.Entity("JobSeekingAPI.Models.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("notificationid");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotificationId"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("content");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("createdat");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean")
-                        .HasColumnName("isread");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("title");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("userid");
-
-                    b.HasKey("NotificationId")
-                        .HasName("pk_notifications");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_notifications_userid");
-
-                    b.ToTable("notifications");
-                });
-
             modelBuilder.Entity("JobSeekingAPI.Models.Recruiter", b =>
                 {
                     b.Property<int>("UserId")
@@ -480,29 +434,6 @@ namespace JobSeekingAPI.Migrations
                         .HasDatabaseName("ix_recruiters_companyid");
 
                     b.ToTable("recruiters");
-                });
-
-            modelBuilder.Entity("JobSeekingAPI.Models.SavedJob", b =>
-                {
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("userid");
-
-                    b.Property<int>("JobId")
-                        .HasColumnType("integer")
-                        .HasColumnName("jobid");
-
-                    b.Property<DateTime>("SavedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("savedat");
-
-                    b.HasKey("UserId", "JobId")
-                        .HasName("pk_savedjobs");
-
-                    b.HasIndex("JobId")
-                        .HasDatabaseName("ix_savedjobs_jobid");
-
-                    b.ToTable("savedjobs");
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Tag", b =>
@@ -718,18 +649,6 @@ namespace JobSeekingAPI.Migrations
                     b.Navigation("Tag");
                 });
 
-            modelBuilder.Entity("JobSeekingAPI.Models.Notification", b =>
-                {
-                    b.HasOne("JobSeekingAPI.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_notifications_users_userid");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("JobSeekingAPI.Models.Recruiter", b =>
                 {
                     b.HasOne("JobSeekingAPI.Models.Company", "Company")
@@ -749,27 +668,6 @@ namespace JobSeekingAPI.Migrations
                     b.Navigation("Company");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("JobSeekingAPI.Models.SavedJob", b =>
-                {
-                    b.HasOne("JobSeekingAPI.Models.Job", "Job")
-                        .WithMany()
-                        .HasForeignKey("JobId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_savedjobs_jobs_jobid");
-
-                    b.HasOne("JobSeekingAPI.Models.Candidate", "Candidate")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_savedjobs_candidates_userid");
-
-                    b.Navigation("Candidate");
-
-                    b.Navigation("Job");
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Candidate", b =>

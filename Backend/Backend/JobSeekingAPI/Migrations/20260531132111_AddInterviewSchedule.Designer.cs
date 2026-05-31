@@ -3,6 +3,7 @@ using System;
 using JobSeekingAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace JobSeekingAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260531132111_AddInterviewSchedule")]
+    partial class AddInterviewSchedule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -418,46 +421,6 @@ namespace JobSeekingAPI.Migrations
                     b.ToTable("locations");
                 });
 
-            modelBuilder.Entity("JobSeekingAPI.Models.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("notificationid");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotificationId"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("content");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("createdat");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean")
-                        .HasColumnName("isread");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("title");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("userid");
-
-                    b.HasKey("NotificationId")
-                        .HasName("pk_notifications");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_notifications_userid");
-
-                    b.ToTable("notifications");
-                });
-
             modelBuilder.Entity("JobSeekingAPI.Models.Recruiter", b =>
                 {
                     b.Property<int>("UserId")
@@ -716,18 +679,6 @@ namespace JobSeekingAPI.Migrations
                     b.Navigation("Job");
 
                     b.Navigation("Tag");
-                });
-
-            modelBuilder.Entity("JobSeekingAPI.Models.Notification", b =>
-                {
-                    b.HasOne("JobSeekingAPI.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_notifications_users_userid");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Recruiter", b =>

@@ -91,8 +91,6 @@ namespace JobSeekingAPI.Repositories
         {
             var query = _context.Jobs
                 .AsNoTracking()
-                .Include(j => j.Company)
-                .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
                 .Where(j => j.LocationId == locationId && j.DeletedAt == null);
 
             var totalCount = await query.CountAsync();
