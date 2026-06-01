@@ -296,6 +296,26 @@ namespace JobSeekingAPI.Data
             });
 
             // =================================================================
+            // 13. NOTIFICATIONS (Thông báo)
+            // =================================================================
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasKey(n => n.NotificationId);
+                entity.Property(n => n.NotificationId).UseIdentityColumn();
+
+                entity.Property(n => n.Title).IsRequired().HasMaxLength(255);
+                entity.Property(n => n.Content).HasMaxLength(1000);
+                
+                entity.Property(n => n.IsRead).HasDefaultValue(false);
+                entity.Property(n => n.CreatedAt).HasDefaultValueSql("now()");
+
+                entity.HasOne(n => n.User)
+                    .WithMany()
+                    .HasForeignKey(n => n.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // =================================================================
             // ÉP TẤT CẢ VỀ CHỮ THƯỜNG CHO POSTGRESQL
             // =================================================================
             foreach (var entity in modelBuilder.Model.GetEntityTypes())
