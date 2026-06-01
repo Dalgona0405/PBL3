@@ -4,6 +4,8 @@ import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import InputField from '../components/ui/InputField';
+import Button from '../components/ui/Button';
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -95,18 +97,37 @@ return (
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-600 mb-2">Email của bạn</label>
-            <input type="email" name="email" placeholder="ví dụ: truc@gmail.com" value={credentials.email} onChange={handleChange} required disabled={isLoading} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
+            <InputField
+              label="Email của bạn"
+              type="email"
+              name="email"
+              placeholder="ví dụ: truc@gmail.com"
+              value={credentials.email}
+              onChange={handleChange}
+              required
+              disabled={isLoading}
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-600 mb-2">Mật khẩu</label>
-            <input type="password" name="password" placeholder="Nhập mật khẩu" value={credentials.password} onChange={handleChange} required disabled={isLoading} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
+            <InputField
+              label="Mật khẩu"
+              type="password"
+              name="password"
+              placeholder="Nhập mật khẩu của bạn"
+              value={credentials.password}
+              onChange={handleChange}
+              required
+              disabled={isLoading}
+            />
           </div>
 
-          <button type="submit" disabled={isLoading} className={`w-full py-3.5 rounded-xl text-white font-bold text-lg transition-all transform hover:-translate-y-1 shadow-md ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-earth hover:bg-olive hover:shadow-lg'}`}>
-            {isLoading ? 'Đang xử lý...' : 'Đăng nhập ngay'}
-          </button>
+          <Button 
+            type="submit" 
+            isLoading={isLoading} 
+          >
+            Đăng nhập ngay
+          </Button>
         </form>
 
         <p className="text-center mt-8 text-gray-500">

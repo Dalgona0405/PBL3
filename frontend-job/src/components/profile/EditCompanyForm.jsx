@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { API_URLS } from '../../api/api';
 import axiosClient from '../../api/axiosClient';
 import toast from 'react-hot-toast';
+import InputField from '../ui/InputField';
+import SelectField from '../ui/SelectField';
+import Button from '../ui/Button';
 
-// =================================================================
-// COMPONENT CON: FORM SỬA THÔNG TIN CÔNG TY (Dành riêng cho HR)
-// =================================================================
 function EditCompanyForm({ company, setFormData }) {
     // State lưu trữ thông tin công ty đang sửa
     const [companyData, setCompanyData] = useState({
@@ -88,8 +88,7 @@ function EditCompanyForm({ company, setFormData }) {
                 🏢 Thông tin Doanh nghiệp
             </h3>
             
-            <form onSubmit={handleSaveCompany} className="space-y-5">
-                {/* Khu vực Upload Logo */}
+            <form onSubmit={handleSaveCompany} className="space-y-6">
                 <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
                     <div className="w-24 h-24 rounded-2xl bg-cream border border-gray-200 flex items-center justify-center overflow-hidden shrink-0 shadow-inner p-1">
                         {companyData.logoImg ? (
@@ -111,48 +110,45 @@ function EditCompanyForm({ company, setFormData }) {
                 </div>
 
                 {/* Các ô nhập liệu */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Tên công ty <span className="text-red-500">*</span></label>
-                        <input 
-                            type="text" name="companyName" required 
-                            value={companyData.companyName} onChange={handleChange} 
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Website</label>
-                        <input 
-                            type="text" name="website" 
-                            value={companyData.website} onChange={handleChange} 
-                            placeholder="https://..."
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
-                        />
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InputField 
+                        label="Tên công ty"
+                        name="companyName"
+                        value={companyData.companyName}
+                        onChange={handleChange}
+                        required={true}
+                    />
+
+                    <InputField 
+                        label="Website"
+                        name="website"
+                        placeholder="https://..."
+                        value={companyData.website}
+                        onChange={handleChange}
+                    />
+
                     <div className="md:col-span-2">
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Quy mô nhân sự</label>
-                        <select 
-                            name="size" 
-                            value={companyData.size} onChange={handleChange}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all"
-                        >
-                            <option value="">-- Chọn quy mô --</option>
-                            <option value="1 - 50 nhân viên">1 - 50 nhân viên</option>
-                            <option value="51 - 200 nhân viên">51 - 200 nhân viên</option>
-                            <option value="201 - 1000 nhân viên">201 - 1000 nhân viên</option>
-                            <option value="1000+ nhân viên">1000+ nhân viên</option>
-                        </select>
+                        <SelectField 
+                            label="Quy mô nhân sự"
+                            name="size"
+                            value={companyData.size}
+                            onChange={handleChange}
+                            options={[
+                                { label: '1 - 50 nhân viên', value: '1 - 50 nhân viên' },
+                                { label: '51 - 200 nhân viên', value: '51 - 200 nhân viên' },
+                                { label: '201 - 1000 nhân viên', value: '201 - 1000 nhân viên' },
+                                { label: '1000+ nhân viên', value: '1000+ nhân viên' }
+                            ]}
+                        />
                     </div>
                 </div>
                 
                 <div className="pt-4 flex justify-end">
-                    <button 
-                        type="submit" 
-                        disabled={isSaving}
-                        className={`px-6 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-earth hover:bg-olive hover:-translate-y-0.5'}`}
-                    >
-                        {isSaving ? 'Đang lưu...' : '💾 Cập nhật Công ty'}
-                    </button>
+                    <div className="w-full md:w-auto">
+                        <Button type="submit" isLoading={isSaving}>
+                            💾 Cập nhật Công ty
+                        </Button>
+                    </div>
                 </div>
             </form>
         </div>

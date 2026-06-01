@@ -4,6 +4,9 @@ import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import InputField from '../components/ui/InputField';
+import Button from '../components/ui/Button';
+import SelectField from '../components/ui/SelectField';
 
 function RegisterPage() {
     const navigate = useNavigate();
@@ -90,37 +93,67 @@ function RegisterPage() {
                     </div>
 
                     <form onSubmit={handleRegister} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-600 mb-1">Họ và tên</label>
-                            <input type="text" name="fullName" placeholder="ví dụ: Nguyễn Văn A" value={formData.fullName} onChange={handleChange} required disabled={isLoading} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
+                        <InputField 
+                            label="Họ và tên"
+                            name="fullName"
+                            placeholder="ví dụ: Nguyễn Văn A"
+                            value={formData.fullName}
+                            onChange={handleChange}
+                            required={true}
+                            disabled={isLoading}
+                        />
+
+                        <InputField 
+                            label="Email của bạn"
+                            name="email"
+                            type="email"
+                            placeholder="ví dụ: abc@gmail.com"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required={true}
+                            disabled={isLoading}
+                        />
+
+                        <InputField 
+                            label="Mật khẩu"
+                            name="password"
+                            type="password"
+                            placeholder="Nhập mật khẩu"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required={true}
+                            disabled={isLoading}
+                        />
+
+                        <InputField 
+                            label="Xác nhận mật khẩu"
+                            name="confirmPassword"
+                            type="password"
+                            placeholder="Nhập lại mật khẩu"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            required={true}
+                            disabled={isLoading}
+                        />
+
+                        <SelectField 
+                            label="Bạn là ai?"
+                            name="role"
+                            value={formData.role}
+                            onChange={handleChange}
+                            disabled={isLoading}
+                            options={[
+                                { label: '👨‍💻 Người tìm việc (Ứng viên)', value: 'Candidate' },
+                                { label: '🏢 Nhà tuyển dụng (HR)', value: 'Recruiter' }
+                            ]}
+                        />
+
+                        <div className="pt-2">
+                            <Button type="submit" isLoading={isLoading}>
+                                Đăng ký ngay
+                            </Button>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-600 mb-1">Email của bạn</label>
-                            <input type="email" name="email" placeholder="ví dụ: abc@gmail.com" value={formData.email} onChange={handleChange} required disabled={isLoading} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-600 mb-1">Mật khẩu</label>
-                            <input type="password" name="password" placeholder="Nhập mật khẩu" value={formData.password} onChange={handleChange} required disabled={isLoading} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-600 mb-1">Xác nhận mật khẩu</label>
-                            <input type="password" name="confirmPassword" placeholder="Nhập lại mật khẩu" value={formData.confirmPassword} onChange={handleChange} required disabled={isLoading} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-600 mb-1">Bạn là ai?</label>
-                            <select name="role" value={formData.role} onChange={handleChange} disabled={isLoading} className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white text-textmain cursor-pointer">
-                                <option value="Candidate">👨‍💻 Người tìm việc (Ứng viên)</option>
-                                <option value="Recruiter">🏢 Nhà tuyển dụng (HR)</option>
-                            </select>
-                        </div>
-
-                        <button type="submit" disabled={isLoading} className={`w-full py-3.5 mt-4 rounded-xl text-white font-bold text-lg transition-all transform hover:-translate-y-1 shadow-md ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-earth hover:bg-olive hover:shadow-lg'}`}>
-                            {isLoading ? 'Đang xử lý...' : 'Đăng ký ngay'}
-                        </button>
                     </form>
 
                     <p className="text-center mt-8 text-gray-500">

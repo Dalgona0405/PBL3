@@ -1,8 +1,9 @@
-// File: src/components/profile/SkillSection.jsx
 import React, { useState, useEffect } from 'react';
 import { API_URLS } from '../../api/api';
 import axiosClient from '../../api/axiosClient';
 import toast from 'react-hot-toast';
+import SelectField from '../ui/SelectField';
+import Button from '../ui/Button';
 
 // 🌟 NHẬN userId TỪ PROFILE PAGE TRUYỀN VÀO
 function SkillSection({ userId }) {
@@ -110,37 +111,46 @@ function SkillSection({ userId }) {
                 🧩 Kỹ năng chuyên môn
             </h3>
 
-            <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                <select
-                    className="flex-[2] px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 text-gray-700 font-medium"
-                    value={selectedTagId}
-                    onChange={(e) => setSelectedTagId(e.target.value)}
-                >
-                    <option value="">-- Chọn kỹ năng muốn thêm --</option>
-                    {allTags.map(tag => (
-                        <option key={tag.tagId} value={tag.tagId}>{tag.tagName}</option>
-                    ))}
-                </select>
+            {/* 🌟 CÁCH MỚI: Dùng Grid chia cột để các ô Select và Nút bấm nằm thẳng hàng */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 items-end">
+                
+                {/* Cột 1+2: Chọn kỹ năng (Chiếm 2 phần) */}
+                <div className="md:col-span-2">
+                    <SelectField 
+                        label="Chọn kỹ năng muốn thêm"
+                        value={selectedTagId}
+                        onChange={(e) => setSelectedTagId(e.target.value)}
+                        options={allTags.map(tag => ({
+                            label: tag.tagName,
+                            value: tag.tagId
+                        }))}
+                    />
+                </div>
 
-                <select
-                    className="flex-[1] px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 text-gray-700 font-medium"
-                    value={selectedProficiency}
-                    onChange={(e) => setSelectedProficiency(e.target.value)}
-                >
-                    <option value="Cơ bản">Cơ bản</option>
-                    <option value="Khá">Khá</option>
-                    <option value="Tốt">Tốt</option>
-                    <option value="Xuất sắc">Xuất sắc</option>
-                </select>
+                {/* Cột 3: Chọn trình độ (Chiếm 1 phần) */}
+                <div className="md:col-span-1">
+                    <SelectField 
+                        label="Trình độ"
+                        value={selectedProficiency}
+                        onChange={(e) => setSelectedProficiency(e.target.value)}
+                        options={[
+                            { label: 'Cơ bản', value: 'Cơ bản' },
+                            { label: 'Khá', value: 'Khá' },
+                            { label: 'Tốt', value: 'Tốt' },
+                            { label: 'Xuất sắc', value: 'Xuất sắc' }
+                        ]}
+                    />
+                </div>
 
-                <button
-                    className="bg-olive hover:bg-earth text-white font-bold py-2.5 px-6 rounded-xl transition-colors shadow-sm"
-                    onClick={handleAddSkill}
-                >
-                    + Thêm
-                </button>
+                {/* Cột 4: Nút Thêm (Chiếm 1 phần) */}
+                <div className="md:col-span-1 pb-1">
+                    <Button onClick={handleAddSkill}>
+                        + Thêm
+                    </Button>
+                </div>
             </div>
 
+            {/* DANH SÁCH KỸ NĂNG ĐÃ THÊM (Giữ nguyên) */}
             <div className="flex flex-wrap gap-4">
                 {userTags.length > 0 ? (
                     userTags.map((tag) => (

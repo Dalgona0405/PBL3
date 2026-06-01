@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { API_URLS } from '../../api/api';
 import axiosClient from "../../api/axiosClient";
 import toast from "react-hot-toast";
+import InputField from "../ui/InputField";
+import SelectField from "../ui/SelectField";
 
 function EditProfileForm({ formData, setFormData }) {
     // State cho Search Company
@@ -73,17 +75,17 @@ function EditProfileForm({ formData, setFormData }) {
     };
 
     const handleInputChange = (e) => {
-        const { id, value } = e.target;
-        if (id === 'fullName') {
-            setFormData({ ...formData, [id]: value });
+        const { name, value } = e.target;
+        if (name === 'fullName') {
+            setFormData({ ...formData, [name]: value });
             return;
         }
-        if (['gender', 'birthday', 'phone', 'address'].includes(id)) {
-            setFormData({ ...formData, candidate: { ...formData.candidate, [id]: value } });
+        if (['gender', 'birthday', 'phone', 'address'].includes(name)) {
+            setFormData({ ...formData, candidate: { ...formData.candidate, [name]: value } });
             return;
         }
-        if (id === 'position') {
-            setFormData({ ...formData, recruiter: { ...formData.recruiter, [id]: value } });
+        if (name === 'position') {
+            setFormData({ ...formData, recruiter: { ...formData.recruiter, [name]: value } });
             return;
         }
     };
@@ -94,41 +96,55 @@ function EditProfileForm({ formData, setFormData }) {
                 📝 Thông tin cá nhân
             </h3>
 
-            <div className="space-y-5">
-                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                    <p className="w-32 font-medium text-gray-600">Họ và tên:</p>
-                    <input type="text" id="fullName" className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white"
-                        value={formData.fullName || ''} onChange={handleInputChange} />
-                </div>
+            <div className="space-y-6">
+                <InputField 
+                    label="Họ và tên"
+                    name="fullName"
+                    value={formData.fullName || ''}
+                    onChange={handleInputChange}
+                />
 
                 {/* FORM CHO CANDIDATE */}
                 {formData.role === 'Candidate' && (
                     <>
-                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                            <p className="w-32 font-medium text-gray-600">⚧️ Giới tính:</p>
-                            <select id="gender" className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white"
-                                value={formData.candidate?.gender || ''} onChange={handleInputChange} >
-                                <option value="">-- Chọn giới tính --</option>
-                                <option value="Nam">Nam</option>
-                                <option value="Nữ">Nữ</option>
-                                <option value="Khác">Khác</option>
-                            </select>
+                        {/* Gom 4 ô này vào 1 Grid chia 2 cột cho đẹp */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <SelectField 
+                                label="Giới tính"
+                                name="gender"
+                                value={formData.candidate?.gender || ''}
+                                onChange={handleInputChange}
+                                options={[
+                                    { label: 'Nam', value: 'Nam' },
+                                    { label: 'Nữ', value: 'Nữ' },
+                                    { label: 'Khác', value: 'Khác' }
+                                ]}
+                            />
+
+                            <InputField 
+                                label="Ngày sinh"
+                                name="birthday"
+                                type="date"
+                                value={formData.candidate?.birthday ? formData.candidate.birthday.split('T')[0] : ''}
+                                onChange={handleInputChange}
+                            />
+
+                            <InputField 
+                                label="Điện thoại"
+                                name="phone"
+                                value={formData.candidate?.phone || ''}
+                                onChange={handleInputChange}
+                            />
+
+                            <InputField 
+                                label="Địa chỉ"
+                                name="address"
+                                value={formData.candidate?.address || ''}
+                                onChange={handleInputChange}
+                            />
                         </div>
-                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                            <p className="w-32 font-medium text-gray-600">📞 Điện thoại:</p>
-                            <input type="text" id="phone" className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white"
-                                value={formData.candidate?.phone || ''} onChange={handleInputChange} />
-                        </div>
-                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                            <p className="w-32 font-medium text-gray-600">🏠 Địa chỉ:</p>
-                            <input type="text" id="address" className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white"
-                                value={formData.candidate?.address || ''} onChange={handleInputChange} />
-                        </div>
-                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                            <p className="w-32 font-medium text-gray-600">🎂 Sinh nhật:</p>
-                            <input type="date" id="birthday" className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white"
-                                value={formData.candidate?.birthday ? formData.candidate.birthday.split('T')[0] : ''} onChange={handleInputChange} />
-                        </div>
+
+                        {/* PHẦN UPLOAD CV GIỮ NGUYÊN (Không đụng vào) */}
                         <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4 mt-6 pt-6 border-t border-dashed border-gray-200">
                             <p className="w-32 font-medium text-olive mt-2">📄 CV Mặc định:</p>
                             <div className="flex-1">
@@ -159,7 +175,6 @@ function EditProfileForm({ formData, setFormData }) {
                                             }
 
                                             try {
-                                                // 1. Upload file lấy URL
                                                 const formDataUpload = new FormData();
                                                 formDataUpload.append('file', file);
                                                 const uploadRes = await axiosClient.post('/Files/upload', formDataUpload, {
@@ -167,10 +182,8 @@ function EditProfileForm({ formData, setFormData }) {
                                                 });
                                                 const newCvUrl = uploadRes.url || uploadRes.fileUrl || uploadRes.data || uploadRes;
 
-                                                // 2. Gọi API PATCH Trúc vừa viết để lưu CV mặc định
                                                 await axiosClient.patch('/Candidates/me/default-cv', { cvUrl: newCvUrl });
 
-                                                // 3. Cập nhật lại giao diện
                                                 setFormData(prev => ({
                                                     ...prev,
                                                     candidate: { ...prev.candidate, cvUrl: newCvUrl }
@@ -190,13 +203,14 @@ function EditProfileForm({ formData, setFormData }) {
                 {/* FORM CHO RECRUITER */}
                 {formData.role === 'Recruiter' && (
                     <>
-                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                            <p className="w-32 font-medium text-gray-600">💼 Chức vụ:</p>
-                            <input type="text" id="position" className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white"
-                                value={formData.recruiter?.position || ''} onChange={handleInputChange} />
-                        </div>
+                        <InputField 
+                            label="Chức vụ"
+                            name="position"
+                            value={formData.recruiter?.position || ''}
+                            onChange={handleInputChange}
+                        />
 
-                        {/* HIỂN THỊ CÔNG TY HIỆN TẠI */}
+                        {/* HIỂN THỊ CÔNG TY HIỆN TẠI (Giữ nguyên) */}
                         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                             <p className="w-32 font-medium text-gray-600">🏢 Công ty hiện tại:</p>
                             <div className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 font-medium">
@@ -204,7 +218,7 @@ function EditProfileForm({ formData, setFormData }) {
                             </div>
                         </div>
 
-                        {/* Ô TÌM KIẾM ĐỂ XIN VÀO CÔNG TY MỚI */}
+                        {/* Ô TÌM KIẾM ĐỂ XIN VÀO CÔNG TY MỚI (Giữ nguyên) */}
                         <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4 relative mt-6 pt-6 border-t border-dashed border-gray-200" ref={dropdownRef}>
                             <p className="w-32 font-medium text-olive mt-3">🔄 Đổi công ty:</p>
                             <div className="flex-1 relative">
@@ -217,7 +231,6 @@ function EditProfileForm({ formData, setFormData }) {
                                         onChange={(e) => handleSearchCompany(e.target.value)}
                                         onFocus={() => searchTerm.length >= 2 && setShowDropdown(true)}
                                     />
-                                    {/* Nút gửi yêu cầu chỉ hiện khi đã chọn 1 công ty từ dropdown */}
                                     {selectedNewCompany && (
                                         <button
                                             onClick={handleSendCompanyRequest}
@@ -229,7 +242,6 @@ function EditProfileForm({ formData, setFormData }) {
                                     )}
                                 </div>
 
-                                {/* Dropdown kết quả tìm kiếm */}
                                 {showDropdown && (
                                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                                         {isSearching ? (

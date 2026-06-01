@@ -3,6 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
+import InputField from '../components/ui/InputField';
+import SelectField from '../components/ui/SelectField';
+import Button from '../components/ui/Button';
 
 function JobFormPage() {
     const { jobId } = useParams(); // Nếu có jobId trên URL -> Chế độ Sửa. Nếu không có -> Chế độ Tạo mới.
@@ -56,7 +60,7 @@ function JobFormPage() {
                 setAllTags(tagsRes ||[]);
 
                 if (!hrRes.company) {
-                    setError("Bạn chưa gia nhập công ty nào. Vui lòng cập nhật hồ sơ trước khi đăng tin!");
+                    toast.error("Bạn chưa gia nhập công ty nào. Vui lòng cập nhật hồ sơ trước khi đăng tin!");
                     return;
                 }
                 // Lưu companyId vào form
@@ -84,7 +88,7 @@ function JobFormPage() {
                     }
                 }
             } catch (err) {
-                setError("Lỗi tải dữ liệu. Vui lòng thử lại sau! 🌿");
+                toast.error("Lỗi tải dữ liệu. Vui lòng thử lại sau! 🌿");
             } finally {
                 setIsLoading(false);
             }
@@ -178,68 +182,95 @@ function JobFormPage() {
                 <div className="lg:col-span-1 space-y-6 bg-white p-8 rounded-3xl shadow-sm border-t-8 border-earth h-fit">
                     <h3 className="text-xl font-bold text-olive border-b border-gray-100 pb-3">Thông tin cơ bản</h3>
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Tiêu đề công việc <span className="text-red-500">*</span></label>
-                        <input type="text" name="title" required value={formData.title} onChange={handleChange} placeholder="VD: Frontend Developer (ReactJS)" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
-                    </div>
+                    <InputField 
+                        label="Tiêu đề công việc"
+                        name="title"
+                        placeholder="VD: Frontend Developer (ReactJS)"
+                        value={formData.title}
+                        onChange={handleChange}
+                        required={true}
+                    />
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Khu vực <span className="text-red-500">*</span></label>
-                        <select name="locationId" required value={formData.locationId} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white">
-                            <option value="">-- Chọn khu vực --</option>
-                            {locations.map(loc => (
-                                <option key={loc.locationId} value={loc.locationId}>{loc.locationName}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <SelectField 
+                        label="Khu vực"
+                        name="locationId"
+                        value={formData.locationId}
+                        onChange={handleChange}
+                        required={true}
+                        options={locations.map(loc => ({
+                            label: loc.locationName,
+                            value: loc.locationId
+                        }))}
+                    />
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Địa chỉ làm việc cụ thể</label>
-                        <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="VD: Tầng 3, Tòa nhà ABC..." className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
+                    <InputField 
+                        label="Địa chỉ làm việc cụ thể"
+                        name="address"
+                        placeholder="VD: Tầng 3, Tòa nhà ABC..."
+                        value={formData.address}
+                        onChange={handleChange}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <InputField 
+                            label="Lương Min (Triệu)"
+                            name="salaryMin"
+                            type="number"
+                            placeholder="VD: 10"
+                            value={formData.salaryMin}
+                            onChange={handleChange}
+                        />
+                        <InputField 
+                            label="Lương Max (Triệu)"
+                            name="salaryMax"
+                            type="number"
+                            placeholder="VD: 20"
+                            value={formData.salaryMax}
+                            onChange={handleChange}
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Lương Min (Triệu)</label>
-                            <input type="number" name="salaryMin" value={formData.salaryMin} onChange={handleChange} placeholder="VD: 10" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Lương Max (Triệu)</label>
-                            <input type="number" name="salaryMax" value={formData.salaryMax} onChange={handleChange} placeholder="VD: 20" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
-                        </div>
+                        <SelectField 
+                            label="Cấp bậc"
+                            name="level"
+                            value={formData.level}
+                            onChange={handleChange}
+                            options={[
+                                { label: 'Thực tập sinh', value: 'Thực tập sinh' },
+                                { label: 'Nhân viên', value: 'Nhân viên' },
+                                { label: 'Trưởng nhóm', value: 'Trưởng nhóm' },
+                                { label: 'Quản lý', value: 'Quản lý' }
+                            ]}
+                        />
+                        <SelectField 
+                            label="Kinh nghiệm"
+                            name="expYear"
+                            value={formData.expYear}
+                            onChange={handleChange}
+                            options={[
+                                { label: 'Không yêu cầu', value: 'Không yêu cầu' },
+                                { label: 'Dưới 1 năm', value: 'Dưới 1 năm' },
+                                { label: '1 - 3 năm', value: '1 - 3 năm' },
+                                { label: 'Trên 3 năm', value: 'Trên 3 năm' }
+                            ]}
+                        />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Cấp bậc</label>
-                            <select name="level" value={formData.level} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white">
-                                <option value="Thực tập sinh">Thực tập sinh</option>
-                                <option value="Nhân viên">Nhân viên</option>
-                                <option value="Trưởng nhóm">Trưởng nhóm</option>
-                                <option value="Quản lý">Quản lý</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Kinh nghiệm</label>
-                            <select name="expYear" value={formData.expYear} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white">
-                                <option value="Không yêu cầu">Không yêu cầu</option>
-                                <option value="Dưới 1 năm">Dưới 1 năm</option>
-                                <option value="1 - 3 năm">1 - 3 năm</option>
-                                <option value="Trên 3 năm">Trên 3 năm</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Hạn chót nộp CV</label>
-                        <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white" />
-                    </div>
+                    <InputField 
+                        label="Hạn chót nộp CV"
+                        name="deadline"
+                        type="date"
+                        value={formData.deadline}
+                        onChange={handleChange}
+                    />
                 </div>
 
                 {/* CỘT PHẢI: CHI TIẾT & KỸ NĂNG */}
                 <div className="lg:col-span-2 space-y-6 bg-white p-8 rounded-3xl shadow-sm border-t-8 border-olive">
                     <h3 className="text-xl font-bold text-olive border-b border-gray-100 pb-3">Chi tiết công việc</h3>
 
+                    {/* TEXTAREA GIỮ NGUYÊN */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">Mô tả công việc</label>
                         <textarea name="description" rows="5" value={formData.description} onChange={handleChange} placeholder="Mô tả các công việc ứng viên sẽ làm..." className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white resize-none"></textarea>
@@ -255,7 +286,7 @@ function JobFormPage() {
                         <textarea name="benefits" rows="4" value={formData.benefits} onChange={handleChange} placeholder="Bảo hiểm, du lịch, thưởng..." className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white resize-none"></textarea>
                     </div>
 
-                    {/* KHU VỰC CHỌN TAGS (KỸ NĂNG) */}
+                    {/* KHU VỰC CHỌN TAGS GIỮ NGUYÊN */}
                     <div className="pt-4 border-t border-gray-100">
                         <label className="block text-sm font-bold text-gray-700 mb-3">Thẻ kỹ năng (Tags)</label>
                         <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -298,15 +329,13 @@ function JobFormPage() {
                         </div>
                     </div>
 
-                    {/* NÚT LƯU */}
-                    <div className="pt-8 text-right">
-                        <button
-                            type="submit"
-                            disabled={isSaving}
-                            className={`px-10 py-3.5 rounded-full text-white font-bold text-lg shadow-md transition-all transform hover:-translate-y-1 ${isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-earth hover:bg-olive hover:shadow-lg'}`}
-                        >
-                            {isSaving ? 'Đang lưu...' : (isEditMode ? '💾 Lưu cập nhật' : '🚀 Đăng tin ngay')}
-                        </button>
+                    {/* NÚT LƯU BẰNG LEGO */}
+                    <div className="pt-8 flex justify-end">
+                        <div className="w-full md:w-auto">
+                            <Button type="submit" isLoading={isSaving}>
+                                {isEditMode ? '💾 Lưu cập nhật' : '🚀 Đăng tin ngay'}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </form>

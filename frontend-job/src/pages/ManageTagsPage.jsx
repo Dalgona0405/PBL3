@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import toast from 'react-hot-toast';
+import InputField from '../components/ui/InputField';
+import SelectField from '../components/ui/SelectField';
+import Button from '../components/ui/Button';
 
 function ManageTagsPage() {
     const [tags, setTags] = useState([]);
@@ -107,48 +110,51 @@ function ManageTagsPage() {
                         <h3 className="text-xl font-bold text-olive mb-4">
                             {editingId ? '✏️ Sửa Kỹ năng' : '✨ Thêm Kỹ năng mới'}
                         </h3>
-                        <form onSubmit={handleSave} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Tên kỹ năng</label>
-                                <input 
-                                    type="text" name="tagName" required
-                                    value={formData.tagName} onChange={handleChange}
-                                    placeholder="VD: ReactJS, Java..."
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">Phân loại</label>
-                                <select 
-                                    name="type" value={formData.type} onChange={handleChange}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all"
-                                >
-                                    <option value="Skill">Kỹ năng chuyên môn</option>
-                                    <option value="Language">Ngoại ngữ</option>
-                                    <option value="Benefit">Phúc lợi</option>
-                                    <option value="Role">Vai trò</option>
-                                    <option value="Experience">Kinh nghiệm</option>
-                                    <option value="Domain">Lĩnh vực</option>
-                                    <option value="Demographic">Nhân khẩu học</option>
-                                </select>
-                            </div>
+                        <form onSubmit={handleSave} className="space-y-5">
+                            
+                            <InputField 
+                                label="Tên kỹ năng"
+                                name="tagName"
+                                placeholder="VD: ReactJS, Java..."
+                                value={formData.tagName}
+                                onChange={handleChange}
+                                required={true}
+                            />
+
+                            <SelectField 
+                                label="Phân loại"
+                                name="type"
+                                value={formData.type}
+                                onChange={handleChange}
+                                options={[
+                                    { label: 'Kỹ năng chuyên môn', value: 'Skill' },
+                                    { label: 'Ngoại ngữ', value: 'Language' },
+                                    { label: 'Phúc lợi', value: 'Benefit' },
+                                    { label: 'Vai trò', value: 'Role' },
+                                    { label: 'Kinh nghiệm', value: 'Experience' },
+                                    { label: 'Lĩnh vực', value: 'Domain' },
+                                    { label: 'Nhân khẩu học', value: 'Demographic' }
+                                ]}
+                            />
                             
                             <div className="flex gap-2 pt-2">
+                                {/* Nút Hủy (Chỉ hiện khi đang sửa) */}
                                 {editingId && (
                                     <button 
                                         type="button" 
                                         onClick={() => { setEditingId(null); setFormData({ tagName: '', type: 'Skill' }); }}
-                                        className="flex-1 py-2.5 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-all"
+                                        className="flex-1 py-3.5 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-all"
                                     >
                                         Hủy
                                     </button>
                                 )}
-                                <button 
-                                    type="submit" disabled={isSaving}
-                                    className={`flex-1 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${isSaving ? 'bg-gray-400' : 'bg-earth hover:bg-olive hover:-translate-y-0.5'}`}
-                                >
-                                    {isSaving ? 'Đang lưu...' : 'Lưu lại'}
-                                </button>
+                                
+                                {/* Nút Lưu (Dùng Component) */}
+                                <div className="flex-1">
+                                    <Button type="submit" isLoading={isSaving}>
+                                        Lưu lại
+                                    </Button>
+                                </div>
                             </div>
                         </form>
                     </div>

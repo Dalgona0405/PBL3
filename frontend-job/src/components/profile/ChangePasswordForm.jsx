@@ -1,8 +1,9 @@
-// File: src/components/profile/ChangePasswordForm.jsx
 import React, { useState } from 'react';
 import { API_URLS } from '../../api/api';
 import axiosClient from '../../api/axiosClient';
 import toast from 'react-hot-toast';
+import InputField from '../ui/InputField';
+import Button from '../ui/Button';
 
 function ChangePasswordForm({ userId }) {
     const [formData, setFormData] = useState({
@@ -52,51 +53,50 @@ function ChangePasswordForm({ userId }) {
                 🔒 Đổi mật khẩu
             </h3>
             
-            {/* 🌟 Đã bỏ max-w-md và tăng khoảng cách các dòng (space-y-5) */}
             <form onSubmit={handleSubmit} className="space-y-5">
+                <InputField 
+                    label="Mật khẩu hiện tại"
+                    name="currentPassword"
+                    type="password"
+                    placeholder="Nhập mật khẩu đang dùng..."
+                    value={formData.currentPassword}
+                    onChange={handleChange}
+                    required={true}
+                    disabled={isLoading}
+                />
                 
-                {/* Dòng 1: Mật khẩu hiện tại (Full width) */}
-                <div>
-                    <label className="block text-sm font-bold text-gray-600 mb-2">Mật khẩu hiện tại <span className="text-red-500">*</span></label>
-                    <input 
-                        type="password" name="currentPassword" required 
-                        value={formData.currentPassword} onChange={handleChange} 
-                        placeholder="Nhập mật khẩu đang dùng..." 
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <InputField 
+                        label="Mật khẩu mới"
+                        name="newPassword"
+                        type="password"
+                        placeholder="Ít nhất 6 ký tự..."
+                        value={formData.newPassword}
+                        onChange={handleChange}
+                        required={true}
+                        disabled={isLoading}
+                    />
+
+                    <InputField 
+                        label="Xác nhận mật khẩu mới"
+                        name="confirmPassword"
+                        type="password"
+                        placeholder="Nhập lại mật khẩu mới..."
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        required={true}
+                        disabled={isLoading}
                     />
                 </div>
                 
-                {/* Dòng 2: Mật khẩu mới & Xác nhận (Chia 2 cột trên màn hình lớn) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-600 mb-2">Mật khẩu mới <span className="text-red-500">*</span></label>
-                        <input 
-                            type="password" name="newPassword" required 
-                            value={formData.newPassword} onChange={handleChange} 
-                            placeholder="Ít nhất 6 ký tự..." 
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-600 mb-2">Xác nhận mật khẩu mới <span className="text-red-500">*</span></label>
-                        <input 
-                            type="password" name="confirmPassword" required 
-                            value={formData.confirmPassword} onChange={handleChange} 
-                            placeholder="Nhập lại mật khẩu mới..." 
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all" 
-                        />
-                    </div>
-                </div>
-                
-                {/* Dòng 3: Nút bấm (Đẩy sang phải cho cân đối với form trên) */}
+                {/* Dòng 3: Nút bấm (Đẩy sang phải cho cân đối) */}
                 <div className="pt-4 flex justify-end">
-                    <button 
-                        type="submit" 
-                        disabled={isLoading}
-                        className={`px-8 py-2.5 rounded-xl font-bold text-white shadow-md transition-all ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-olive hover:bg-earth hover:-translate-y-0.5'}`}
-                    >
-                        {isLoading ? 'Đang xử lý...' : 'Cập nhật mật khẩu'}
-                    </button>
+                    {/* Bọc trong div w-auto để nút không bị kéo dài ra hết màn hình */}
+                    <div className="w-full md:w-auto">
+                        <Button type="submit" isLoading={isLoading}>
+                            Cập nhật mật khẩu
+                        </Button>
+                    </div>
                 </div>
             </form>
         </div>

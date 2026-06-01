@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationBell from '../components/NotificationBell';
 
 const MainLayout = () => {
   const navigate = useNavigate();
@@ -46,7 +47,10 @@ const MainLayout = () => {
                 🎯 <span className="ml-3 font-medium">Việc làm gợi ý</span>
               </button>
               <button onClick={() => navigate('/history-applied')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
-                📤 <span className="ml-3 font-medium">Lịch sử ứng tuyển</span>
+                📤 <span className="ml-3 font-medium">Danh sách ứng tuyển</span>
+              </button>
+              <button onClick={() => navigate('/saved-jobs')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
+                📚 <span className="ml-3 font-medium">Việc làm đã lưu</span>
               </button>
             </>
           )}
@@ -96,8 +100,9 @@ const MainLayout = () => {
 
           <div>
             {user ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 <span className="font-medium text-earth">Chào {user.name || user.fullName}!</span>
+                <NotificationBell />
                 <button onClick={handleLogout} className="px-5 py-2 text-sm bg-olive text-white hover:bg-red-500 rounded-lg transition-all">
                   Đăng xuất
                 </button>

@@ -20,6 +20,7 @@ import ManageTagsPage from "./pages/ManageTagsPage";
 import ManageUsersPage from "./pages/ManageUsersPage";
 import ManageCompaniesPage from "./pages/ManageCompaniesPage";
 import ForeCast from "./pages/ForeCast";
+import SavedJobsPage from "./pages/SavedJobsPage";
 
 // Component con để bảo vệ các trang bắt buộc đăng nhập (Route Guard)
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -46,6 +47,7 @@ function AppRoutes() {
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/history-applied" element={<ProtectedRoute allowedRole="Candidate"><HistoryAppliedPage /></ProtectedRoute>} />
                 <Route path="/suggested-jobs" element={<ProtectedRoute allowedRole="Candidate"><SuggestedJobs /></ProtectedRoute>} />
+                <Route path="/saved-jobs" element={<ProtectedRoute allowedRole="Candidate"><SavedJobsPage /></ProtectedRoute>} />
                 <Route path="/recruiter-dashboard" element={<ProtectedRoute allowedRole="Recruiter"><RecruiterDashboardPage /></ProtectedRoute>} />
                 <Route path="/recruiter/jobs/:jobId/applications" element={<ProtectedRoute allowedRole="Recruiter"><JobApplicationsPage /></ProtectedRoute>} />
                 <Route path="/recruiter/jobs/create" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />

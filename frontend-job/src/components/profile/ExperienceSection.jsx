@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { API_URLS } from '../../api/api';
 import axiosClient from '../../api/axiosClient';
 import toast from 'react-hot-toast';
+import InputField from '../ui/InputField';
+import Button from '../ui/Button';
 
 function ExperienceSection({ userId }) {
     const [experiences, setExperiences] = useState([]);
@@ -119,40 +121,63 @@ function ExperienceSection({ userId }) {
             {/* KHU VỰC HIỂN THỊ FORM (Chỉ hiện khi showForm = true) */}
             {showForm ? (
                 <form onSubmit={handleSave} className="bg-cream p-6 rounded-2xl border border-gray-200 mb-6 animate-fade-in-up">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Chức danh / Vị trí <span className="text-red-500">*</span></label>
-                            <input type="text" name="jobTitle" required value={formData.jobTitle} onChange={handleChange} placeholder="VD: Frontend Developer" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-white" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Tên công ty <span className="text-red-500">*</span></label>
-                            <input type="text" name="companyName" required value={formData.companyName} onChange={handleChange} placeholder="VD: Vulcan Labs" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-white" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Ngày bắt đầu <span className="text-red-500">*</span></label>
-                            <input type="date" name="startDate" required value={formData.startDate} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-white" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">Ngày kết thúc (Để trống nếu đang làm)</label>
-                            <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-white" />
-                        </div>
+                    
+                    {/* DÙNG LEGO CHO CÁC Ô INPUT */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <InputField 
+                            label="Chức danh / Vị trí"
+                            name="jobTitle"
+                            placeholder="VD: Frontend Developer"
+                            value={formData.jobTitle}
+                            onChange={handleChange}
+                            required={true}
+                        />
+                        <InputField 
+                            label="Tên công ty"
+                            name="companyName"
+                            placeholder="VD: Vulcan Labs"
+                            value={formData.companyName}
+                            onChange={handleChange}
+                            required={true}
+                        />
+                        <InputField 
+                            label="Ngày bắt đầu"
+                            name="startDate"
+                            type="date"
+                            value={formData.startDate}
+                            onChange={handleChange}
+                            required={true}
+                        />
+                        <InputField 
+                            label="Ngày kết thúc (Để trống nếu đang làm)"
+                            name="endDate"
+                            type="date"
+                            value={formData.endDate}
+                            onChange={handleChange}
+                        />
                     </div>
-                    <div className="mb-4">
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Mô tả công việc</label>
+
+                    {/* TEXTAREA GIỮ NGUYÊN */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Mô tả công việc</label>
                         <textarea name="description" rows="3" value={formData.description} onChange={handleChange} placeholder="Mô tả ngắn gọn những việc bạn đã làm và thành tựu đạt được..." className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth outline-none bg-white resize-none"></textarea>
                     </div>
-                    <div className="flex justify-end gap-3">
-                        <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2.5 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">
+
+                    {/* NÚT BẤM */}
+                    <div className="flex justify-end items-center gap-3">
+                        <button type="button" onClick={() => setShowForm(false)} className="px-5 py-3 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">
                             Hủy bỏ
                         </button>
-                        <button type="submit" className="px-6 py-2.5 rounded-xl font-bold text-white bg-olive hover:bg-earth transition-colors shadow-md">
-                            {editId ? '💾 Lưu cập nhật' : '✨ Thêm mới'}
-                        </button>
+                        <div className="w-auto">
+                            <Button type="submit">
+                                {editId ? '💾 Lưu cập nhật' : '✨ Thêm mới'}
+                            </Button>
+                        </div>
                     </div>
                 </form>
             ) : null}
 
-            {/* KHU VỰC HIỂN THỊ DANH SÁCH KINH NGHIỆM */}
+            {/* KHU VỰC HIỂN THỊ DANH SÁCH KINH NGHIỆM (Giữ nguyên) */}
             {isLoading ? (
                 <div className="text-center text-gray-400 animate-pulse py-4">Đang tải kinh nghiệm... 🌿</div>
             ) : experiences.length === 0 && !showForm ? (
@@ -177,7 +202,6 @@ function ExperienceSection({ userId }) {
                                         )}
                                     </div>
 
-                                    {/* Nút Sửa/Xóa (Chỉ hiện khi hover chuột vào) */}
                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onClick={() => handleEdit(exp)} className="bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white p-2 rounded-lg transition-colors" title="Sửa">
                                             ✏️
