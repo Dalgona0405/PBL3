@@ -17,7 +17,9 @@ namespace JobSeekingAPI.DTOs
         int Id, 
         string Label, 
         string Group,
-        int Size
+        int Size,
+        double CurrentAvgSalary = 0,
+        int JobCount = 0
     );
 
     public record GraphEdgeDTO(

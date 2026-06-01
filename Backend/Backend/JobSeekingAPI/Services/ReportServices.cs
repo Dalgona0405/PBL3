@@ -112,7 +112,11 @@ namespace JobSeekingAPI.Services
                     t.TagName,
                     t.Type,
                     // Ép EF Core đếm dưới DB và gán thành biến Size
-                    Size = t.JobTags.Count() + t.CandidateTags.Count() 
+                    Size = t.JobTags.Count() + t.CandidateTags.Count(),
+                    JobCount = t.JobTags.Count(),
+                    CurrentAvgSalary = t.JobTags
+                        .Where(jt => jt.Job != null && jt.Job.DeletedAt == null && (jt.Job.SalaryMin > 0 || jt.Job.SalaryMax > 0))
+                        .Average(jt => (decimal?)((jt.Job.SalaryMin + jt.Job.SalaryMax) / 2)) ?? 0
                 })
                 .OrderByDescending(n => n.Size) // SQL ORDER BY hoạt động trơn tru
                 .Take(nodeLimit)
@@ -123,7 +127,9 @@ namespace JobSeekingAPI.Services
                 t.TagId,
                 t.TagName,
                 t.Type ?? "Skill",
-                t.Size
+                t.Size,
+                (double)t.CurrentAvgSalary,
+                t.JobCount
             )).ToList();
 
             var nodeIds = nodes.Select(n => n.Id).ToList();
