@@ -17,6 +17,7 @@ namespace JobSeekingAPI.Models
         public string? InterviewLocation { get; set; }
         public string? CVUrl { get; set; }
         public DateTime? DeletedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         // Navigation properties
         public Candidate? Candidate { get; set; }

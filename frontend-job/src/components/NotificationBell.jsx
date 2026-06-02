@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axiosClient from '../api/axiosClient';
 import toast from 'react-hot-toast';
-import { API_URL } from '../api/api';
+import { API_URLS } from '../api/api';
 
 function NotificationBell() {
     const [unreadCount, setUnreadCount] = useState(0);

@@ -13,7 +13,7 @@ namespace JobSeekingAPI.DTOs
         public string? InterviewLocation { get; set; }
         public string? CVUrl { get; set; }
         public DateTime? DeletedAt { get; set; }
-
+        public DateTime? UpdatedAt { get; set; }
         public CandidateSummaryDTO? Candidate { get; set; }
         public JobSummaryDTO? Job { get; set; }
     }
@@ -38,5 +38,6 @@ namespace JobSeekingAPI.DTOs
         public string? Message { get; set; }
         public DateTime? InterviewTime { get; set; }
         public string? InterviewLocation { get; set; }
+        public DateTime? UpdatedAt { get; set; }
     }
 }

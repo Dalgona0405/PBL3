@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import toast from 'react-hot-toast'; // Import thêm thư viện thông báo
 
 function AdminDashboardPage() {
     const navigate = useNavigate();
@@ -11,6 +12,9 @@ function AdminDashboardPage() {
     const [pendingRequests, setPendingRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    
+    // 🌟 STATE MỚI: Quản lý trạng thái lúc AI đang đi học
+    const [isRetraining, setIsRetraining] = useState(false);
 
     // Bảng màu Soft Autumn cho biểu đồ Pie
     const PIE_COLORS = ['#8A9A86', '#C19A6B', '#D4C4B7'];
@@ -40,12 +44,30 @@ function AdminDashboardPage() {
         fetchDashboardData();
     }, []);
 
+    // 🌟 HÀM MỚI: GỌI API BẮT AI ĐI HỌC LẠI
+    const handleRetrainAI = async () => {
+        if (!window.confirm("Bạn có muốn cập nhật lại mô hình AI không? Quá trình này có thể mất vài phút tùy thuộc vào lượng dữ liệu mới. 🌿")) {
+            return;
+        }
+
+        setIsRetraining(true);
+        const toastId = toast.loading("🤖 AI đang đọc sách và cập nhật kiến thức mới. Vui lòng đợi...");
+
+        try {
+            // Gọi API POST /api/AI/retrain
+            await axiosClient.post('/AI/retrain');
+            toast.success("🎉 Tuyệt vời! AI đã cập nhật xong kiến thức mới nhất!", { id: toastId });
+        } catch (err) {
+            console.error("Lỗi khi train AI:", err);
+            toast.error("⚠️ Có lỗi xảy ra khi cập nhật AI. Vui lòng thử lại sau.", { id: toastId });
+        } finally {
+            setIsRetraining(false);
+        }
+    };
+
     if (isLoading) return <div className="flex justify-center items-center h-64 text-olive text-xl animate-pulse font-medium">Đang đồng bộ dữ liệu từ máy chủ... 🌿</div>;
     if (error) return <div className="text-center mt-20 text-red-500 bg-red-50 p-6 rounded-xl max-w-lg mx-auto">{error}</div>;
 
-    // =================================================================
-    // MỞ 3 TẦNG HỘP BENTO MÀ C# TRẢ VỀ (Xử lý cả chữ Hoa lẫn chữ thường)
-    // =================================================================
     const overview = summary?.overview || summary?.Overview || {};
     const charts = summary?.charts || summary?.Charts || {};
     const forms = summary?.formsAndStatus || summary?.FormsAndStatus || {};
@@ -53,26 +75,32 @@ function AdminDashboardPage() {
     const apps = forms?.applications || forms?.Applications || {};
     const jobStatus = forms?.jobsByStatus || forms?.JobsByStatus || {};
 
-    // Chuẩn bị Data cho Biểu đồ Trạng thái Job (Pie Chart)
-    const jobPieData = [
-        { name: 'Đang mở', value: jobStatus.active || jobStatus.Active || 0 },
-        { name: 'Đã hết hạn', value: jobStatus.expired || jobStatus.Expired || 0 }
-    ];
-
-    // Chuẩn bị Data cho Biểu đồ Lương (Bar Chart)
     const salaryData = charts.salaryRanges || charts.SalaryRanges || [];
 
     return (
         <div className="max-w-7xl mx-auto w-full pb-12">
             
             {/* HEADER */}
-            <div className="mb-8 border-b-2 border-olive pb-4 flex justify-between items-end">
+            <div className="mb-8 border-b-2 border-olive pb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
                     <h2 className="text-3xl font-bold text-textmain mb-2">👑 Phòng Điều Hành (Control Room)</h2>
                     <p className="text-gray-500">
                         Cập nhật lần cuối: {summary?.lastUpdated || summary?.LastUpdated ? new Date(summary.lastUpdated || summary.LastUpdated).toLocaleString('vi-VN') : 'Vừa xong'}
                     </p>
                 </div>
+                
+                {/* 🌟 NÚT RETRAIN AI NẰM Ở ĐÂY */}
+                <button 
+                    onClick={handleRetrainAI}
+                    disabled={isRetraining}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold shadow-md transition-all transform ${isRetraining ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-earth text-white hover:bg-olive hover:-translate-y-1'}`}
+                >
+                    {isRetraining ? (
+                        <><span className="animate-spin text-xl">⏳</span> Đang huấn luyện AI...</>
+                    ) : (
+                        <><span className="text-xl">🧠</span> Cập nhật dữ liệu AI</>
+                    )}
+                </button>
             </div>
 
             {/* 🚨 KHU VỰC NHẮC VIỆC (ACTION CENTER) */}
@@ -97,7 +125,6 @@ function AdminDashboardPage() {
                     <div>
                         <p className="text-gray-500 font-medium text-sm mb-1">Tổng Người Dùng</p>
                         <h3 className="text-3xl font-bold text-textmain">
-                            {/* Cộng tổng Candidate và Recruiter */}
                             {(overview.totalCandidates || overview.TotalCandidates || 0) + (overview.totalRecruiters || overview.TotalRecruiters || 0)}
                         </h3>
                     </div>

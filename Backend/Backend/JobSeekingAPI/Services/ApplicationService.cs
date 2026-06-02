@@ -96,6 +96,7 @@ namespace JobSeekingAPI.Services
                 throw new UnauthorizedAccessException("You don't have permission to update this application.");
 
             existApplication.CVUrl = dto.CVUrl ?? existApplication.CVUrl;
+            existApplication.UpdatedAt = DateTime.UtcNow;
             await _appRepo.UpdateAsync(existApplication);
         }
 
@@ -121,6 +122,7 @@ namespace JobSeekingAPI.Services
                 existApplication.InterviewTime = null;
                 existApplication.InterviewLocation = null;
             }
+            existApplication.UpdatedAt = DateTime.UtcNow;
             await _appRepo.UpdateAsync(existApplication);
             string statusName = dto.Status switch
             {
@@ -202,6 +204,7 @@ namespace JobSeekingAPI.Services
                 InterviewTime = a.InterviewTime,
                 InterviewLocation = a.InterviewLocation,
                 CVUrl = a.CVUrl,
+                UpdatedAt = a.UpdatedAt,
 
                 Candidate = a.Candidate == null ? null : new CandidateSummaryDTO
                 {

@@ -64,12 +64,12 @@ namespace JobSeekingAPI.Controllers
         }
 
         [Authorize(Roles = UserRoles.Candidate)]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateApplication(int id, [FromBody] UpdateApplicationDTO dto)
+        [HttpPatch("{id}/cv")]
+        public async Task<IActionResult> UpdateApplication(int id, [FromBody] UpdateApplicationDTO dto) 
         {
             var userId = User.GetUserIdFromToken();
             await _applicationService.UpdateApplicationAsync(id, dto, userId);
-            return Ok(new { message = "Update success" });
+            return Ok(new { message = "CV updated successfully!" });
         }
 
         [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
