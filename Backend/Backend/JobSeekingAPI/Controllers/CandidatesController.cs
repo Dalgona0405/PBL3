@@ -104,10 +104,7 @@ namespace JobSeekingAPI.Controllers
         [HttpPost("me/experiences")]
         public async Task<IActionResult> AddExperience([FromBody] CreateExperienceDTO dto)
         {
-            int userId = User.GetUserIdFromToken();
-            if (userId != dto.UserId) return BadRequest("User ID mismatch.");
-            var candidate = await _candidateRepo.GetCandidateEntityByIdAsync(userId);
-
+            int userId = User.GetUserIdFromToken(); 
             var experience = new Experience
             {
                 UserId = userId,
@@ -117,6 +114,7 @@ namespace JobSeekingAPI.Controllers
                 EndDate = dto.EndDate,
                 Description = dto.Description
             };
+            
             var created = await _experienceRepo.AddExperienceAsync(experience);
             return CreatedAtAction(nameof(GetExperiences), new { id = userId }, MapExperienceToDTO(created));
         }
@@ -127,16 +125,16 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> UpdateExperience(int expId, [FromBody] UpdateExperienceDTO dto)
         {
             int userId = User.GetUserIdFromToken();
-            if (userId != dto.UserId)
-                return BadRequest("User ID mismatch.");
             var existing = await _experienceRepo.GetExperienceByIdAsync(expId);
             if (existing == null || existing.UserId != userId)
-                return NotFound(new { message = "Experience not found" });
+                return NotFound(new { message = "Không tìm thấy kinh nghiệm hoặc bạn không có quyền sửa!" });
+
             existing.JobTitle = dto.JobTitle ?? existing.JobTitle;
             existing.CompanyName = dto.CompanyName ?? existing.CompanyName;
             existing.StartDate = dto.StartDate ?? existing.StartDate;
             existing.EndDate = dto.EndDate ?? existing.EndDate;
             existing.Description = dto.Description ?? existing.Description;
+            
             await _experienceRepo.UpdateExperienceAsync(existing);
             return Ok(MapExperienceToDTO(existing));
         }

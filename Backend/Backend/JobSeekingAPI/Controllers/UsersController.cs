@@ -116,15 +116,7 @@ namespace JobSeekingAPI.Controllers
         {
             var result = await _userRepository.SearchUsersAsync(keyword, role, page, pageSize);
 
-            // Trả về đúng format mà Frontend ReactJS của Trúc đang mong đợi
-            return Ok(new
-            {
-                TotalCount = result.TotalCount,
-                Page = result.Page,
-                PageSize = result.PageSize,
-                TotalPages = result.TotalPages,
-                Data = result.Items
-            });
+            return Ok(result);
         }
 
         // GET: api/users/profile
@@ -136,9 +128,9 @@ namespace JobSeekingAPI.Controllers
             return await GetUserById(userId);
         }
 
-        // PUT: api/users/{id}/change-password
+        // PATCH: api/users/{id}/change-password
         [Authorize]
-        [HttpPut("{id}/change-password")]
+        [HttpPatch("{id}/change-password")]
         public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordDTO changePasswordDto)
         {
             if (id != User.GetUserIdFromToken())

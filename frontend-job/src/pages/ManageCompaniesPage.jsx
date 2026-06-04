@@ -32,10 +32,7 @@ function ManageCompaniesPage() {
                     
                 const data = await axiosClient.get(url);
                 
-                const companyList = data.items;
-                setCompanies(Array.isArray(companyList) ? companyList : []);
-                
-                // Lấy tổng số trang
+                setCompanies(data.items || []);
                 setTotalPages(data.totalPages || 1);
             } catch (error) {
                 console.error("Lỗi lấy danh sách công ty:", error);

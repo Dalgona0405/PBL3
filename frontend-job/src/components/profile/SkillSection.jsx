@@ -15,23 +15,24 @@ function SkillSection({ userId }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Nếu chưa có userId thì khoan gọi API
         if (!userId) return;
 
         const fetchSkillsData = async () => {
             try {
                 setIsLoading(true);
 
-                const [tagsData, userSkillsData] = await Promise.all([
-                    axiosClient.get(API_URLS.TAGS),
-                    // 🌟 GỌI API GET THEO ĐÚNG ID CỦA USER
+                // 🌟 TỐI ƯU HÓA: Gọi API lấy đúng loại Tag cần thiết thay vì lấy tất cả
+                // Dùng Promise.all để gọi song song 2 API lấy Skill và Language cho nhanh
+                const [skillsRes, languagesRes, rolesRes, domainsRes, userSkillsData] = await Promise.all([
+                    axiosClient.get('/Tags/type/Skill').catch(() => []),
+                    axiosClient.get('/Tags/type/Language').catch(() => []),
+                    axiosClient.get('/Tags/type/Role').catch(() => []),
+                    axiosClient.get('/Tags/type/Domain').catch(() => []),
                     axiosClient.get(`/Candidates/${userId}/skills`).catch(() => [])
                 ]);
 
-                // Lọc chỉ lấy Skill và Language
-                const validTags = (tagsData || []).filter(
-                    tag => tag.type === 'Skill' || tag.type === 'Language' || tag.type === 'Domain'
-                );
+                // Gộp 2 mảng Skill và Language lại với nhau
+                const validTags = [...(skillsRes || []), ...(languagesRes || []), ...(rolesRes || []), ...(domainsRes || [])];
 
                 setAllTags(validTags);
                 setUserTags(userSkillsData || []);
@@ -47,7 +48,7 @@ function SkillSection({ userId }) {
 
     const handleAddSkill = async () => {
         if (!selectedTagId) {
-            toast.error("Trúc ơi, chọn một kỹ năng trước đã nha! 🌿");
+            toast.error("Chọn một kỹ năng trước đã nha! 🌿");
             return;
         }
 

@@ -17,7 +17,7 @@ function DetailJobPage() {
     const [cvOption, setCvOption] = useState('default');
     const [selectedFile, setSelectedFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [matchScore, setMatchScore] = useState(null);
+    const [matchResult, setMatchResult] = useState(null);
 
     useEffect(() => {
         const fetchJobDetail = async () => {
@@ -32,11 +32,8 @@ function DetailJobPage() {
         const fetchMatchScore = async () => {
             if (user && user.role === 'Candidate') {
                 try {
-                    const matchData = await axiosClient.get(`${API_URLS.JOBS}/${id}/match/${user.id}`);
-                    const score = matchData.MatchScore;
-                    if (typeof score === 'number') {
-                        setMatchScore(score);
-                    }
+                    const data = await axiosClient.get(`${API_URLS.JOBS}/${id}/match/${user.id}`);
+                    setMatchResult(data);
                 } catch (error) {
                     console.error('Lỗi lấy điểm match:', error);
                 }
@@ -95,8 +92,8 @@ function DetailJobPage() {
                 });
                 finalCvUrl = uploadRes.url || uploadRes.fileUrl || uploadRes.data || uploadRes.file || uploadRes;
             }
-            
-             const payload = {
+
+            const payload = {
                 userId: user.id,
                 jobId: parseInt(id),
                 cvUrl: finalCvUrl
@@ -117,17 +114,17 @@ function DetailJobPage() {
     // 🌟 HÀM FORMAT TEXT XỊN XÒ (ĐÃ FIX LỖI BĂM NÁT CHỮ TIẾNG VIỆT)
     const formatJDText = (text) => {
         if (!text) return null;
-        
+
         // Bước 1: Tách chỗ có dấu câu dính liền chữ Hoa (VD: "quốc tế.Chi tiết" -> "quốc tế.\nChi tiết")
         let formatted = text.replace(/([.;:)])([A-ZĐ])/g, '$1\n$2');
-        
+
         // Bước 2: Tách chỗ chữ thường dính liền chữ Hoa (VD: "nghiệp vụCó ít nhất" -> "nghiệp vụ\nCó ít nhất")
         // Dùng \p{Ll} để nhận diện an toàn mọi chữ cái viết thường của tiếng Việt
         formatted = formatted.replace(/(\p{Ll})([A-ZĐ])/gu, '$1\n$2');
 
         // Bước 3: Cắt thành từng dòng dựa trên dấu \n vừa thêm
         const sentences = formatted.split('\n');
-        
+
         return (
             <ul className="list-disc pl-5 space-y-2 text-gray-700 leading-relaxed">
                 {sentences.map((sentence, index) => {
@@ -147,8 +144,8 @@ function DetailJobPage() {
     // 🌟 LOGIC XỬ LÝ LƯƠNG THÔNG MINH
     let displaySalary = "Thỏa thuận";
     if (jobDetail.salaryMin && jobDetail.salaryMax) {
-        displaySalary = jobDetail.salaryMin === jobDetail.salaryMax 
-            ? `${jobDetail.salaryMin} triệu` 
+        displaySalary = jobDetail.salaryMin === jobDetail.salaryMax
+            ? `${jobDetail.salaryMin} triệu`
             : `${jobDetail.salaryMin} - ${jobDetail.salaryMax} triệu`;
     } else if (jobDetail.salaryMin && !jobDetail.salaryMax) {
         displaySalary = `Từ ${jobDetail.salaryMin} triệu`;
@@ -158,7 +155,7 @@ function DetailJobPage() {
 
     return (
         <div className="max-w-6xl mx-auto w-full pb-12 relative">
-            
+
             {/* NÚT QUAY LẠI */}
             <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-olive font-medium flex items-center gap-2 mb-6 transition-colors">
                 ⬅ Quay lại
@@ -167,7 +164,7 @@ function DetailJobPage() {
             {/* 🌟 HEADER: THÔNG TIN TỔNG QUAN */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-8 flex flex-col md:flex-row gap-6 items-start">
                 {/* Logo Công ty */}
-                <div 
+                <div
                     className="w-28 h-28 rounded-2xl bg-white border border-gray-100 flex items-center justify-center overflow-hidden shrink-0 shadow-sm p-2 cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => navigate(`/detail-company/${jobDetail.company?.companyId}`)}
                 >
@@ -181,13 +178,13 @@ function DetailJobPage() {
                 {/* Thông tin chính */}
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-textmain mb-2 leading-tight">{jobDetail.title}</h1>
-                    <p 
+                    <p
                         className="text-lg text-olive font-bold mb-4 cursor-pointer hover:text-earth transition-colors"
                         onClick={() => navigate(`/detail-company/${jobDetail.company?.companyId}`)}
                     >
                         {jobDetail.company?.companyName}
                     </p>
-                    
+
                     {/* Các chỉ số (Metrics) */}
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 font-medium">
                         <span className="bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 flex items-center gap-1.5">
@@ -205,21 +202,46 @@ function DetailJobPage() {
 
             {/* 🌟 BENTO BOX LAYOUT: CHIA 2 CỘT */}
             <div className="flex flex-col lg:flex-row gap-8">
-                
+
                 {/* CỘT TRÁI (70%): NỘI DUNG CHI TIẾT */}
                 <div className="lg:w-2/3 space-y-8">
-                    
+
                     {/* Độ phù hợp AI (Nếu có) */}
-                    {matchScore !== null && (
+                    {matchResult && matchResult.matchScore !== undefined && (
                         <div className="bg-gradient-to-r from-cream to-white rounded-3xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row items-center gap-6 transform transition-all hover:shadow-md">
+                            
+                            {/* Vòng tròn điểm số */}
                             <div className="w-20 h-20 shrink-0 rounded-full flex items-center justify-center border-4 border-olive bg-white shadow-inner relative">
-                                <span className="text-2xl font-bold text-olive">{matchScore}%</span>
+                                <span className="text-2xl font-bold text-olive">
+                                    {matchResult.matchScore}%
+                                </span>
                             </div>
+                            
+                            {/* Nội dung phân tích */}
                             <div className="flex-1 text-center md:text-left">
                                 <h3 className="text-xl font-bold text-olive mb-2">Độ phù hợp của bạn</h3>
-                                <p className="text-gray-600">
-                                    {matchScore >= 80 ? "Tuyệt vời! Kỹ năng của bạn cực kỳ phù hợp với vị trí này. Hãy ứng tuyển ngay nhé! 🚀" : matchScore >= 50 ? "Khá tốt! Bạn có một số kỹ năng phù hợp. Đừng ngần ngại thử sức! 🌿" : "Có vẻ vị trí này yêu cầu một số kỹ năng mới. Đây là cơ hội tốt để học hỏi thêm! 📚"}
+                                
+                                {/* 🌟 Hiển thị Lời khuyên (Advice) từ Backend AI */}
+                                <p className="text-gray-700 font-medium mb-3">
+                                    {matchResult.advice || "Hệ thống đang phân tích hồ sơ của bạn..."}
                                 </p>
+
+                                {/* 🌟 Hiển thị Danh sách Kỹ năng còn thiếu (Missing Skills) */}
+                                {matchResult.missingSkills && matchResult.missingSkills.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start mt-2 pt-3 border-t border-gray-100 border-dashed">
+                                        <span className="text-sm text-red-500 font-bold flex items-center gap-1">
+                                            ⚠️ Cần bổ sung:
+                                        </span>
+                                        {matchResult.missingSkills.map((skill, index) => (
+                                            <span 
+                                                key={index} 
+                                                className="bg-red-50 text-red-600 px-3 py-1 rounded-lg text-xs font-bold border border-red-100"
+                                            >
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -261,7 +283,7 @@ function DetailJobPage() {
                 <div className="lg:w-1/3">
                     <div className="bg-white rounded-3xl shadow-sm border-t-8 border-olive p-6 sticky top-8">
                         <h3 className="text-xl font-bold text-textmain mb-6 border-b border-gray-100 pb-4">Tóm tắt công việc</h3>
-                        
+
                         <div className="space-y-5 mb-8">
                             <div className="flex items-start gap-3">
                                 <div className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-lg shrink-0">💰</div>

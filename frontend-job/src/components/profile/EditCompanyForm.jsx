@@ -39,7 +39,7 @@ function EditCompanyForm({ company, setFormData }) {
             formDataUpload.append('file', file);
             
             // Gọi API Upload file của C#
-            const uploadRes = await axiosClient.post('/Files/upload', formDataUpload, {
+            const uploadRes = await axiosClient.post('/files/upload', formDataUpload, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             

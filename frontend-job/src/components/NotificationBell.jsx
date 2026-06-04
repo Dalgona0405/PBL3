@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import toast from 'react-hot-toast';
 import { API_URLS } from '../api/api';
@@ -8,8 +9,9 @@ function NotificationBell() {
     const [notifications, setNotifications] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const dropdownRef = useRef(null); // Dùng để nhận biết khi user click ra ngoài quả chuông
+    const navigate = useNavigate();
 
     // 1. Lấy số lượng thông báo chưa đọc (Cái chấm đỏ) khi vừa vào trang
     useEffect(() => {
@@ -39,7 +41,7 @@ function NotificationBell() {
     // 3. Khi click vào quả chuông: Mở hộp thoại & Tải danh sách chi tiết
     const handleToggleBell = async () => {
         setIsOpen(!isOpen);
-        
+
         // Nếu đang mở ra và chưa có data thì mới gọi API lấy danh sách
         if (!isOpen) {
             setIsLoading(true);
@@ -54,21 +56,7 @@ function NotificationBell() {
         }
     };
 
-    // 4. Đánh dấu 1 thông báo là đã đọc
-    const handleMarkAsRead = async (id, isRead) => {
-        if (isRead) return; // Đọc rồi thì thôi không gọi API nữa
-        
-        try {
-            await axiosClient.patch(`${API_URLS.NOTIFICATIONS}/${id}/read`);
-            // Cập nhật lại giao diện: Đổi trạng thái isRead thành true, giảm chấm đỏ đi 1
-            setNotifications(prev => prev.map(notif => notif.id === id ? { ...notif, isRead: true } : notif));
-            setUnreadCount(prev => Math.max(0, prev - 1));
-        } catch (error) {
-            console.error("Lỗi cập nhật thông báo:", error);
-        }
-    };
-
-    // 5. Đánh dấu đọc tất cả
+    // 4. Đánh dấu đọc tất cả
     const handleMarkAllAsRead = async () => {
         try {
             await axiosClient.patch(`${API_URLS.NOTIFICATIONS}/read-all`);
@@ -80,10 +68,38 @@ function NotificationBell() {
         }
     };
 
+    // 5. Đánh dấu đọc từng thông báo khi click vào nó
+    const handleNotificationClick = async (notif) => {
+        const currentId = notif.NotificationId;
+
+        if (!notif.isRead) {
+            try {
+                // 🌟 Đổi thành API_URLS cho đồng bộ
+                await axiosClient.patch(`${API_URLS.NOTIFICATIONS}/${currentId}/read`);
+                setNotifications(prev => prev.map(n => (n.notificationId || n.NotificationId || n.id) === currentId ? { ...n, isRead: true } : n));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            } catch (error) {
+                console.error("Lỗi cập nhật thông báo:", error);
+            }
+        }
+
+        setIsOpen(false);
+
+        const message = (notif.message || notif.content || "").toLowerCase();
+        
+        if (message.includes('application') || message.includes('ứng tuyển')) {
+            navigate('/history-applied');
+        } else if (notif.link) {
+            navigate(notif.link);
+        } else {
+            navigate('/');
+        }
+    };
+
     return (
         <div className="relative" ref={dropdownRef}>
             {/* NÚT QUẢ CHUÔNG */}
-            <button 
+            <button
                 onClick={handleToggleBell}
                 className="relative p-2 text-gray-500 hover:text-olive transition-colors rounded-full hover:bg-cream"
             >
@@ -103,7 +119,7 @@ function NotificationBell() {
                     <div className="px-5 py-4 border-b border-gray-50 flex justify-between items-center bg-cream">
                         <h3 className="font-bold text-olive text-lg">Thông báo</h3>
                         {unreadCount > 0 && (
-                            <button 
+                            <button
                                 onClick={handleMarkAllAsRead}
                                 className="text-xs font-bold text-earth hover:text-olive transition-colors"
                             >
@@ -123,26 +139,29 @@ function NotificationBell() {
                             </div>
                         ) : (
                             <div className="flex flex-col">
-                                {notifications.map((notif) => (
-                                    <div 
-                                        key={notif.id} 
-                                        onClick={() => handleMarkAsRead(notif.id, notif.isRead)}
-                                        className={`p-4 border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50 flex gap-4 ${notif.isRead ? 'opacity-60 bg-white' : 'bg-orange-50/30'}`}
-                                    >
-                                        {/* Icon tùy theo loại thông báo (nếu C# có trả về type) */}
-                                        <div className="w-10 h-10 rounded-full bg-cream flex items-center justify-center shrink-0 text-lg">
-                                            {notif.type === 'Application' ? '📄' : notif.type === 'System' ? '⚙️' : '💬'}
+                                {notifications.map((notif, index) => {
+                                    const currentId = notif.NotificationId;
+
+                                    return (
+                                        <div
+                                            key={currentId || index} // 🌟 Sửa lỗi thiếu Key
+                                            onClick={() => handleNotificationClick(notif)} // 🌟 Sửa lỗi undefined
+                                            className={`p-4 border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50 flex gap-4 ${notif.isRead ? 'opacity-60 bg-white' : 'bg-orange-50/30'}`}
+                                        >
+                                            <div className="w-10 h-10 rounded-full bg-cream flex items-center justify-center shrink-0 text-lg">
+                                                {notif.type === 'Application' ? '📄' : notif.type === 'System' ? '⚙️' : '💬'}
+                                            </div>
+                                            <div>
+                                                <p className={`text-sm ${notif.isRead ? 'text-gray-600' : 'text-textmain font-bold'}`}>
+                                                    {notif.message || notif.content}
+                                                </p>
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    {new Date(notif.createdAt || notif.createdDate).toLocaleString('vi-VN')}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className={`text-sm ${notif.isRead ? 'text-gray-600' : 'text-textmain font-bold'}`}>
-                                                {notif.message || notif.content}
-                                            </p>
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                {new Date(notif.createdAt || notif.createdDate).toLocaleString('vi-VN')}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

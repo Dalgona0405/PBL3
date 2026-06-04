@@ -20,10 +20,10 @@ function SuggestedJobs() {
             try {
                 setIsLoading(true);
                 const jobsData = await axiosClient.get(`${API_URLS.JOBS}/suggested?topN=6`);
-                
+
                 const jobs = jobsData.items || jobsData.Items || jobsData.data || jobsData;
                 setSuggestedJobs(Array.isArray(jobs) ? jobs : []);
-                
+
             } catch (error) {
                 console.error("Lỗi lấy gợi ý việc làm từ AI:", error);
             } finally {
@@ -35,10 +35,10 @@ function SuggestedJobs() {
     }, [user]);
 
     if (!user || user.role !== 'Candidate') return null;
-    
+
     if (isLoading) return <div className="animate-pulse bg-cream p-8 rounded-3xl mb-10 text-olive font-medium">Hệ thống đang phân tích hồ sơ để tìm việc phù hợp nhất với bạn... 🌿</div>;
-    
-    if (suggestedJobs.length === 0) return null; 
+
+    if (suggestedJobs.length === 0) return null;
 
     return (
         <div className="bg-gradient-to-r from-cream to-white p-8 rounded-3xl shadow-sm border border-gray-50 mb-10 transform transition-all hover:shadow-md">
@@ -53,17 +53,17 @@ function SuggestedJobs() {
                 </div>
             </div>
 
-            
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {suggestedJobs.map((item, index) => {
-                    const actualJob = item.job || item.Job || item;
-                    const currentJobId = actualJob.jobId || actualJob.JobId || actualJob.id || actualJob.Id;
-                    const companyInfo = actualJob.company || actualJob.Company || {
-                        companyName: actualJob.companyName || actualJob.CompanyName,
-                        logoImg: actualJob.logoImg || actualJob.LogoImg || actualJob.companyLogo || actualJob.CompanyLogo
+                    const actualJob = item.job || item;
+                    const currentJobId = actualJob.jobId;
+                    const companyInfo = actualJob.company || {
+                        companyName: actualJob.companyName,
+                        logoImg: actualJob.logoImg
                     };
 
-                    const locationInfo = actualJob.location || actualJob.Location || {
+                    const locationInfo = actualJob.location ||{
                         locationName: actualJob.locationName || actualJob.LocationName
                     };
 

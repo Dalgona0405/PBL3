@@ -21,15 +21,12 @@ const JobCardSkeleton = () => (
     </div>
 );
 
-// 1. BỎ cái default = {} đi nha Trúc, chỉ để { filters, companyId } thôi
 function JobList({ filters, companyId, companyInfo }) {
     const [jobs, setJobs] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [isFetching, setIsFetching] = useState(true);
 
-    // 2. Tách các giá trị nhỏ ra để React dễ so sánh (Tránh vòng lặp vô tận)
-    // Dùng dấu chấm hỏi (?.) để lỡ filters không có thì nó không bị lỗi
     const keyword = filters?.keyword;
     const locationId = filters?.locationId;
     const tagId = filters?.tagId;
@@ -68,8 +65,7 @@ function JobList({ filters, companyId, companyInfo }) {
 
             axiosClient.get(url)
                 .then(response => {
-                    const fetchedJobs = response.items || response.Items || response.data || response;
-                    setJobs(Array.isArray(fetchedJobs) ? fetchedJobs : []);
+                    setJobs(response.items || response);
                     setTotalPages(response.totalPages || 1);
                 })
                 .catch(error => console.error('Lỗi lấy dữ liệu:', error))

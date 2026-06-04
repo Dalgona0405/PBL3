@@ -45,13 +45,11 @@ function ForeCast() {
                     axiosClient.get(`${API_URLS.REPORTS}/salary-forecast-ai`).catch(() => ({}))
                 ]);
 
-                const summaryData = dashRes?.data || dashRes?.items || dashRes || {};
-                setOverview(summaryData.overview || summaryData.Overview || {});
+                const summaryData = dashRes || {};
+                setOverview(summaryData.overview || {});
                 
-                // 🌟 LOGIC MỚI: Lấy dữ liệu Phân bổ lương từ API dashboard-summary
-                const charts = summaryData.charts || summaryData.Charts || {};
-                setSalaryDistribution(charts.salaryRanges || charts.SalaryRanges || []);
-
+                const charts = summaryData.charts || {};
+                setSalaryDistribution(charts.salaryRanges || []);
                 setMarketTrend(Array.isArray(trendRes) ? trendRes : []); 
                 setSalaryLocation(Array.isArray(salLocRes) ? salLocRes : []); 
                 setTopCompanies(Array.isArray(compRes) ? compRes : []); 

@@ -106,9 +106,6 @@ function ProfilePage() {
 
                 <div className="lg:col-span-2">
                     <EditProfileForm formData={formData} setFormData={setFormData} />
-                    {formData.role === 'Recruiter' && formData.recruiter?.company && (
-                        <EditCompanyForm company={formData.recruiter.company} setFormData={setFormData} />
-                    )}
                     {formData.role === 'Candidate' && (
                         <>
                             <SkillSection userId={user.id} />

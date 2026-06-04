@@ -19,16 +19,19 @@ import CompanyRequestsPage from "./pages/CompanyRequestsPage";
 import ManageTagsPage from "./pages/ManageTagsPage";
 import ManageUsersPage from "./pages/ManageUsersPage";
 import ManageCompaniesPage from "./pages/ManageCompaniesPage";
+import ManageLocationsPage from "./pages/ManageLocationsPage";
 import ForeCast from "./pages/ForeCast";
 import SavedJobsPage from "./pages/SavedJobsPage";
+import ManageCompanyProfilePage from "./pages/ManageCompanyProfilePage";
 
 // Component con để bảo vệ các trang bắt buộc đăng nhập (Route Guard)
-const ProtectedRoute = ({ children, allowedRole }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
     const { user } = useAuth();
-    
+
     if (!user) return <Navigate to="/login" />;
-    if (allowedRole && user.role !== allowedRole) return <Navigate to="/" />;
-    
+    if (allowedRoles && !allowedRoles.includes(user.role))
+        return <Navigate to="/" />;
+
     return children;
 };
 
@@ -45,18 +48,19 @@ function AppRoutes() {
                 <Route path="/detail-company/:id" element={<DetailCompanyPage />} />
 
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                <Route path="/history-applied" element={<ProtectedRoute allowedRole="Candidate"><HistoryAppliedPage /></ProtectedRoute>} />
-                <Route path="/suggested-jobs" element={<ProtectedRoute allowedRole="Candidate"><SuggestedJobs /></ProtectedRoute>} />
-                <Route path="/saved-jobs" element={<ProtectedRoute allowedRole="Candidate"><SavedJobsPage /></ProtectedRoute>} />
-                <Route path="/recruiter-dashboard" element={<ProtectedRoute allowedRole="Recruiter"><RecruiterDashboardPage /></ProtectedRoute>} />
-                <Route path="/recruiter/jobs/:jobId/applications" element={<ProtectedRoute allowedRole="Recruiter"><JobApplicationsPage /></ProtectedRoute>} />
-                <Route path="/recruiter/jobs/create" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />
-                <Route path="/recruiter/jobs/edit/:jobId" element={<ProtectedRoute allowedRole="Recruiter"><JobFormPage /></ProtectedRoute>} />
-                <Route path="/admin/dashboard" element={<ProtectedRoute allowedRole="Admin"><AdminDashboardPage /></ProtectedRoute>} />
-                <Route path="/admin/company-requests" element={<ProtectedRoute allowedRole="Admin"><CompanyRequestsPage /></ProtectedRoute>} />
-                <Route path="/admin/companies" element={<ProtectedRoute allowedRole="Admin"><ManageCompaniesPage /></ProtectedRoute>} />
-                <Route path="/admin/tags" element={<ProtectedRoute allowedRole="Admin"><ManageTagsPage /></ProtectedRoute>} />
-                <Route path="/admin/users" element={<ProtectedRoute allowedRole="Admin"><ManageUsersPage /></ProtectedRoute>} />
+                <Route path="/history-applied" element={<ProtectedRoute allowedRoles={['Candidate']}><HistoryAppliedPage /></ProtectedRoute>} />
+                <Route path="/suggested-jobs" element={<ProtectedRoute allowedRoles={['Candidate']}><SuggestedJobs /></ProtectedRoute>} />
+                <Route path="/saved-jobs" element={<ProtectedRoute allowedRoles={['Candidate']}><SavedJobsPage /></ProtectedRoute>} />
+                <Route path="/recruiter-dashboard" element={<ProtectedRoute allowedRoles={['Recruiter', 'Company']}><RecruiterDashboardPage /></ProtectedRoute>} />
+                <Route path="/recruiter/jobs/:jobId/applications" element={<ProtectedRoute allowedRoles={['Recruiter', 'Company']}><JobApplicationsPage /></ProtectedRoute>} />
+                <Route path="/recruiter/jobs/create" element={<ProtectedRoute allowedRoles={['Recruiter', 'Company']}><JobFormPage /></ProtectedRoute>} />
+                <Route path="/recruiter/jobs/edit/:jobId" element={<ProtectedRoute allowedRoles={['Recruiter', 'Company']}><JobFormPage /></ProtectedRoute>} />
+                <Route path="/company/company-requests" element={<ProtectedRoute allowedRoles={['Company']}><CompanyRequestsPage /></ProtectedRoute>} />
+                <Route path="/company/profile" element={<ProtectedRoute allowedRoles={['Company']}><ManageCompanyProfilePage /></ProtectedRoute>} />                <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage /></ProtectedRoute>} />
+                <Route path="/admin/companies" element={<ProtectedRoute allowedRoles={['Admin']}><ManageCompaniesPage /></ProtectedRoute>} />
+                <Route path="/admin/locations" element={<ProtectedRoute allowedRoles={['Admin']}><ManageLocationsPage /></ProtectedRoute>} />
+                <Route path="/admin/tags" element={<ProtectedRoute allowedRoles={['Admin']}><ManageTagsPage /></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['Admin']}><ManageUsersPage /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" />} />

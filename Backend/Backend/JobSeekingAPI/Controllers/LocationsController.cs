@@ -58,9 +58,9 @@ namespace JobSeekingAPI.Controllers
             });
         }
 
-        // PUT: api/locations/{id}
+        // PATCH: api/locations/{id}
         [Authorize(Roles = UserRoles.Admin)]
-        [HttpPut("{id}")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateLocation(int id, [FromBody] UpdateLocationDTO dto)
         {
             var location = await _locationRepository.GetLocationEntityByIdAsync(id);

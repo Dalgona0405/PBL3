@@ -12,7 +12,7 @@ namespace JobSeekingAPI.Services
         {
             _context = context;
         }
-        
+
         // 1. MARKET TREND: Kéo dữ liệu đếm về RAM rồi mới chia phần trăm
         public async Task<List<MarketTrendDTO>> GetMarketTrendAsync(int limit)
         {
@@ -21,8 +21,9 @@ namespace JobSeekingAPI.Services
 
             // Bước 1: Kéo data thô từ DB (EF Core dịch cực dễ)
             var rawTags = await _context.Tags
-                .Where(t => t.Type == "Skill" || t.Type == "Language")
-                .Select(t => new {
+                .Where(t => t.Type == "Skill" || t.Type == "Language" || t.Type == "Role" || t.Type == "Domain")
+                .Select(t => new
+                {
                     t.TagName,
                     JobCount = t.JobTags.Count()
                 })
@@ -31,7 +32,7 @@ namespace JobSeekingAPI.Services
                 .ToListAsync(); // <--- Cắt đứt lệnh SQL tại đây
 
             // Bước 2: Map sang DTO và dùng Math.Round trên RAM của C#
-            return rawTags.Select(t => new MarketTrendDTO (
+            return rawTags.Select(t => new MarketTrendDTO(
                 t.TagName,
                 t.JobCount,
                 totalJobs > 0 ? Math.Round((double)t.JobCount / totalJobs * 100, 2) : 0
@@ -45,7 +46,8 @@ namespace JobSeekingAPI.Services
             var rawSalaries = await _context.Jobs
                 .Where(j => j.DeletedAt == null && j.Location != null && (j.SalaryMin > 0 || j.SalaryMax > 0))
                 .GroupBy(j => j.Location!.LocationName)
-                .Select(g => new {
+                .Select(g => new
+                {
                     LocationName = g.Key,
                     AvgMin = g.Average(j => (decimal?)j.SalaryMin),
                     AvgMax = g.Average(j => (decimal?)j.SalaryMax),
@@ -71,7 +73,8 @@ namespace JobSeekingAPI.Services
             // Bước 1: Chỉ lấy các số liệu Count, Sum, Average căn bản từ DB
             var rawCompanies = await _context.Companies
                 .Where(c => c.DeletedAt == null)
-                .Select(c => new {
+                .Select(c => new
+                {
                     c.CompanyId,
                     c.CompanyName,
                     c.LogoImg,
@@ -94,7 +97,7 @@ namespace JobSeekingAPI.Services
                 c.JobCount,
                 c.AppCount,
                 c.ViewCount ?? 0,
-                c.AvgSalary ?? 0, 
+                c.AvgSalary ?? 0,
                 c.LatestJobDate
             )).ToList();
         }
@@ -105,8 +108,9 @@ namespace JobSeekingAPI.Services
             // BƯỚC 1: LẤY DANH SÁCH NODES BẰNG ANONYMOUS TYPE (FIX LỖI EF CORE)
             // =========================================================
             var rawNodes = await _context.Tags
-                .Where(t => t.Type == "Skill" || t.Type == "Language")
-                .Select(t => new 
+               .Where(t => t.Type == "Skill" || t.Type == "Language" || t.Type == "Role" || t.Type == "Domain"
+                    && t.TagName != "IT - Phần mềm")
+                .Select(t => new
                 {
                     t.TagId,
                     t.TagName,
@@ -181,13 +185,13 @@ namespace JobSeekingAPI.Services
                 .Select(x => new GraphEdgeDTO(
                     x.Key.Item1,
                     x.Key.Item2,
-                    x.Value, 
-                    totalActiveJobs > 0 
-                        ? Math.Round((double)x.Value / totalActiveJobs * 100, 2) 
+                    x.Value,
+                    totalActiveJobs > 0
+                        ? Math.Round((double)x.Value / totalActiveJobs * 100, 2)
                         : 0
                 ))
-                .OrderByDescending(e => e.Value) 
-                .Take(100) 
+                .OrderByDescending(e => e.Value)
+                .Take(100)
                 .ToList();
 
             return new { nodes, edges };
@@ -291,9 +295,10 @@ namespace JobSeekingAPI.Services
             return await _context.Jobs
                 .Where(j => j.DeletedAt == null)
                 .GroupBy(j => j.Level)
-                .Select(g => new SimpleStatDTO { 
-                    Label = g.Key ?? "Chưa phân loại", 
-                    Value = g.Count() 
+                .Select(g => new SimpleStatDTO
+                {
+                    Label = g.Key ?? "Chưa phân loại",
+                    Value = g.Count()
                 })
                 .ToListAsync();
         }
@@ -307,7 +312,8 @@ namespace JobSeekingAPI.Services
                 .OrderBy(x => x.Year)
                 .ToListAsync();
 
-            var trends = history.Select(h => new TrendStatDTO {
+            var trends = history.Select(h => new TrendStatDTO
+            {
                 Period = h.Year.ToString(),
                 Actual = h.Count,
                 Forecast = 0 // Hiện tại là thực tế nên forecast = 0
@@ -318,12 +324,13 @@ namespace JobSeekingAPI.Services
             {
                 var last = history.Last();
                 var prev = history[history.Count - 2];
-                
+
                 // Tính tỷ lệ tăng trưởng so với năm ngoái
                 double growth = prev.Count > 0 ? (double)last.Count / prev.Count : 1.1;
-                
+
                 // Thêm một mốc cho năm tiếp theo (Dự báo)
-                trends.Add(new TrendStatDTO {
+                trends.Add(new TrendStatDTO
+                {
                     Period = (last.Year + 1).ToString() + " (Dự báo)",
                     Actual = 0, // Năm tương lai chưa có thực tế
                     Forecast = (int)(last.Count * growth)

@@ -7,12 +7,12 @@ import toast from 'react-hot-toast'; // Import thêm thư viện thông báo
 
 function AdminDashboardPage() {
     const navigate = useNavigate();
-    
+
     const [summary, setSummary] = useState(null);
     const [pendingRequests, setPendingRequests] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    
+
     // 🌟 STATE MỚI: Quản lý trạng thái lúc AI đang đi học
     const [isRetraining, setIsRetraining] = useState(false);
 
@@ -27,9 +27,9 @@ function AdminDashboardPage() {
                     axiosClient.get(`${API_URLS.REPORTS}/dashboard-summary`).catch(() => null),
                     axiosClient.get(`${API_URLS.COMPANY_REQUESTS}/pending`).catch(() => [])
                 ]);
-                
+
                 setSummary(summaryRes?.data || summaryRes?.items || summaryRes || {});
-                
+
                 const pendingList = pendingRes?.items || pendingRes?.Items || pendingRes?.data || pendingRes;
                 setPendingRequests(Array.isArray(pendingList) ? pendingList : []);
 
@@ -68,18 +68,16 @@ function AdminDashboardPage() {
     if (isLoading) return <div className="flex justify-center items-center h-64 text-olive text-xl animate-pulse font-medium">Đang đồng bộ dữ liệu từ máy chủ... 🌿</div>;
     if (error) return <div className="text-center mt-20 text-red-500 bg-red-50 p-6 rounded-xl max-w-lg mx-auto">{error}</div>;
 
-    const overview = summary?.overview || summary?.Overview || {};
-    const charts = summary?.charts || summary?.Charts || {};
-    const forms = summary?.formsAndStatus || summary?.FormsAndStatus || {};
-    
-    const apps = forms?.applications || forms?.Applications || {};
-    const jobStatus = forms?.jobsByStatus || forms?.JobsByStatus || {};
-
-    const salaryData = charts.salaryRanges || charts.SalaryRanges || [];
+    const overview = summary?.overview || {};
+    const charts = summary?.charts || {};
+    const forms = summary?.formsAndStatus || {};
+    const apps = forms?.applications || {};
+    const jobStatus = forms?.jobsByStatus || {};
+    const salaryData = charts.salaryRanges || [];
 
     return (
         <div className="max-w-7xl mx-auto w-full pb-12">
-            
+
             {/* HEADER */}
             <div className="mb-8 border-b-2 border-olive pb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
@@ -88,9 +86,9 @@ function AdminDashboardPage() {
                         Cập nhật lần cuối: {summary?.lastUpdated || summary?.LastUpdated ? new Date(summary.lastUpdated || summary.LastUpdated).toLocaleString('vi-VN') : 'Vừa xong'}
                     </p>
                 </div>
-                
+
                 {/* 🌟 NÚT RETRAIN AI NẰM Ở ĐÂY */}
-                <button 
+                <button
                     onClick={handleRetrainAI}
                     disabled={isRetraining}
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold shadow-md transition-all transform ${isRetraining ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-earth text-white hover:bg-olive hover:-translate-y-1'}`}
@@ -157,12 +155,12 @@ function AdminDashboardPage() {
 
             {/* TẦNG 2: TỐC ĐỘ TĂNG TRƯỞNG & BIỂU ĐỒ */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                
+
                 {/* Cột trái: Tốc độ nộp CV (Application Velocity) */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 h-full">
                         <h3 className="text-xl font-bold text-olive mb-6 border-b border-gray-50 pb-3">📈 Tốc độ nộp CV</h3>
-                        
+
                         <div className="space-y-4">
                             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex justify-between items-center">
                                 <span className="text-gray-600 font-medium">7 ngày qua</span>

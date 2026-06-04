@@ -62,7 +62,7 @@ function ManageTagsPage() {
         try {
             const toastId = toast.loading(editingId ? 'Đang cập nhật...' : 'Đang thêm mới...');
             if (editingId) {
-                await axiosClient.put(`${API_URLS.TAGS}/${editingId}`, formData);
+                await axiosClient.patch(`${API_URLS.TAGS}/${editingId}`, formData);
                 toast.success("Cập nhật thành công! 🌿", { id: toastId });
             } else {
                 await axiosClient.post(API_URLS.TAGS, formData);

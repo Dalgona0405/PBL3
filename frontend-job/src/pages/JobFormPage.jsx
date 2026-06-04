@@ -4,6 +4,7 @@ import { API_URLS } from '../api/api';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import useDebounce from '../hooks/useDebounce';
 import InputField from '../components/ui/InputField';
 import SelectField from '../components/ui/SelectField';
 import Button from '../components/ui/Button';
@@ -35,7 +36,11 @@ function JobFormPage() {
     });
 
     const [selectedTags, setSelectedTags] = useState([]);
-    const [selectedTagId, setSelectedTagId] = useState('');
+    const [tagKeyword, setTagKeyword] = useState('');
+    const debouncedTagKeyword = useDebounce(tagKeyword, 300);
+    const [tagSuggestions, setTagSuggestions] = useState([]);
+    const [isSuggesting, setIsSuggesting] = useState(false);
+    const [showTagDropdown, setShowTagDropdown] = useState(false);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -56,8 +61,8 @@ function JobFormPage() {
                     axiosClient.get(`${API_URLS.RECRUITERS}/${user.id}`)
                 ]);
 
-                setLocations(locRes ||[]);
-                setAllTags(tagsRes ||[]);
+                setLocations(locRes || []);
+                setAllTags(tagsRes || []);
 
                 if (!hrRes.company) {
                     toast.error("Bạn chưa gia nhập công ty nào. Vui lòng cập nhật hồ sơ trước khi đăng tin!");
@@ -97,6 +102,31 @@ function JobFormPage() {
         fetchInitialData();
     }, [jobId, isEditMode, navigate, user]);
 
+    // 🌟 GỌI API GỢI Ý KHI HR GÕ CHỮ
+    useEffect(() => {
+        const fetchTagSuggestions = async () => {
+            if (debouncedTagKeyword.trim().length < 1) {
+                setTagSuggestions([]);
+                setShowTagDropdown(false);
+                return;
+            }
+
+            setIsSuggesting(true);
+            try {
+                // Gọi API suggest với limit = 5 để giao diện không bị rối
+                const data = await axiosClient.get(`/Tags/suggest?keyword=${encodeURIComponent(debouncedTagKeyword)}&limit=5`);
+                setTagSuggestions(Array.isArray(data) ? data : (data.items || []));
+                setShowTagDropdown(true);
+            } catch (error) {
+                console.error("Lỗi gợi ý tag:", error);
+            } finally {
+                setIsSuggesting(false);
+            }
+        };
+
+        fetchTagSuggestions();
+    }, [debouncedTagKeyword]);
+
     // 2. XỬ LÝ THAY ĐỔI INPUT
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -130,7 +160,7 @@ function JobFormPage() {
                 locationId: parseInt(formData.locationId),
                 salaryMin: formData.salaryMin ? parseFloat(formData.salaryMin) : null,
                 salaryMax: formData.salaryMax ? parseFloat(formData.salaryMax) : null,
-                tagIds: selectedTags.map(t => t.tagId) 
+                tagIds: selectedTags.map(t => t.tagId)
             };
 
             const toastId = toast.loading(isEditMode ? 'Đang cập nhật tin...' : 'Đang đăng tin...');
@@ -143,7 +173,7 @@ function JobFormPage() {
             }
 
             toast.success(`🎉 Đã ${isEditMode ? 'cập nhật' : 'đăng'} tin tuyển dụng thành công! 🌿`, { id: toastId });
-            navigate('/recruiter-dashboard'); 
+            navigate('/recruiter-dashboard');
 
         } catch (err) {
             const errorMsg = err.response?.data?.message || 'Vui lòng kiểm tra lại thông tin.';
@@ -182,7 +212,7 @@ function JobFormPage() {
                 <div className="lg:col-span-1 space-y-6 bg-white p-8 rounded-3xl shadow-sm border-t-8 border-earth h-fit">
                     <h3 className="text-xl font-bold text-olive border-b border-gray-100 pb-3">Thông tin cơ bản</h3>
 
-                    <InputField 
+                    <InputField
                         label="Tiêu đề công việc"
                         name="title"
                         placeholder="VD: Frontend Developer (ReactJS)"
@@ -191,7 +221,7 @@ function JobFormPage() {
                         required={true}
                     />
 
-                    <SelectField 
+                    <SelectField
                         label="Khu vực"
                         name="locationId"
                         value={formData.locationId}
@@ -203,7 +233,7 @@ function JobFormPage() {
                         }))}
                     />
 
-                    <InputField 
+                    <InputField
                         label="Địa chỉ làm việc cụ thể"
                         name="address"
                         placeholder="VD: Tầng 3, Tòa nhà ABC..."
@@ -212,7 +242,7 @@ function JobFormPage() {
                     />
 
                     <div className="grid grid-cols-2 gap-4">
-                        <InputField 
+                        <InputField
                             label="Lương Min (Triệu)"
                             name="salaryMin"
                             type="number"
@@ -220,7 +250,7 @@ function JobFormPage() {
                             value={formData.salaryMin}
                             onChange={handleChange}
                         />
-                        <InputField 
+                        <InputField
                             label="Lương Max (Triệu)"
                             name="salaryMax"
                             type="number"
@@ -231,7 +261,7 @@ function JobFormPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <SelectField 
+                        <SelectField
                             label="Cấp bậc"
                             name="level"
                             value={formData.level}
@@ -243,7 +273,7 @@ function JobFormPage() {
                                 { label: 'Quản lý', value: 'Quản lý' }
                             ]}
                         />
-                        <SelectField 
+                        <SelectField
                             label="Kinh nghiệm"
                             name="expYear"
                             value={formData.expYear}
@@ -257,7 +287,7 @@ function JobFormPage() {
                         />
                     </div>
 
-                    <InputField 
+                    <InputField
                         label="Hạn chót nộp CV"
                         name="deadline"
                         type="date"
@@ -286,27 +316,51 @@ function JobFormPage() {
                         <textarea name="benefits" rows="4" value={formData.benefits} onChange={handleChange} placeholder="Bảo hiểm, du lịch, thưởng..." className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white resize-none"></textarea>
                     </div>
 
-                    {/* KHU VỰC CHỌN TAGS GIỮ NGUYÊN */}
+                    {/* KHU VỰC CHỌN TAGS (KỸ NĂNG) - ĐÃ NÂNG CẤP AUTOCOMPLETE */}
                     <div className="pt-4 border-t border-gray-100">
                         <label className="block text-sm font-bold text-gray-700 mb-3">Thẻ kỹ năng (Tags)</label>
-                        <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                            <select
-                                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50"
-                                value={selectedTagId}
-                                onChange={(e) => setSelectedTagId(e.target.value)}
-                            >
-                                <option value="">-- Chọn kỹ năng yêu cầu --</option>
-                                {allTags.map(tag => (
-                                    <option key={tag.tagId} value={tag.tagId}>{tag.tagName}</option>
-                                ))}
-                            </select>
-                            <button
-                                type="button"
-                                className="bg-olive hover:bg-earth text-white font-bold py-2.5 px-6 rounded-xl transition-colors"
-                                onClick={handleAddTag}
-                            >
-                                + Thêm Tag
-                            </button>
+
+                        <div className="relative mb-4">
+                            <div className="flex gap-3">
+                                <input
+                                    type="text"
+                                    placeholder="Gõ tên kỹ năng (VD: React, Java...)"
+                                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white transition-all"
+                                    value={tagKeyword}
+                                    onChange={(e) => setTagKeyword(e.target.value)}
+                                    onFocus={() => tagSuggestions.length > 0 && setShowTagDropdown(true)}
+                                    onBlur={() => setTimeout(() => setShowTagDropdown(false), 200)} // Chờ 200ms để user kịp click vào gợi ý
+                                />
+                            </div>
+
+                            {/* 🌟 HỘP THOẠI GỢI Ý (DROPDOWN) */}
+                            {showTagDropdown && (
+                                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                                    {isSuggesting ? (
+                                        <div className="p-3 text-sm text-gray-500 text-center">Đang tìm... 🌿</div>
+                                    ) : tagSuggestions.length > 0 ? (
+                                        tagSuggestions.map(tag => (
+                                            <div
+                                                key={tag.tagId}
+                                                className="px-4 py-3 hover:bg-cream cursor-pointer border-b border-gray-50 last:border-0 transition-colors flex justify-between items-center"
+                                                onClick={() => {
+                                                    // Nếu chưa có trong danh sách thì mới thêm vào
+                                                    if (!selectedTags.some(t => t.tagId === tag.tagId)) {
+                                                        setSelectedTags([...selectedTags, { tagId: tag.tagId, tagName: tag.tagName }]);
+                                                    }
+                                                    setTagKeyword(''); // Xóa trắng ô input
+                                                    setShowTagDropdown(false); // Đóng dropdown
+                                                }}
+                                            >
+                                                <span className="font-bold text-olive">{tag.tagName}</span>
+                                                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-md">{tag.type}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-3 text-sm text-gray-500 text-center">Không tìm thấy kỹ năng phù hợp.</div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex flex-wrap gap-3">
@@ -317,7 +371,7 @@ function JobFormPage() {
                                         <button
                                             type="button"
                                             className="ml-2 text-red-400 hover:text-red-600 font-bold text-lg leading-none focus:outline-none transform hover:scale-110 transition-transform"
-                                            onClick={() => handleRemoveTag(tag.tagId)}
+                                            onClick={() => setSelectedTags(selectedTags.filter(t => t.tagId !== tag.tagId))}
                                         >
                                             &times;
                                         </button>

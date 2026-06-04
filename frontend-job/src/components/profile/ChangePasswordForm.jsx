@@ -31,7 +31,7 @@ function ChangePasswordForm({ userId }) {
 
         setIsLoading(true);
         try {
-            await axiosClient.put(`${API_URLS.USERS}/${userId}/change-password`, {
+            await axiosClient.patch(`${API_URLS.USERS}/${userId}/change-password`, {
                 currentPassword: formData.currentPassword,
                 newPassword: formData.newPassword,
                 confirmPassword: formData.confirmPassword

@@ -16,7 +16,6 @@ namespace JobSeekingAPI.DTOs
 
     public class CreateExperienceDTO
     {
-        public int UserId { get; set; }
         public string JobTitle { get; set; } = string.Empty;
         public string CompanyName { get; set; } = string.Empty;
         public DateTime StartDate { get; set; }
@@ -26,7 +25,6 @@ namespace JobSeekingAPI.DTOs
 
     public class UpdateExperienceDTO
     {
-        public int UserId { get; set; }
         public string? JobTitle { get; set; }
         public string? CompanyName { get; set; }
         public DateTime? StartDate { get; set; }

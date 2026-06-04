@@ -43,15 +43,18 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> SearchJobs([FromQuery] JobSearchDTO searchParams)
         {
             var result = await _jobRepository.SearchJobsAsync(searchParams);
-            var mappedData = result.Items.Select(j => MapToDTO(j)).ToList();
-            return Ok(new
+            // (Lưu ý: Nếu Job cần MapToDTO thì map xong bỏ vào PagedResultDTO mới rồi return Ok)
+            var mappedItems = result.Items.Select(j => MapToDTO(j)).ToList();
+
+            var finalResult = new PagedResultDTO<JobDetailDTO>
             {
-                result.TotalCount,
-                result.Page,
-                result.PageSize,
-                result.TotalPages,
-                Data = mappedData
-            });
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize,
+                TotalPages = result.TotalPages,
+                Items = mappedItems
+            };
+            return Ok(finalResult);
         }
 
         // GET: api/jobs/recent?count=8

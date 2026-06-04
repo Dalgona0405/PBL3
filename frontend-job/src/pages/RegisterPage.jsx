@@ -144,7 +144,8 @@ function RegisterPage() {
                             disabled={isLoading}
                             options={[
                                 { label: '👨‍💻 Người tìm việc (Ứng viên)', value: 'Candidate' },
-                                { label: '🏢 Nhà tuyển dụng (HR)', value: 'Recruiter' }
+                                { label: '🏢 Nhà tuyển dụng (HR)', value: 'Recruiter' },
+                                { label: '🏢 Công ty', value: 'Company' }
                             ]}
                         />
 

@@ -1,13 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URLS } from "../api/api";
 import axiosClient from "../api/axiosClient";
+import toast from "react-hot-toast";
 
 function HistoryAppliedPage() {
     const navigate = useNavigate();
     const [applications, setApplications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // 🌟 STATE MỚI: Dùng cho việc Đổi CV
+    const [isUploading, setIsUploading] = useState(false);
+    const [selectedAppId, setSelectedAppId] = useState(null); // Nhớ xem đang đổi CV cho đơn nào
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         const fetchHistory = async () => {
@@ -22,6 +28,75 @@ function HistoryAppliedPage() {
         };
         fetchHistory();
     }, [navigate]);
+
+    // ==========================================
+    // 🌟 HÀM 1: RÚT HỒ SƠ (DELETE)
+    // ==========================================
+    const handleWithdraw = async (appId, jobTitle) => {
+        if (!window.confirm(`Bạn có chắc chắn muốn rút hồ sơ khỏi vị trí "${jobTitle}" không? Hành động này không thể hoàn tác.`)) {
+            return;
+        }
+
+        const toastId = toast.loading("Đang rút hồ sơ... 🌿");
+        try {
+            await axiosClient.delete(`${API_URLS.APPLICATIONS}/${appId}`);
+            
+            // Xóa đơn đó khỏi màn hình
+            setApplications(prev => prev.filter(app => app.applicationId !== appId));
+            toast.success("Đã rút hồ sơ thành công!", { id: toastId });
+        } catch (err) {
+            toast.error("Không thể rút hồ sơ lúc này. Vui lòng thử lại!", { id: toastId });
+        }
+    };
+
+    // ==========================================
+    // 🌟 HÀM 2: KÍCH HOẠT CHỌN FILE ĐỔI CV
+    // ==========================================
+    const triggerFileSelect = (appId) => {
+        setSelectedAppId(appId); // Ghi nhớ lại ID của đơn ứng tuyển đang muốn đổi CV
+        fileInputRef.current.click(); // Mở hộp thoại chọn file của Windows/Mac lên
+    };
+
+    // ==========================================
+    // 🌟 HÀM 3: XỬ LÝ KHI CHỌN FILE XONG (UPLOAD & PATCH)
+    // ==========================================
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Kiểm tra file PDF
+        if (file.type !== 'application/pdf') {
+            toast.error("Vui lòng chỉ tải lên file PDF nha Trúc ơi! 🌿");
+            e.target.value = null; // Reset input
+            return;
+        }
+
+        setIsUploading(true);
+        const toastId = toast.loading("Đang tải CV mới lên... 🌿");
+
+        try {
+            // Bước 1: Upload file lên server C# để lấy URL
+            const formData = new FormData();
+            formData.append('file', file);
+            const uploadRes = await axiosClient.post('/files/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            const newCvUrl = uploadRes.url || uploadRes.fileUrl || uploadRes.data || uploadRes.file || uploadRes;
+
+            // Bước 2: Gọi API PATCH để cập nhật URL mới vào đơn ứng tuyển
+            await axiosClient.patch(`${API_URLS.APPLICATIONS}/${selectedAppId}/cv`, {
+                cvUrl: newCvUrl
+            });
+
+            toast.success("🎉 Đã cập nhật CV mới thành công!", { id: toastId });
+        } catch (err) {
+            toast.error("⚠️ Có lỗi xảy ra khi đổi CV. Vui lòng thử lại!", { id: toastId });
+        } finally {
+            setIsUploading(false);
+            setSelectedAppId(null);
+            e.target.value = null; // Reset input để lần sau chọn lại file đó vẫn ăn
+        }
+    };
 
     // Hàm "Tô màu" cho các trạng thái
     const getStatusInfo = (statusCode) => {
@@ -39,7 +114,7 @@ function HistoryAppliedPage() {
     if (error) return <div className="text-center mt-20 text-red-500 bg-red-50 p-6 rounded-xl max-w-lg mx-auto">{error}</div>;
 
     return (
-        <div className="max-w-5xl mx-auto w-full pb-12">
+        <div className="max-w-5xl mx-auto w-full pb-12 relative">
             
             {/* HEADER */}
             <div className="flex justify-between items-end mb-8 border-b-2 border-olive pb-4">
@@ -66,6 +141,8 @@ function HistoryAppliedPage() {
                 <div className="space-y-6">
                     {applications.map((app) => {
                         const statusInfo = getStatusInfo(app.status);
+                        // 🌟 LOGIC BA: Chỉ cho phép sửa/xóa khi trạng thái là 1 (Chờ duyệt)
+                        const canEditOrDelete = app.status === 1;
 
                         return (
                             <div key={app.applicationId} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border-l-8 border-olive flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -94,17 +171,47 @@ function HistoryAppliedPage() {
                                     </div>
                                 </div>
 
-                                {/* Cột phải: Trạng thái (Badge) */}
-                                <div className="shrink-0 mt-4 md:mt-0">
+                                {/* Cột phải: Trạng thái & Nút hành động */}
+                                <div className="shrink-0 mt-4 md:mt-0 flex flex-col items-end gap-3">
+                                    {/* Badge Trạng thái */}
                                     <div className={`px-6 py-2.5 rounded-full text-sm font-bold border ${statusInfo.style} shadow-sm text-center min-w-[140px]`}>
                                         {statusInfo.text}
                                     </div>
+
+                                    {/* 🌟 CÁC NÚT HÀNH ĐỘNG (Chỉ hiện khi Chờ duyệt) */}
+                                    {canEditOrDelete && (
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => triggerFileSelect(app.applicationId)}
+                                                disabled={isUploading}
+                                                className="text-xs font-bold bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors border border-blue-100"
+                                            >
+                                                📄 Đổi CV
+                                            </button>
+                                            <button 
+                                                onClick={() => handleWithdraw(app.applicationId, app.job?.title)}
+                                                disabled={isUploading}
+                                                className="text-xs font-bold bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors border border-red-100"
+                                            >
+                                                🗑️ Rút hồ sơ
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
                     })}
                 </div>
             )}
+
+            {/* 🌟 INPUT FILE TÀNG HÌNH (Dùng chung cho tất cả các nút "Đổi CV") */}
+            <input 
+                type="file" 
+                accept=".pdf" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                className="hidden" 
+            />
         </div>
     );
 }

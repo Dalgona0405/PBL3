@@ -177,7 +177,7 @@ function EditProfileForm({ formData, setFormData }) {
                                             try {
                                                 const formDataUpload = new FormData();
                                                 formDataUpload.append('file', file);
-                                                const uploadRes = await axiosClient.post('/Files/upload', formDataUpload, {
+                                                const uploadRes = await axiosClient.post('/files/upload', formDataUpload, {
                                                     headers: { 'Content-Type': 'multipart/form-data' }
                                                 });
                                                 const newCvUrl = uploadRes.url || uploadRes.fileUrl || uploadRes.data || uploadRes;

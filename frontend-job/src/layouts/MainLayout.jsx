@@ -55,14 +55,27 @@ const MainLayout = () => {
             </>
           )}
 
-          {user?.role === 'Recruiter' && (
+          {(user?.role === 'Recruiter' || user?.role === 'Company') && (
             <>
               <div className="pt-4 pb-2 px-4">
-                <p className="text-xs font-bold text-cream uppercase tracking-wider">Nhà tuyển dụng</p>
+                <p className="text-xs font-bold text-cream uppercase tracking-wider">
+                  {user?.role === 'Company' ? 'Chủ doanh nghiệp' : 'Nhà tuyển dụng'}
+                </p>
               </div>
               <button onClick={() => navigate('/recruiter-dashboard')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
-                🏢 <span className="ml-3 font-medium">Quản lý tuyển dụng</span>
+                🏢 <span className="ml-3 font-medium">Quản lý bài đăng</span>
               </button>
+
+              {user?.role === 'Company' && (
+                <>
+                  <button onClick={() => navigate('/company/profile')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
+                    🏢 <span className="ml-3 font-medium">Hồ sơ Doanh nghiệp</span>
+                  </button>
+                  <button onClick={() => navigate('/company/requests')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
+                    🛡️ <span className="ml-3 font-medium">Duyệt nhân viên HR</span>
+                  </button>
+                </>
+              )}
             </>
           )}
 
@@ -74,11 +87,11 @@ const MainLayout = () => {
               <button onClick={() => navigate('/admin/dashboard')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 🎯 <span className="ml-3 font-medium">Bảng điều khiển</span>
               </button>
-              <button onClick={() => navigate('/admin/company-requests')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
-                🛡️ <span className="ml-3 font-medium">Duyệt Công ty</span>
-              </button>
               <button onClick={() => navigate('/admin/companies')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 🏢 <span className="ml-3 font-medium">Quản lý Công ty</span>
+              </button>
+              <button onClick={() => navigate('/admin/locations')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
+                📍 <span className="ml-3 font-medium">Quản lý Địa điểm</span>
               </button>
               <button onClick={() => navigate('/admin/tags')} className="w-full flex items-center px-4 py-3 text-cream hover:bg-earth hover:text-white rounded-xl transition-all">
                 🏷️ <span className="ml-3 font-medium">Quản lý Tags</span>
@@ -95,7 +108,7 @@ const MainLayout = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         <header className="h-20 bg-white shadow-sm flex items-center justify-between px-8">
-          <div className="text-gray-400 text-sm">              
+          <div className="text-gray-400 text-sm">
           </div>
 
           <div>

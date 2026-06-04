@@ -58,7 +58,6 @@ namespace JobSeekingAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateApplication([FromBody] CreateApplicationDTO dto)
         {
-            // Không cần try...catch nữa vì ExceptionMiddleware sẽ tự lo việc bắt lỗi!
             var createdApp = await _applicationService.ApplyForJobAsync(dto);
             return CreatedAtAction(nameof(GetApplicationById), new { id = createdApp.ApplicationId }, createdApp);
         }

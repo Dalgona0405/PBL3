@@ -15,7 +15,7 @@ function CompanyRequestsPage() {
 
     // 1. LẤY DANH SÁCH HỒ SƠ ĐANG CHỜ DUYỆT
     useEffect(() => {
-        if (!user || user.role !== 'Admin') {
+        if (!user || user.role !== 'Company') {
             navigate('/');
             return;
         }

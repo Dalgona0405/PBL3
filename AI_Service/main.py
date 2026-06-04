@@ -196,20 +196,24 @@ def get_matching_score(request: MatchScoreRequest):
 
         for j_idx in job_indices:
             if j_idx in candidate_indices:
+                # Trùng khớp 100% -> Cộng trọn vẹn 1 điểm
                 total_score += 1.0
             else:
-                # 1. Chắc chắn là thiếu kỹ năng này rồi, ghi vào danh sách luôn!
                 missing_skills_names.append(idx_to_name.get(j_idx, "Unknown Skill"))
                 
-                # 2. Nhờ AI tìm xem có kỹ năng nào tương đồng để "vớt vát" điểm số không
+                # Tìm kỹ năng tương đồng nhất của ứng viên
                 max_sim = 0.0
                 for c_idx in candidate_indices:
                     sim_score = calculate_score(node_embeddings, c_idx, j_idx)
                     if sim_score > max_sim:
                         max_sim = sim_score
                 
-                total_score += max_sim
+                if max_sim > 0.90:
+                    total_score += 0.5 
+                else:
+                    total_score += 0.0
         
+        # Tính phần trăm
         match_score = round((total_score / len(job_indices)) * 100, 1)
 
         if not missing_skills_names:

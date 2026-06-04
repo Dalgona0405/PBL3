@@ -6,9 +6,9 @@ import toast from 'react-hot-toast';
 function ManageUsersPage() {
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     const [keyword, setKeyword] = useState('');
-    const [roleFilter, setRoleFilter] = useState(''); 
+    const [roleFilter, setRoleFilter] = useState('');
 
     // 🌟 STATE CHO PHÂN TRANG
     const [currentPage, setCurrentPage] = useState(1);
@@ -30,15 +30,8 @@ function ManageUsersPage() {
                 if (roleFilter) url += `&role=${roleFilter}`;
 
                 const data = await axiosClient.get(url);
-                
-                const userList = data.items || data.Items || data.data || data;
-                if (Array.isArray(userList)) {
-                    setUsers(userList);
-                } else {
-                    setUsers([]);
-                }
 
-                // 🌟 Lấy tổng số trang từ Backend trả về (nếu Backend không trả, mặc định là 1)
+                setUsers(data.items || []);
                 setTotalPages(data.totalPages || 1);
 
             } catch (error) {
@@ -68,7 +61,7 @@ function ManageUsersPage() {
     };
 
     const getRoleBadge = (role) => {
-        switch(role) {
+        switch (role) {
             case 'Admin': return <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold">Admin 🛡️</span>;
             case 'Recruiter': return <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold">HR 🏢</span>;
             case 'Candidate': return <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">Ứng viên 👨‍💻</span>;
@@ -85,17 +78,17 @@ function ManageUsersPage() {
 
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex gap-2">
-                    <input 
-                        type="text" 
-                        placeholder="Tìm theo tên hoặc email..." 
+                    <input
+                        type="text"
+                        placeholder="Tìm theo tên hoặc email..."
                         value={keyword}
                         onChange={(e) => setKeyword(e.target.value)}
                         className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 focus:bg-white"
                     />
                 </div>
 
-                <select 
-                    value={roleFilter} 
+                <select
+                    value={roleFilter}
                     onChange={(e) => setRoleFilter(e.target.value)}
                     className="px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth outline-none bg-gray-50 font-medium text-gray-600 cursor-pointer"
                 >
@@ -124,7 +117,7 @@ function ManageUsersPage() {
                             </thead>
                             <tbody>
                                 {users.map(u => {
-                                    const currentId = u.id || u.userId; 
+                                    const currentId = u.id || u.userId;
                                     return (
                                         <tr key={currentId} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                                             <td className="py-4 px-6">
@@ -138,7 +131,7 @@ function ManageUsersPage() {
                                             <td className="py-4 px-6 text-gray-600">{u.email}</td>
                                             <td className="py-4 px-6">{getRoleBadge(u.role)}</td>
                                             <td className="py-4 px-6 text-center">
-                                                <button 
+                                                <button
                                                     onClick={() => handleDeleteUser(currentId, u.fullName || u.email)}
                                                     className="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-4 py-1.5 rounded-lg font-bold text-sm transition-colors border border-red-100"
                                                 >
@@ -157,20 +150,20 @@ function ManageUsersPage() {
             {/* 🌟 KHU VỰC NÚT PHÂN TRANG */}
             {!isLoading && totalPages > 1 && (
                 <div className="flex justify-center items-center mt-8 gap-4">
-                    <button 
-                        onClick={() => setCurrentPage(prev => prev - 1)} 
+                    <button
+                        onClick={() => setCurrentPage(prev => prev - 1)}
                         disabled={currentPage === 1}
                         className={`px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-olive border border-olive hover:bg-olive hover:text-white'}`}
                     >
                         ⬅ Trang trước
                     </button>
-                    
+
                     <span className="font-bold text-textmain bg-white px-5 py-2.5 rounded-xl shadow-sm border border-gray-100">
                         Trang {currentPage} / {totalPages}
                     </span>
 
-                    <button 
-                        onClick={() => setCurrentPage(prev => prev + 1)} 
+                    <button
+                        onClick={() => setCurrentPage(prev => prev + 1)}
                         disabled={currentPage === totalPages}
                         className={`px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm ${currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-olive border border-olive hover:bg-olive hover:text-white'}`}
                     >

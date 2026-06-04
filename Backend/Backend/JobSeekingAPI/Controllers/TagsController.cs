@@ -88,9 +88,9 @@ namespace JobSeekingAPI.Controllers
             return CreatedAtAction(nameof(GetTagById), new { id = tag.TagId }, tagDto);
         }
 
-        // PUT: api/tags/{id}
+        // PATCH: api/tags/{id}
         [Authorize(Roles = UserRoles.Admin)]
-        [HttpPut("{id}")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateTag(int id, [FromBody] UpdateTagDTO dto)
         {
             var existingTag = await _tagRepository.GetTagEntityByIdAsync(id);
