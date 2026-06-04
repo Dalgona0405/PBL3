@@ -26,7 +26,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(result);
         }
 
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("jobs/{jobId}")]
         public async Task<IActionResult> GetApplicationsByJob(int jobId)
         {
@@ -58,6 +58,9 @@ namespace JobSeekingAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateApplication([FromBody] CreateApplicationDTO dto)
         {
+            int currentUserId = User.GetUserIdFromToken();
+            if (dto.UserId != currentUserId)
+                return Forbid();
             var createdApp = await _applicationService.ApplyForJobAsync(dto);
             return CreatedAtAction(nameof(GetApplicationById), new { id = createdApp.ApplicationId }, createdApp);
         }
@@ -71,7 +74,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(new { message = "CV updated successfully!" });
         }
 
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateApplicationStatus(int id, [FromBody] UpdateApplicationStatusDTO dto)
         {
@@ -91,7 +94,7 @@ namespace JobSeekingAPI.Controllers
             return Ok(new { message = "Application withdrawn successfully!" });
         }
 
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("statistics/job/{jobId}")]
         public async Task<IActionResult> GetApplicationStatistics(int jobId)
         {

@@ -24,7 +24,7 @@ namespace JobSeekingAPI.Controllers
         {
             int userId = User.GetUserIdFromToken();
             await _requestService.CreateRequestAsync(userId, dto);
-            return Ok(new { message = "Successfully sent a request to join the company. Please wait for the Admin to approve!" });
+            return Ok(new { message = "Successfully sent a request to join the company. Please wait for the Company to approve!" });
         }
 
         [Authorize(Roles = UserRoles.Company)]
@@ -40,7 +40,8 @@ namespace JobSeekingAPI.Controllers
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateRequestStatus(int id, [FromBody] UpdateCompanyRequestStatusDTO dto)
         {
-            var msg = await _requestService.UpdateRequestStatusAsync(id, dto);
+            int companyOwnerId = User.GetUserIdFromToken();
+            var msg = await _requestService.UpdateRequestStatusAsync(id, dto, companyOwnerId);
             return Ok(new { message = msg });
         }
     }

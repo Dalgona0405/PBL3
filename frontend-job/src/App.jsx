@@ -55,7 +55,7 @@ function AppRoutes() {
                 <Route path="/recruiter/jobs/:jobId/applications" element={<ProtectedRoute allowedRoles={['Recruiter', 'Company']}><JobApplicationsPage /></ProtectedRoute>} />
                 <Route path="/recruiter/jobs/create" element={<ProtectedRoute allowedRoles={['Recruiter', 'Company']}><JobFormPage /></ProtectedRoute>} />
                 <Route path="/recruiter/jobs/edit/:jobId" element={<ProtectedRoute allowedRoles={['Recruiter', 'Company']}><JobFormPage /></ProtectedRoute>} />
-                <Route path="/company/company-requests" element={<ProtectedRoute allowedRoles={['Company']}><CompanyRequestsPage /></ProtectedRoute>} />
+                <Route path="/company/requests" element={<ProtectedRoute allowedRoles={['Company']}><CompanyRequestsPage /></ProtectedRoute>} />
                 <Route path="/company/profile" element={<ProtectedRoute allowedRoles={['Company']}><ManageCompanyProfilePage /></ProtectedRoute>} />                <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboardPage /></ProtectedRoute>} />
                 <Route path="/admin/companies" element={<ProtectedRoute allowedRoles={['Admin']}><ManageCompaniesPage /></ProtectedRoute>} />
                 <Route path="/admin/locations" element={<ProtectedRoute allowedRoles={['Admin']}><ManageLocationsPage /></ProtectedRoute>} />

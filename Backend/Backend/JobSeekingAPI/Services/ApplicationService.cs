@@ -181,7 +181,7 @@ namespace JobSeekingAPI.Services
             if (jobExists == null)
                 throw new KeyNotFoundException("Job not found!");
 
-            if (role == UserRoles.Recruiter)
+            if (role == UserRoles.Recruiter || role == UserRoles.Company) 
             {
                 var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
                 if (recruiterCompanyId == null || recruiterCompanyId != jobExists.CompanyId)

@@ -14,7 +14,17 @@ function EditCompanyForm({ company, setFormData }) {
         size: company?.size || '',
         logoImg: company?.logoImg || ''
     });
+
     const [isSaving, setIsSaving] = useState(false);
+
+    const sizeOptions = [
+        { value: "Dưới 10 nhân viên", label: "Dưới 10 nhân viên" },
+        { value: "10-24 nhân viên", label: "10 - 24 nhân viên" },
+        { value: "25-99 nhân viên", label: "25 - 99 nhân viên" },
+        { value: "100-499 nhân viên", label: "100 - 499 nhân viên" },
+        { value: "500-1000 nhân viên", label: "500 - 1000 nhân viên" },
+        { value: "Trên 1000 nhân viên", label: "Trên 1000 nhân viên" }
+    ];
 
     // Hàm xử lý khi HR gõ chữ vào ô input
     const handleChange = (e) => {
@@ -25,7 +35,7 @@ function EditCompanyForm({ company, setFormData }) {
     const handleLogoUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
+
         // Kiểm tra xem có đúng là file ảnh không
         if (!file.type.startsWith('image/')) {
             toast.error("Chỉ được tải lên file ảnh (JPG, PNG) thôi nha HR ơi! 🌿");
@@ -37,15 +47,15 @@ function EditCompanyForm({ company, setFormData }) {
         try {
             const formDataUpload = new FormData();
             formDataUpload.append('file', file);
-            
+
             // Gọi API Upload file của C#
             const uploadRes = await axiosClient.post('/files/upload', formDataUpload, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            
+
             // Tùy Backend C# trả về tên biến là gì (url, fileUrl, hay data), mình hứng lấy
             const newLogoUrl = uploadRes.url || uploadRes.fileUrl || uploadRes.data || uploadRes.file || uploadRes;
-            
+
             // Cập nhật lại State để hiển thị ảnh mới ngay lập tức
             setCompanyData({ ...companyData, logoImg: newLogoUrl });
             toast.success("Tải logo thành công! Nhớ bấm Lưu thay đổi nha.", { id: toastId });
@@ -63,7 +73,7 @@ function EditCompanyForm({ company, setFormData }) {
         try {
             // Gọi API PUT /api/Companies/{id}
             await axiosClient.put(`${API_URLS.COMPANIES}/${company.companyId}`, companyData);
-            
+
             // Cập nhật lại State tổng của trang Profile để giao diện đồng bộ
             setFormData(prev => ({
                 ...prev,
@@ -72,7 +82,7 @@ function EditCompanyForm({ company, setFormData }) {
                     company: { ...prev.recruiter.company, ...companyData }
                 }
             }));
-            
+
             toast.success("🎉 Cập nhật thông tin công ty thành công!", { id: toastId });
         } catch (error) {
             const msg = error.response?.data?.message || "Có lỗi xảy ra khi cập nhật.";
@@ -87,7 +97,7 @@ function EditCompanyForm({ company, setFormData }) {
             <h3 className="text-xl font-bold text-olive mb-6 pb-3 border-b border-gray-100 flex items-center gap-2">
                 🏢 Thông tin Doanh nghiệp
             </h3>
-            
+
             <form onSubmit={handleSaveCompany} className="space-y-6">
                 <div className="flex flex-col md:flex-row items-center gap-6 mb-6">
                     <div className="w-24 h-24 rounded-2xl bg-cream border border-gray-200 flex items-center justify-center overflow-hidden shrink-0 shadow-inner p-1">
@@ -99,9 +109,9 @@ function EditCompanyForm({ company, setFormData }) {
                     </div>
                     <div className="flex-1 text-center md:text-left">
                         <p className="text-sm font-bold text-gray-700 mb-2">Logo Công ty</p>
-                        <input 
-                            type="file" 
-                            accept="image/*" 
+                        <input
+                            type="file"
+                            accept="image/*"
                             onChange={handleLogoUpload}
                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-cream file:text-olive hover:file:bg-olive hover:file:text-white transition-all cursor-pointer"
                         />
@@ -110,8 +120,8 @@ function EditCompanyForm({ company, setFormData }) {
                 </div>
 
                 {/* Các ô nhập liệu */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <InputField 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputField
                         label="Tên công ty"
                         name="companyName"
                         value={companyData.companyName}
@@ -119,30 +129,25 @@ function EditCompanyForm({ company, setFormData }) {
                         required={true}
                     />
 
-                    <InputField 
+                    <InputField
                         label="Website"
                         name="website"
-                        placeholder="https://..."
                         value={companyData.website}
                         onChange={handleChange}
+                        placeholder="https://..."
                     />
 
                     <div className="md:col-span-2">
-                        <SelectField 
+                        <SelectField
                             label="Quy mô nhân sự"
                             name="size"
                             value={companyData.size}
                             onChange={handleChange}
-                            options={[
-                                { label: '1 - 50 nhân viên', value: '1 - 50 nhân viên' },
-                                { label: '51 - 200 nhân viên', value: '51 - 200 nhân viên' },
-                                { label: '201 - 1000 nhân viên', value: '201 - 1000 nhân viên' },
-                                { label: '1000+ nhân viên', value: '1000+ nhân viên' }
-                            ]}
+                            options={sizeOptions}
                         />
                     </div>
                 </div>
-                
+
                 <div className="pt-4 flex justify-end">
                     <div className="w-full md:w-auto">
                         <Button type="submit" isLoading={isSaving}>

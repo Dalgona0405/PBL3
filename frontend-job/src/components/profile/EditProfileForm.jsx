@@ -263,7 +263,7 @@ function EditProfileForm({ formData, setFormData }) {
                                     </div>
                                 )}
                                 <p className="text-xs text-gray-400 mt-2 italic">
-                                    * Yêu cầu gia nhập sẽ được Admin phê duyệt. Trong lúc chờ, bạn vẫn thuộc công ty cũ.
+                                    * Yêu cầu gia nhập sẽ được Công ty phê duyệt. Trong lúc chờ, bạn vẫn thuộc công ty cũ.
                                 </p>
                             </div>
                         </div>

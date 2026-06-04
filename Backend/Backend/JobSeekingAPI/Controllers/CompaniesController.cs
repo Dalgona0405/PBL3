@@ -39,7 +39,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/companies/recruiters/{recruiterId}
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("recruiters/{recruiterId}")]
         public async Task<IActionResult> GetCompanyIdByRecruiterId(int recruiterId)
         {
@@ -71,7 +71,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/companies/{id}
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Company)]
+        [Authorize(Roles = UserRoles.Company)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCompany(int id, [FromBody] UpdateCompanyDTO dto)
         {

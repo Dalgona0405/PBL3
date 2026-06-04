@@ -10,16 +10,6 @@ namespace JobSeekingAPI.Repositories
         {
         }
 
-        //public async Task<IEnumerable<Recruiter>> GetAllRecruitersWithDetailsAsync()
-        //{
-        //    return await _context.Recruiters
-        //        .AsNoTracking()
-        //        .Include(r => r.User)
-        //        .Include(r => r.Company)
-        //        .Where(r => r.User != null && r.User.DeletedAt == null)
-        //        .ToListAsync();
-        //}
-
         public async Task<Recruiter?> GetRecruiterDetailByIdAsync(int id)
         {
             return await _context.Recruiters

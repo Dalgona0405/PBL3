@@ -1,5 +1,6 @@
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Enums;
+using JobSeekingAPI.Helpers;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -20,18 +21,8 @@ namespace JobSeekingAPI.Controllers
             _companyRepository = companyRepository;
         }
 
-        // GET: api/recruiters => Cân nhắc bỏ
-        //[Authorize(Roles = "Admin")]
-        //[HttpGet]
-        //public async Task<IActionResult> GetAllRecruiters()
-        //{
-        //    var recruiters = await _recruiterRepository.GetAllRecruitersWithDetailsAsync();
-        //    var dtos = recruiters.Select(r => MapToDTO(r));
-        //    return Ok(dtos);
-        //}
-
         // GET: api/recruiters/{id}
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetRecruiterById(int id)
         {
@@ -42,7 +33,7 @@ namespace JobSeekingAPI.Controllers
         }
 
         // GET: api/recruiters/company/{companyId}
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("company/{companyId}")]
         public async Task<IActionResult> GetRecruitersByCompany(int companyId)
         {
@@ -62,10 +53,14 @@ namespace JobSeekingAPI.Controllers
         }
 
         // PUT: api/recruiters/{id}
-        [Authorize(Roles = UserRoles.Recruiter)]
+        [Authorize(Roles = UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateRecruiter(int id, [FromBody] UpdateRecruiterDTO dto)
         {
+            int currentUserId = User.GetUserIdFromToken();
+            if (id != currentUserId)
+                return Forbid(); 
+                
             var existingRecruiter = await _recruiterRepository.GetRecruiterEntityByIdAsync(id);
             if (existingRecruiter == null)
                 return NotFound("Recruiter not found");
@@ -78,6 +73,11 @@ namespace JobSeekingAPI.Controllers
 
             // Update Recruiter
             existingRecruiter.Position = dto.Position ?? existingRecruiter.Position;
+
+            if (dto.CompanyId.HasValue)
+            {
+                existingRecruiter.CompanyId = dto.CompanyId.Value;
+            }
 
             await _recruiterRepository.UpdateAsync(existingRecruiter);
             return Ok(new { message = "Update success" });
@@ -99,7 +99,8 @@ namespace JobSeekingAPI.Controllers
                     CompanyId = r.Company.CompanyId,
                     CompanyName = r.Company.CompanyName,
                     LogoImg = r.Company.LogoImg,
-                    Website = r.Company.Website
+                    Website = r.Company.Website,
+                    Size = r.Company.Size
                 },
 
                 Jobs = r.Company?.Jobs?.Select(j => new JobSummaryDTO

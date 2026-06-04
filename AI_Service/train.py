@@ -19,7 +19,7 @@ def train_gnn():
     pos_edge_index = graph_data.edge_index
     num_nodes = graph_data.num_nodes
 
-    encoder = GCNNet(in_channels=6, hidden_channels=32, out_channels=16)
+    encoder = GCNNet(in_channels=8, hidden_channels=32, out_channels=16)
     predictor = LinkPredictor()
     regressor = SalaryRegressor(in_channels=16, hidden_channels=8)
 

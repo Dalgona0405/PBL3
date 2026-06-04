@@ -6,6 +6,6 @@ namespace JobSeekingAPI.Services
     {
         Task CreateRequestAsync(int userId, CreateCompanyRequestDTO dto);
         Task<IEnumerable<CompanyRequestSummaryDTO>> GetPendingRequestsAsync(int companyOwnerId);
-        Task<string> UpdateRequestStatusAsync(int id, UpdateCompanyRequestStatusDTO dto);
+        Task<string> UpdateRequestStatusAsync(int id, UpdateCompanyRequestStatusDTO dto, int companyOwnerId);
     }
 }

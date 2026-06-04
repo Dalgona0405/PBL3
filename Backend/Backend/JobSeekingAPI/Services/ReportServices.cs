@@ -108,20 +108,19 @@ namespace JobSeekingAPI.Services
             // BƯỚC 1: LẤY DANH SÁCH NODES BẰNG ANONYMOUS TYPE (FIX LỖI EF CORE)
             // =========================================================
             var rawNodes = await _context.Tags
-               .Where(t => t.Type == "Skill" || t.Type == "Language" || t.Type == "Role" || t.Type == "Domain"
-                    && t.TagName != "IT - Phần mềm")
-                .Select(t => new
-                {
-                    t.TagId,
-                    t.TagName,
-                    t.Type,
-                    // Ép EF Core đếm dưới DB và gán thành biến Size
-                    Size = t.JobTags.Count() + t.CandidateTags.Count(),
-                    JobCount = t.JobTags.Count(),
-                    CurrentAvgSalary = t.JobTags
+               .Where(t => t.Type == "Skill" || t.Type == "Language" || t.Type == "Role" || t.Type == "Domain")
+               .Select(t => new
+               {
+                   t.TagId,
+                   t.TagName,
+                   t.Type,
+                   // Ép EF Core đếm dưới DB và gán thành biến Size
+                   Size = t.JobTags.Count() + t.CandidateTags.Count(),
+                   JobCount = t.JobTags.Count(),
+                   CurrentAvgSalary = t.JobTags
                         .Where(jt => jt.Job != null && jt.Job.DeletedAt == null && (jt.Job.SalaryMin > 0 || jt.Job.SalaryMax > 0))
                         .Average(jt => (decimal?)((jt.Job.SalaryMin + jt.Job.SalaryMax) / 2)) ?? 0
-                })
+               })
                 .OrderByDescending(n => n.Size) // SQL ORDER BY hoạt động trơn tru
                 .Take(nodeLimit)
                 .ToListAsync(); // <--- Chạy SQL và kéo data về RAM tại đây

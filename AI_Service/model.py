@@ -42,4 +42,9 @@ class SalaryRegressor(nn.Module):
 def calculate_score(z, source_idx, target_idx):
     src_vec = z[source_idx]
     tgt_vec = z[target_idx]
-    return torch.sigmoid((src_vec * tgt_vec).sum()).item()
+    
+    # Dùng Cosine Similarity thay vì Dot Product (Khắt khe hơn rất nhiều)
+    # Nó đo góc giữa 2 hành tinh, trả về giá trị từ -1 đến 1
+    cos_sim = F.cosine_similarity(src_vec.unsqueeze(0), tgt_vec.unsqueeze(0)).item()
+    
+    return cos_sim

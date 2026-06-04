@@ -16,7 +16,6 @@ function RecruiterDashboardPage() {
     // 1. LẤY DANH SÁCH CÔNG VIỆC CỦA HR
     useEffect(() => {
         if (!user) { navigate('/login'); return; }
-        if (user.role !== 'Recruiter') { navigate('/'); return; }
 
         const fetchDashboardData = async () => {
             try {

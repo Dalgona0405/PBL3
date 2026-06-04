@@ -78,7 +78,6 @@ namespace JobSeekingAPI.Controllers
                 existingUser.FullName = updateUserDto.FullName ?? existingUser.FullName;
                 existingUser.Candidate.User.Avatar = updateUserDto.Avatar ?? existingUser.Candidate.User.Avatar;
                 existingUser.Candidate.User.LastLogin = DateTime.UtcNow;
-                existingUser.Password = updateUserDto.NewPassword != null ? BCrypt.Net.BCrypt.HashPassword(updateUserDto.NewPassword) : existingUser.Password;
             }
             else if (existingUser.Role == "Recruiter")
             {

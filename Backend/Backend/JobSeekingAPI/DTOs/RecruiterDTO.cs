@@ -14,6 +14,7 @@ namespace JobSeekingAPI.DTOs
         public string? Position { get; set; }
         public string? FullName { get; set; }
         public string? Avatar { get; set; }
+        public int? CompanyId { get; set; }
     }
 
     public class RecruiterDetailDTO

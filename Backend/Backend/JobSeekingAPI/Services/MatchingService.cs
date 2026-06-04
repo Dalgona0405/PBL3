@@ -84,7 +84,7 @@ namespace JobSeekingAPI.Services
 
         public async Task<List<JobSuggestionDTO>> GetTopJobSuggestionsForCandidateAsync(int candidateId, int topN = 6)
         {
-            var recentJobs = await _jobRepo.GetRecentJobsAsync(20);
+            var recentJobs = await _jobRepo.GetRecentJobsAsync(100);
             var suggestedJobs = new List<JobSuggestionDTO>();
             foreach (var job in recentJobs)
             {
@@ -120,7 +120,6 @@ namespace JobSeekingAPI.Services
             }
             return suggestedJobs.OrderByDescending(r => r.MatchScore).Take(topN).ToList();
         }
-        // 👇 Đã sửa List<ExperienceDetailDTO> thành ICollection<Experience>
         private double CalculateExperienceScore(string? jobExpRequired, ICollection<JobSeekingAPI.Models.Experience> candidateExps)
         {
             if (string.IsNullOrWhiteSpace(jobExpRequired) || jobExpRequired.Contains("Không yêu cầu"))

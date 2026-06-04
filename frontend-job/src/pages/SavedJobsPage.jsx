@@ -59,19 +59,27 @@ function SavedJobsPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {savedJobs.map((item) => {
-                        // Tùy thuộc vào C# trả về nguyên object Job hay bọc trong object SavedJob
-                        const job = item.job || item.Job || item; 
+                        const job = item.job || item; 
+                        const companyData = job.company || {
+                            companyName: job.companyName,
+                            logoImg: job.logoImg
+                        };
+                        
+                        const locationData = job.location || {
+                            locationName: job.locationName
+                        };
+
                         return (
                             <JobCard
                                 key={job.jobId}
                                 jobId={job.jobId}
                                 title={job.title}
-                                company={job.company}
-                                location={job.location}
+                                company={companyData}
+                                location={locationData}
                                 salaryMin={job.salaryMin}
                                 salaryMax={job.salaryMax}
-                                isSaved={true} // Báo cho JobCard biết là job này đã lưu rồi (tim đỏ)
-                                onRemove={handleRemoveJob} // Truyền hàm xóa xuống
+                                isSaved={true} 
+                                onRemove={handleRemoveJob} 
                             />
                         );
                     })}

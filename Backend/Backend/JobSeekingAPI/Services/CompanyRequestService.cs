@@ -2,6 +2,7 @@
 using JobSeekingAPI.Enums;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace JobSeekingAPI.Services
 {
@@ -61,11 +62,15 @@ namespace JobSeekingAPI.Services
             });
         }
 
-        public async Task<string> UpdateRequestStatusAsync(int id, UpdateCompanyRequestStatusDTO dto)
+        public async Task<string> UpdateRequestStatusAsync(int id, UpdateCompanyRequestStatusDTO dto, int companyOwnerId)
         {
             var request = await _requestRepo.GetByIdAsync(id);
             if (request == null)
                 throw new KeyNotFoundException("Request not found!");
+
+            var ownerProfile = await _recruiterRepo.GetRecruiterEntityByIdAsync(companyOwnerId);
+            if (ownerProfile == null || request.CompanyId != ownerProfile.CompanyId)
+                throw new UnauthorizedAccessException();
 
             if (request.Status != (int)CompanyRequestStatus.Pending)
                 throw new ArgumentException("This request has already been processed!");

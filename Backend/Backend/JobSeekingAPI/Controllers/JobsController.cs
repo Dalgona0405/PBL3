@@ -16,12 +16,14 @@ namespace JobSeekingAPI.Controllers
         private readonly IJobRepository _jobRepository;
         private readonly IMatchingService _matchingService;
         private readonly IJobService _jobService;
+        private readonly ICompanyRepository _companyRepo;
 
-        public JobsController(IJobRepository jobRepository, IMatchingService matchingService, IJobService jobService)
+        public JobsController(IJobRepository jobRepository, IMatchingService matchingService, IJobService jobService, ICompanyRepository companyRepo)
         {
             _jobRepository = jobRepository;
             _matchingService = matchingService;
             _jobService = jobService;
+            _companyRepo = companyRepo;
         }
 
         // GET: api/jobs/{id}
@@ -82,6 +84,14 @@ namespace JobSeekingAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateJob([FromBody] CreateJobDTO dto)
         {
+            var userId = User.GetUserIdFromToken();
+            if (!User.IsInRole(UserRoles.Admin))
+            {
+                var myCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
+                if (myCompanyId == null) return Forbid();
+
+                dto.CompanyId = myCompanyId.Value;
+            }
             var createdJob = await _jobService.CreateJobAsync(dto);
             return CreatedAtAction(nameof(GetJobById), new { id = createdJob.JobId }, MapToDTO(createdJob));
         }
@@ -92,7 +102,7 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> UpdateJob(int id, [FromBody] UpdateJobDTO dto)
         {
             var userId = User.GetUserIdFromToken();
-            bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
+            bool isRecruiter = User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Company);
 
             await _jobService.UpdateJobAsync(id, dto, userId, isRecruiter);
             return Ok(new { message = "Update Success" });
@@ -104,7 +114,7 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> UpdateJobStatus(int id, [FromBody] JobUpdateStatusDTO dto)
         {
             var userId = User.GetUserIdFromToken();
-            bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
+            bool isRecruiter = User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Company);
 
             await _jobService.UpdateJobStatusAsync(id, dto, userId, isRecruiter);
             return Ok(new { message = "Status update success" });
@@ -116,7 +126,7 @@ namespace JobSeekingAPI.Controllers
         public async Task<IActionResult> DeleteJob(int id)
         {
             var userId = User.GetUserIdFromToken();
-            bool isRecruiter = User.IsInRole(UserRoles.Recruiter);
+            bool isRecruiter = User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Company);
 
             await _jobService.DeleteJobAsync(id, userId, isRecruiter);
             return Ok(new { message = "Delete success" });
@@ -127,6 +137,9 @@ namespace JobSeekingAPI.Controllers
         [HttpGet("{jobId}/match/{candidateId}")]
         public async Task<IActionResult> GetJobMatchScore(int jobId, int candidateId)
         {
+            int currentUserId = User.GetUserIdFromToken();
+            if (User.IsInRole(UserRoles.Candidate) && currentUserId != candidateId)
+                return Forbid();
             var result = await _matchingService.GetJobMatchScoreAsync(jobId, candidateId);
             return Ok(result);
         }

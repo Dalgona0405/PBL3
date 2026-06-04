@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
     graph_data, sql_to_idx, idx_to_sql, idx_to_name = fetch_and_process_data()
     
     if graph_data is not None:
-        model = GCNNet(in_channels=6) 
+        model = GCNNet(in_channels=8) 
         model.load_state_dict(torch.load('gnn_encoder.pth'))
         model.eval() 
         
@@ -82,7 +82,7 @@ def train_and_reload():
     # Đọc lại data và model mới nhất
     graph_data, sql_to_idx, idx_to_sql, idx_to_name = fetch_and_process_data()
     if graph_data is not None:
-        model = GCNNet(in_channels=1)
+        model = GCNNet(in_channels=8)
         model.load_state_dict(torch.load('gnn_encoder.pth'))
         model.eval()
         with torch.no_grad():
@@ -192,27 +192,35 @@ def get_matching_score(request: MatchScoreRequest):
             }
         
         total_score = 0
+        exact_match_count = 0 # Thêm biến đếm số kỹ năng khớp 100%
         missing_skills_names = []
 
         for j_idx in job_indices:
             if j_idx in candidate_indices:
                 # Trùng khớp 100% -> Cộng trọn vẹn 1 điểm
                 total_score += 1.0
+                exact_match_count += 1 # Đánh dấu là có khớp
             else:
                 missing_skills_names.append(idx_to_name.get(j_idx, "Unknown Skill"))
                 
-                # Tìm kỹ năng tương đồng nhất của ứng viên
                 max_sim = 0.0
                 for c_idx in candidate_indices:
                     sim_score = calculate_score(node_embeddings, c_idx, j_idx)
                     if sim_score > max_sim:
                         max_sim = sim_score
                 
-                if max_sim > 0.90:
+                # Vì Cosine Similarity trả về từ -1 đến 1, ngưỡng 0.75 là cực kỳ cao
+                if max_sim > 0.75:
                     total_score += 0.5 
                 else:
                     total_score += 0.0
         
+        # 🚨 CHỐT CHẶN AN TOÀN (SANITY CHECK) 🚨
+        # Nếu Job có yêu cầu kỹ năng, nhưng ứng viên KHÔNG KHỚP 100% BẤT CỨ KỸ NĂNG NÀO
+        # -> Phạt điểm vớt vát (Chỉ cho tối đa 30% số điểm vớt vát)
+        if exact_match_count == 0 and len(job_indices) > 0:
+            total_score = total_score * 0.3
+            
         # Tính phần trăm
         match_score = round((total_score / len(job_indices)) * 100, 1)
 

@@ -15,9 +15,9 @@ function CompanyRequestsPage() {
 
     // 1. LẤY DANH SÁCH HỒ SƠ ĐANG CHỜ DUYỆT
     useEffect(() => {
-        if (!user || user.role !== 'Company') {
-            navigate('/');
-            return;
+        if (!user || user.role !== 'Company') { 
+            navigate('/'); 
+            return; 
         }
 
         const fetchPendingRequests = async () => {
@@ -96,17 +96,25 @@ function CompanyRequestsPage() {
                                         Đang chờ duyệt
                                     </span>
                                     <span className="text-sm text-gray-400">
-                                        📅 Ngày gửi: {new Date(req.requestDate || Date.now()).toLocaleDateString('vi-VN')}
+                                        📅 Ngày gửi: {new Date(req.createdAt || req.requestDate || Date.now()).toLocaleDateString('vi-VN')}
                                     </span>
                                 </div>
                                 
-                                <h3 className="text-xl font-bold text-olive mb-1">
-                                    Công ty: {req.company?.companyName || "Tên công ty ẩn"}
+                                <h3 className="text-xl font-bold text-olive mb-2">
+                                    Công ty: {req.companyName || "Tên công ty ẩn"}
                                 </h3>
-                                <p className="text-gray-600 font-medium flex items-center gap-2">
-                                    <span>👤 Người yêu cầu:</span> 
-                                    <span className="text-textmain">{req.recruiter?.fullName || "HR Ẩn danh"}</span>
-                                </p>
+                                
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                    <p className="text-gray-600 font-medium flex items-center gap-2">
+                                        <span>👤 Người yêu cầu:</span> 
+                                        <strong className="text-textmain">{req.recruiterName || "HR Ẩn danh"}</strong>
+                                    </p>
+                                    {req.recruiterEmail && (
+                                        <span className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100 flex items-center gap-1 w-fit">
+                                            📧 {req.recruiterEmail}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Nút Hành động (Đóng mộc) */}

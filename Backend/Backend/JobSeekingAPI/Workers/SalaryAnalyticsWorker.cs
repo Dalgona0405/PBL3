@@ -35,7 +35,7 @@ namespace JobSeekingAPI.Workers
 
                         // 1. C# TỰ TÍNH TOÁN LƯƠNG TRUNG BÌNH (Rất nhanh nhờ EF Core)
                         var skillsData = await context.Tags
-                            .Where(t => t.Type == "Skill" || t.Type == "Language")
+                            .Where(t => t.Type == "Skill" || t.Type == "Language" || t.Type == "Role" || t.Type == "Domain")
                             .Select(t => new
                             {
                                 skill_id = t.TagId,

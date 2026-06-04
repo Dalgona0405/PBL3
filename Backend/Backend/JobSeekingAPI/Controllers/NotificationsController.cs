@@ -50,10 +50,16 @@ namespace JobSeekingAPI.Controllers
         [HttpPatch("{id}/read")]
         public async Task<IActionResult> MarkAsRead(int id)
         {
-            await _notifRepo.MarkAsReadAsync(id);
-            return Ok(new { message = "Đã đánh dấu đọc." });
-        }
+            int currentUserId = User.GetUserIdFromToken();
+            var notif = await _notifRepo.GetByIdAsync(id);
+            if (notif == null) 
+                return NotFound("Not found notification.");
+            if (notif.UserId != currentUserId) 
+                return Forbid();
 
+            await _notifRepo.MarkAsReadAsync(id);
+            return Ok(new { message = "Mask as read" });
+        }
         // PATCH: api/notifications/read-all
         [HttpPatch("read-all")]
         public async Task<IActionResult> MarkAllAsRead()

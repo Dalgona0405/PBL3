@@ -17,7 +17,7 @@ namespace JobSeekingAPI.DTOs
         [MaxLength(100, ErrorMessage = "FullName too long")]
         public string FullName { get; set; } = string.Empty;
         [Required(ErrorMessage = "Please enter Role")]
-        [RegularExpression("^(Candidate|Recruiter)$", ErrorMessage = "Role just can be Candidate or Recruiter")]
+        [RegularExpression("^(Candidate|Recruiter|Company)$", ErrorMessage = "Role just can be Candidate, Recruiter or Company")]
         public string Role { get; set; } = "Candidate";
 
         public string? Avatar { get; set; }

@@ -25,7 +25,6 @@ function AdminDashboardPage() {
                 setIsLoading(true);
                 const [summaryRes, pendingRes] = await Promise.all([
                     axiosClient.get(`${API_URLS.REPORTS}/dashboard-summary`).catch(() => null),
-                    axiosClient.get(`${API_URLS.COMPANY_REQUESTS}/pending`).catch(() => [])
                 ]);
 
                 setSummary(summaryRes?.data || summaryRes?.items || summaryRes || {});
@@ -214,10 +213,10 @@ function AdminDashboardPage() {
                         <h4 className="font-bold text-textmain mb-1">Quản lý Kỹ năng</h4>
                         <p className="text-xs text-gray-500">Thêm/sửa các Tags công nghệ mới.</p>
                     </div>
-                    <div onClick={() => navigate('/admin/company-requests')} className="p-5 bg-gray-50 hover:bg-orange-50 rounded-2xl border border-gray-100 shadow-sm cursor-pointer transition-colors group">
+                    <div onClick={() => navigate('/admin/locations')} className="p-5 bg-gray-50 hover:bg-orange-50 rounded-2xl border border-gray-100 shadow-sm cursor-pointer transition-colors group">
                         <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">🛡️</div>
-                        <h4 className="font-bold text-textmain mb-1">Duyệt yêu cầu</h4>
-                        <p className="text-xs text-gray-500">Cấp phép cho HR tạo công ty mới.</p>
+                        <h4 className="font-bold text-textmain mb-1">Quản lý Địa điểm</h4>
+                        <p className="text-xs text-gray-500">Thêm/sửa các địa điểm làm việc mới.</p>
                     </div>
                 </div>
             </div>

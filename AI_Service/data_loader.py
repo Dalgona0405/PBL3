@@ -73,9 +73,11 @@ def fetch_and_process_data(limit=200):
             group = node.get('group') or node.get('Group') or 'Skill'
             is_skill = 1.0 if group == 'Skill' else 0.0
             is_lang = 1.0 if group == 'Language' else 0.0
+            is_role = 1.0 if group == 'Role' else 0.0
+            is_domain = 1.0 if group == 'Domain' else 0.0
             
             # Vector đặc trưng 6 chiều
-            features.append([salary_norm, jobs_norm, is_skill, is_lang, deg_norm, size_norm])
+            features.append([salary_norm, jobs_norm, is_skill, is_lang, is_role, is_domain, deg_norm, size_norm])
             
         x = torch.tensor(features, dtype=torch.float)
         
