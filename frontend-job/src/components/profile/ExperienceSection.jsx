@@ -20,7 +20,6 @@ function ExperienceSection({ userId }) {
     const fetchExperiences = async () => {
         try {
             setIsLoading(true);
-            // Gọi API lấy kinh nghiệm của user hiện tại
             const data = await axiosClient.get(`${API_URLS.CANDIDATE}/${userId}/experiences`);
             setExperiences(data || []);
         } catch (error) {
@@ -43,7 +42,6 @@ function ExperienceSection({ userId }) {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
-            // Gói hàng gửi cho Backend (C# yêu cầu có userId)
             const payload = {
                 userId: userId,
                 jobTitle: formData.jobTitle,
@@ -122,7 +120,7 @@ function ExperienceSection({ userId }) {
             {showForm ? (
                 <form onSubmit={handleSave} className="bg-cream p-6 rounded-2xl border border-gray-200 mb-6 animate-fade-in-up">
                     
-                    {/* DÙNG LEGO CHO CÁC Ô INPUT */}
+                    {/* CÁC Ô INPUT */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <InputField 
                             label="Chức danh / Vị trí"
@@ -157,7 +155,7 @@ function ExperienceSection({ userId }) {
                         />
                     </div>
 
-                    {/* TEXTAREA GIỮ NGUYÊN */}
+                    {/* TEXTAREA */}
                     <div className="mb-6">
                         <label className="block text-sm font-bold text-gray-700 mb-2">Mô tả công việc</label>
                         <textarea name="description" rows="3" value={formData.description} onChange={handleChange} placeholder="Mô tả ngắn gọn những việc bạn đã làm và thành tựu đạt được..." className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-earth outline-none bg-white resize-none"></textarea>
@@ -177,7 +175,7 @@ function ExperienceSection({ userId }) {
                 </form>
             ) : null}
 
-            {/* KHU VỰC HIỂN THỊ DANH SÁCH KINH NGHIỆM (Giữ nguyên) */}
+            {/* KHU VỰC HIỂN THỊ DANH SÁCH KINH NGHIỆM */}
             {isLoading ? (
                 <div className="text-center text-gray-400 animate-pulse py-4">Đang tải kinh nghiệm... 🌿</div>
             ) : experiences.length === 0 && !showForm ? (

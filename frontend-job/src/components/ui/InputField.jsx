@@ -28,7 +28,6 @@ function InputField({
                 placeholder={placeholder}
                 required={required}
                 disabled={disabled}
-                // Gom toàn bộ class Tailwind dài ngoằng vào đây 1 lần duy nhất
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-earth focus:ring-2 focus:ring-earth focus:ring-opacity-20 outline-none transition-all bg-gray-50 focus:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
         </div>

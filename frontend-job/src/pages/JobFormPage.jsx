@@ -334,16 +334,20 @@ function JobFormPage() {
                             </div>
 
                             {/* 🌟 HỘP THOẠI GỢI Ý (DROPDOWN) */}
+                            {/* 🌟 HỘP THOẠI GỢI Ý (DROPDOWN) */}
                             {showTagDropdown && (
                                 <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
                                     {isSuggesting ? (
                                         <div className="p-3 text-sm text-gray-500 text-center">Đang tìm... 🌿</div>
                                     ) : tagSuggestions.length > 0 ? (
                                         tagSuggestions.map(tag => (
-                                            <div
+                                            <div 
                                                 key={tag.tagId}
                                                 className="px-4 py-3 hover:bg-cream cursor-pointer border-b border-gray-50 last:border-0 transition-colors flex justify-between items-center"
-                                                onClick={() => {
+                                                onMouseDown={(e) => {
+                                                    // Ngăn ô input bị mất focus (không cho onBlur chạy)
+                                                    e.preventDefault(); 
+                                                    
                                                     // Nếu chưa có trong danh sách thì mới thêm vào
                                                     if (!selectedTags.some(t => t.tagId === tag.tagId)) {
                                                         setSelectedTags([...selectedTags, { tagId: tag.tagId, tagName: tag.tagName }]);

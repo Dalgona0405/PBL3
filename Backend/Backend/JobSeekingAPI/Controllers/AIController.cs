@@ -10,15 +10,13 @@ namespace JobSeekingAPI.Controllers
         private readonly HttpClient _httpClient;
         private readonly string _pythonBaseUrl;
 
-        // Tiêm HttpClient để C# có thể "gọi điện" sang Python
         public AIController(HttpClient httpClient, IConfiguration config)
         {
             _httpClient = httpClient;
-            // Lấy số điện thoại của Python từ danh bạ (appsettings.json)
             _pythonBaseUrl = config["PythonAI:BaseUrl"] ?? "http://localhost:8000";
         }
 
-        // Chỉ Admin mới có quyền bắt AI đi học!
+        // Chỉ Admin mới có quyền retrain AI!
         /// <summary>
         /// Kích hoạt AI tự động học lại dữ liệu mới (Chỉ dành cho Admin)
         /// </summary>
@@ -32,7 +30,6 @@ namespace JobSeekingAPI.Controllers
         {
             try
             {
-                // C# gọi điện sang Python qua đường dây POST
                 var response = await _httpClient.PostAsync($"{_pythonBaseUrl}/api/train", null);
                 
                 if (response.IsSuccessStatusCode)
@@ -44,7 +41,6 @@ namespace JobSeekingAPI.Controllers
             }
             catch (Exception ex)
             {
-                // Bắt lỗi nếu Python chưa bật server
                 return StatusCode(500, new { message = $"Không thể kết nối tới AI Server: {ex.Message}" });
             }
         }

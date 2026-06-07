@@ -18,6 +18,7 @@ function DetailJobPage() {
     const [selectedFile, setSelectedFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [matchResult, setMatchResult] = useState(null);
+    const [candidateProfile, setCandidateProfile] = useState(null);
 
     useEffect(() => {
         const fetchJobDetail = async () => {
@@ -43,7 +44,7 @@ function DetailJobPage() {
         fetchMatchScore();
     }, [id, user]);
 
-    const handleOpenModal = () => {
+    const handleOpenModal = async () => {
         if (!user) {
             toast.error("Bạn cần đăng nhập để ứng tuyển nha! 🌿");
             navigate('/login', { state: { from: location.pathname } });
@@ -53,7 +54,76 @@ function DetailJobPage() {
             toast.error("Bạn là nhà tuyển dụng mà, sao lại tự đi xin việc? 😆");
             return;
         }
-        setShowModal(true);
+
+        const toastId = toast.loading("Đang kiểm tra hồ sơ của bạn...");
+        try {
+            const profileRes = await axiosClient.get('/Candidates/me');
+            const actualProfile = profileRes.items || profileRes.data || profileRes;
+            setCandidateProfile(actualProfile);
+
+            toast.dismiss(toastId); // Tắt thông báo loading
+
+            // Kiểm tra CV từ data mới nhất vừa lấy về
+            const cv = actualProfile?.cvUrl || actualProfile?.cVUrl || actualProfile?.CVUrl;
+            
+            if (!cv) {
+                setCvOption('new'); // Ép chọn tải mới nếu chưa có
+            } else {
+                setCvOption('default');
+            }
+            
+            setShowModal(true);
+
+        } catch (error) {
+            toast.error("Lỗi khi kiểm tra hồ sơ. Vui lòng thử lại!", { id: toastId });
+        }
+    };
+
+    const handleConfirmApply = async () => {
+        setIsSubmitting(true);
+        let finalCvUrl = null; // 🌟 Đổi thành null thay vì chuỗi rỗng ""
+        const toastId = toast.loading("Đang gửi hồ sơ của bạn... 🌿");
+
+        try {
+            if (cvOption === 'new') {
+                if (!selectedFile) {
+                    toast.error("Bạn chưa chọn file CV mới kìa! 🌿", { id: toastId });
+                    setIsSubmitting(false);
+                    return;
+                }
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                const uploadRes = await axiosClient.post('/files/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                finalCvUrl = uploadRes.url || uploadRes.fileUrl || uploadRes.data || uploadRes.file || uploadRes;
+            } else {
+                // 🌟 BẢO HIỂM LỚP 2: Nếu cố tình chọn default mà không có CV
+                if (!candidateProfile?.cvUrl) {
+                    toast.error("Bạn chưa có CV mặc định. Vui lòng tải CV mới lên nha!", { id: toastId });
+                    setIsSubmitting(false);
+                    return;
+                }
+                // Gửi null để Backend tự động lấy CV mặc định trong DB
+                finalCvUrl = null; 
+            }
+            
+             const payload = {
+                userId: user.id,
+                jobId: parseInt(id),
+                cvUrl: finalCvUrl
+            };
+
+            await axiosClient.post(API_URLS.APPLICATIONS, payload);
+            toast.success("🎉 Chúc mừng bạn! Nộp CV thành công rồi nè!", { id: toastId });
+            setShowModal(false);
+
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || "Bạn đã ứng tuyển công việc này rồi hoặc lỗi mạng. 🌿";
+            toast.error(`Lỗi: ${errorMsg}`, { id: toastId });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleFileChange = (e) => {
@@ -70,44 +140,6 @@ function DetailJobPage() {
                 return;
             }
             setSelectedFile(file);
-        }
-    };
-
-    const handleConfirmApply = async () => {
-        setIsSubmitting(true);
-        let finalCvUrl = "";
-        const toastId = toast.loading("Đang gửi hồ sơ của bạn... 🌿");
-
-        try {
-            if (cvOption === 'new') {
-                if (!selectedFile) {
-                    toast.error("Bạn chưa chọn file CV mới kìa! 🌿", { id: toastId });
-                    setIsSubmitting(false);
-                    return;
-                }
-                const formData = new FormData();
-                formData.append('file', selectedFile);
-                const uploadRes = await axiosClient.post('/files/upload', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
-                finalCvUrl = uploadRes.url || uploadRes.fileUrl || uploadRes.data || uploadRes.file || uploadRes;
-            }
-
-            const payload = {
-                userId: user.id,
-                jobId: parseInt(id),
-                cvUrl: finalCvUrl
-            };
-
-            await axiosClient.post(API_URLS.APPLICATIONS, payload);
-            toast.success("🎉 Chúc mừng bạn! Nộp CV thành công rồi nè!", { id: toastId });
-            setShowModal(false);
-
-        } catch (error) {
-            const errorMsg = error.response?.data?.message || "Bạn đã ứng tuyển công việc này rồi hoặc lỗi mạng. 🌿";
-            toast.error(`Lỗi: ${errorMsg}`, { id: toastId });
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
@@ -339,9 +371,7 @@ function DetailJobPage() {
                 </div>
             </div>
 
-            {/* ======================================================= */}
             {/* MODAL (POPUP) XÁC NHẬN NỘP CV (Giữ nguyên logic, làm đẹp UI) */}
-            {/* ======================================================= */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm px-4">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up border-t-8 border-olive">
@@ -355,13 +385,34 @@ function DetailJobPage() {
                                 Bạn đang ứng tuyển vào vị trí <strong className="text-olive">{jobDetail.title}</strong>. Vui lòng chọn CV:
                             </p>
 
-                            <label className={`flex items-center p-5 border-2 rounded-2xl mb-4 cursor-pointer transition-all ${cvOption === 'default' ? 'border-earth bg-cream' : 'border-gray-100 hover:bg-gray-50'}`}>
-                                <input type="radio" name="cvOption" value="default" checked={cvOption === 'default'} onChange={() => setCvOption('default')} className="w-5 h-5 text-earth focus:ring-earth" />
-                                <div className="ml-4">
-                                    <span className="block font-bold text-textmain text-lg">Dùng CV mặc định</span>
-                                    <span className="text-sm text-gray-500">Hệ thống sẽ lấy CV bạn đã lưu trong Hồ sơ.</span>
-                                </div>
-                            </label>
+                            {/* 🌟 KIỂM TRA XEM CÓ CV MẶC ĐỊNH CHƯA */}
+                            {(() => {
+                                // 🌟 BAO LÔ: Quét hết mọi trường hợp chữ Hoa/Thường của C#
+                                const cv = candidateProfile?.cvUrl || candidateProfile?.cVUrl || candidateProfile?.CVUrl;
+                                const hasDefaultCv = !!cv;
+                                
+                                return (
+                                    <label className={`flex items-center p-5 border-2 rounded-2xl mb-4 transition-all ${!hasDefaultCv ? 'opacity-50 cursor-not-allowed bg-gray-50 border-gray-200' : (cvOption === 'default' ? 'border-earth bg-cream cursor-pointer' : 'border-gray-100 hover:bg-gray-50 cursor-pointer')}`}>
+                                        <input 
+                                            type="radio" 
+                                            name="cvOption" 
+                                            value="default" 
+                                            disabled={!hasDefaultCv}
+                                            checked={cvOption === 'default'} 
+                                            onChange={() => setCvOption('default')} 
+                                            className="w-5 h-5 text-earth focus:ring-earth disabled:bg-gray-300" 
+                                        />
+                                        <div className="ml-4">
+                                            <span className="block font-bold text-textmain text-lg">Dùng CV mặc định</span>
+                                            {hasDefaultCv ? (
+                                                <span className="text-sm text-gray-500">Hệ thống sẽ lấy CV bạn đã lưu trong Hồ sơ.</span>
+                                            ) : (
+                                                <span className="text-sm text-red-500 font-medium">⚠️ Bạn chưa có CV trong Hồ sơ. Vui lòng tải file mới lên.</span>
+                                            )}
+                                        </div>
+                                    </label>
+                                );
+                            })()}
 
                             <label className={`flex items-center p-5 border-2 rounded-2xl cursor-pointer transition-all ${cvOption === 'new' ? 'border-earth bg-cream' : 'border-gray-100 hover:bg-gray-50'}`}>
                                 <input type="radio" name="cvOption" value="new" checked={cvOption === 'new'} onChange={() => setCvOption('new')} className="w-5 h-5 text-earth focus:ring-earth" />

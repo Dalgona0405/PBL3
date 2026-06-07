@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import SelectField from '../ui/SelectField';
 import Button from '../ui/Button';
 
-// 🌟 NHẬN userId TỪ PROFILE PAGE TRUYỀN VÀO
 function SkillSection({ userId }) {
     const [allTags, setAllTags] = useState([]);
     const [userTags, setUserTags] = useState([]);
@@ -20,9 +19,6 @@ function SkillSection({ userId }) {
         const fetchSkillsData = async () => {
             try {
                 setIsLoading(true);
-
-                // 🌟 TỐI ƯU HÓA: Gọi API lấy đúng loại Tag cần thiết thay vì lấy tất cả
-                // Dùng Promise.all để gọi song song 2 API lấy Skill và Language cho nhanh
                 const [skillsRes, languagesRes, rolesRes, domainsRes, userSkillsData] = await Promise.all([
                     axiosClient.get('/Tags/type/Skill').catch(() => []),
                     axiosClient.get('/Tags/type/Language').catch(() => []),
@@ -31,7 +27,6 @@ function SkillSection({ userId }) {
                     axiosClient.get(`/Candidates/${userId}/skills`).catch(() => [])
                 ]);
 
-                // Gộp 2 mảng Skill và Language lại với nhau
                 const validTags = [...(skillsRes || []), ...(languagesRes || []), ...(rolesRes || []), ...(domainsRes || [])];
 
                 setAllTags(validTags);
@@ -44,7 +39,7 @@ function SkillSection({ userId }) {
         };
 
         fetchSkillsData();
-    }, [userId]); // 🌟 Thêm userId vào mảng phụ thuộc để React biết khi nào cần gọi lại
+    }, [userId]);
 
     const handleAddSkill = async () => {
         if (!selectedTagId) {
@@ -72,7 +67,6 @@ function SkillSection({ userId }) {
                     proficiency: t.proficiency
                 }));
 
-                // 🌟 GỌI API PUT ĐỂ CẬP NHẬT (Dùng /me/skills theo Swagger)
                 await axiosClient.put('/Candidates/me/skills', payload);
 
                 setUserTags(updatedSkills);
@@ -94,7 +88,6 @@ function SkillSection({ userId }) {
                 proficiency: t.proficiency
             }));
 
-            // 🌟 GỌI API PUT ĐỂ CẬP NHẬT
             await axiosClient.put('/Candidates/me/skills', payload);
 
             setUserTags(updatedSkills);
@@ -112,7 +105,7 @@ function SkillSection({ userId }) {
                 🧩 Kỹ năng chuyên môn
             </h3>
 
-            {/* 🌟 CÁCH MỚI: Dùng Grid chia cột để các ô Select và Nút bấm nằm thẳng hàng */}
+            {/* Dùng Grid chia cột để các ô Select và Nút bấm nằm thẳng hàng */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 items-end">
                 
                 {/* Cột 1+2: Chọn kỹ năng (Chiếm 2 phần) */}
@@ -151,7 +144,7 @@ function SkillSection({ userId }) {
                 </div>
             </div>
 
-            {/* DANH SÁCH KỸ NĂNG ĐÃ THÊM (Giữ nguyên) */}
+            {/* DANH SÁCH KỸ NĂNG ĐÃ THÊM */}
             <div className="flex flex-wrap gap-4">
                 {userTags.length > 0 ? (
                     userTags.map((tag) => (

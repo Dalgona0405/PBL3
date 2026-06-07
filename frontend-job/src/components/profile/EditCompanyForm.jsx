@@ -7,7 +7,6 @@ import SelectField from '../ui/SelectField';
 import Button from '../ui/Button';
 
 function EditCompanyForm({ company, setFormData }) {
-    // State lưu trữ thông tin công ty đang sửa
     const [companyData, setCompanyData] = useState({
         companyName: company?.companyName || '',
         website: company?.website || '',
@@ -53,7 +52,6 @@ function EditCompanyForm({ company, setFormData }) {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            // Tùy Backend C# trả về tên biến là gì (url, fileUrl, hay data), mình hứng lấy
             const newLogoUrl = uploadRes.url || uploadRes.fileUrl || uploadRes.data || uploadRes.file || uploadRes;
 
             // Cập nhật lại State để hiển thị ảnh mới ngay lập tức
@@ -71,7 +69,6 @@ function EditCompanyForm({ company, setFormData }) {
         const toastId = toast.loading("Đang cập nhật thông tin công ty... 🏢");
 
         try {
-            // Gọi API PUT /api/Companies/{id}
             await axiosClient.put(`${API_URLS.COMPANIES}/${company.companyId}`, companyData);
 
             // Cập nhật lại State tổng của trang Profile để giao diện đồng bộ

@@ -21,7 +21,7 @@ function ChangePasswordForm({ userId }) {
         e.preventDefault();
         
         if (formData.newPassword !== formData.confirmPassword) {
-            toast.error("⚠️ Mật khẩu mới và xác nhận không khớp nhau nha Trúc ơi!");
+            toast.error("⚠️ Mật khẩu mới và xác nhận không khớp nhau nha!");
             return;
         }
         if (formData.newPassword.length < 6) {

@@ -7,9 +7,8 @@ function Button({
     type = "button",    // Loại nút (button, submit)
     isLoading = false,  // Trạng thái đang tải
     disabled = false,   // Trạng thái khóa nút
-    variant = "primary" // Màu sắc: "primary" (Màu Đất) hoặc "secondary" (Màu Olive)
+    variant = "primary" // Màu sắc: "primary" hoặc "secondary"
 }) {
-    // Tự động đổi màu dựa vào variant Trúc truyền vào
     const baseStyle = "w-full py-3.5 rounded-xl font-bold text-lg transition-all transform shadow-md flex justify-center items-center gap-2";
     const colorStyle = variant === "primary" 
         ? "bg-earth text-white hover:bg-olive hover:shadow-lg hover:-translate-y-1" 

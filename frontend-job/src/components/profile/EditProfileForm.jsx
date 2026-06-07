@@ -11,7 +11,7 @@ function EditProfileForm({ formData, setFormData }) {
     const [companyResults, setCompanyResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
-    const [selectedNewCompany, setSelectedNewCompany] = useState(null); // Lưu công ty vừa chọn để gửi request
+    const [selectedNewCompany, setSelectedNewCompany] = useState(null);
     const [isSendingRequest, setIsSendingRequest] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -27,7 +27,7 @@ function EditProfileForm({ formData, setFormData }) {
 
     const handleSearchCompany = async (keyword) => {
         setSearchTerm(keyword);
-        setSelectedNewCompany(null); // Reset công ty đã chọn nếu user gõ lại
+        setSelectedNewCompany(null);
         if (keyword.length < 2) {
             setCompanyResults([]);
             setShowDropdown(false);
@@ -48,7 +48,7 @@ function EditProfileForm({ formData, setFormData }) {
 
     const handleSelectCompany = (company) => {
         setSearchTerm(company.companyName);
-        setSelectedNewCompany(company); // Lưu lại để hiện nút "Gửi yêu cầu"
+        setSelectedNewCompany(company);
         setShowDropdown(false);
     };
 
@@ -144,7 +144,7 @@ function EditProfileForm({ formData, setFormData }) {
                             />
                         </div>
 
-                        {/* PHẦN UPLOAD CV GIỮ NGUYÊN (Không đụng vào) */}
+                        {/* PHẦN UPLOAD CV */}
                         <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4 mt-6 pt-6 border-t border-dashed border-gray-200">
                             <p className="w-32 font-medium text-olive mt-2">📄 CV Mặc định:</p>
                             <div className="flex-1">
@@ -210,7 +210,7 @@ function EditProfileForm({ formData, setFormData }) {
                             onChange={handleInputChange}
                         />
 
-                        {/* HIỂN THỊ CÔNG TY HIỆN TẠI (Giữ nguyên) */}
+                        {/* HIỂN THỊ CÔNG TY HIỆN TẠI */}
                         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                             <p className="w-32 font-medium text-gray-600">🏢 Công ty hiện tại:</p>
                             <div className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 font-medium">
@@ -218,7 +218,7 @@ function EditProfileForm({ formData, setFormData }) {
                             </div>
                         </div>
 
-                        {/* Ô TÌM KIẾM ĐỂ XIN VÀO CÔNG TY MỚI (Giữ nguyên) */}
+                        {/* Ô TÌM KIẾM ĐỂ XIN VÀO CÔNG TY MỚI */}
                         <div className="flex flex-col md:flex-row md:items-start gap-2 md:gap-4 relative mt-6 pt-6 border-t border-dashed border-gray-200" ref={dropdownRef}>
                             <p className="w-32 font-medium text-olive mt-3">🔄 Đổi công ty:</p>
                             <div className="flex-1 relative">

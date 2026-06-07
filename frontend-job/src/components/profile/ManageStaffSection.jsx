@@ -13,7 +13,6 @@ function ManageStaffSection({ companyId }) {
         const fetchStaff = async () => {
             try {
                 setIsLoading(true);
-                // Gọi API lấy danh sách HR của công ty này
                 const data = await axiosClient.get(`${API_URLS.RECRUITERS}/company/${companyId}`);
                 setStaffList(Array.isArray(data) ? data : (data.items || []));
             } catch (error) {
@@ -27,7 +26,7 @@ function ManageStaffSection({ companyId }) {
         fetchStaff();
     }, [companyId]);
 
-    // Hàm xử lý khi ông Chủ bấm nút Đuổi việc
+    // Hàm xử lý khi bấm nút Đuổi việc
     const handleFireStaff = async (recruiterId, staffName) => {
         if (!window.confirm(`⚠️ Bạn có chắc chắn muốn xóa quyền của nhân viên "${staffName}" khỏi công ty không?`)) {
             return;
@@ -35,12 +34,10 @@ function ManageStaffSection({ companyId }) {
 
         const toastId = toast.loading("Đang xử lý... 🌿");
         try {
-            // Logic BrSE: Cập nhật lại profile của HR này, set CompanyId = null để cắt đứt quan hệ
             await axiosClient.put(`${API_URLS.RECRUITERS}/${recruiterId}`, {
                 companyId: null 
             });
 
-            // Xóa nhân viên đó khỏi màn hình
             setStaffList(prev => prev.filter(staff => staff.recruiterId !== recruiterId && staff.id !== recruiterId));
             toast.success(`Đã xóa quyền của ${staffName} thành công!`, { id: toastId });
         } catch (error) {
@@ -68,7 +65,6 @@ function ManageStaffSection({ companyId }) {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {staffList.map((staff, index) => {
-                        // Tùy Backend C# trả về tên biến là gì, mình bao lô hết
                         const currentId = staff.recruiterId || staff.id;
                         const fullName = staff.user?.fullName || staff.fullName || "Nhân viên ẩn danh";
                         const email = staff.user?.email || staff.email || "Chưa có email";
