@@ -71,6 +71,16 @@ Follow these steps to set up the project on your local machine.
     ```bash
     npm run dev
     ```
+## 📸 UI & Screenshots
+
+*(Add your actual product images to the `images/` folder and update the links below to showcase your application)*
+
+| Home Page | Job Details & AI Forecast |
+| :---: | :---: |
+| <img width="1920" height="1080" alt="Screenshot 2026-06-04 200306" src="https://github.com/user-attachments/assets/f8304ff7-5e0e-4a8d-806a-ccc11734713b" />| <img width="1920" height="1080" alt="Screenshot 2026-06-04 200328" src="https://github.com/user-attachments/assets/60141bd5-6adc-42c4-a994-72187d4d4ca8" /> <img width="1920" height="1080" alt="Screenshot 2026-06-04 200351" src="https://github.com/user-attachments/assets/d1725093-3d81-4550-905c-eee4435b18b4" /><img width="1920" height="1080" alt="Screenshot 2026-06-04 200422" src="https://github.com/user-attachments/assets/0826a51c-ed22-4a5b-9647-b4dfc0b7ad1b" />|
+| **Candidate Dashboard / Profile** | **Recruiter / Admin Dashboard** |
+|<img width="1920" height="1080" alt="Screenshot 2026-06-04 200435" src="https://github.com/user-attachments/assets/e8225cdd-c729-4cae-a718-ab1cce7c462d" /> <img width="1920" height="1080" alt="Screenshot 2026-06-04 200451" src="https://github.com/user-attachments/assets/571787ee-1b0e-42ac-b232-8e26b21cda1c" /> <img width="1920" height="1080" alt="Screenshot 2026-06-04 200519" src="https://github.com/user-attachments/assets/79cba7d5-415c-49fb-8c15-ddb52bb7ad2e" /> <img width="1920" height="1080" alt="Screenshot 2026-06-04 200529" src="https://github.com/user-attachments/assets/58d58641-57d1-44f8-9baf-1f2016cf5d17" /> <img width="1920" height="1080" alt="Screenshot 2026-06-04 200542" src="https://github.com/user-attachments/assets/9141b4cf-63ae-488d-8a47-2baf99decefa" /> |  <img width="1920" height="1080" alt="Screenshot 2026-06-04 200905" src="https://github.com/user-attachments/assets/5ed1f915-ca80-4c1a-8527-36fa40be3510" /> <img width="1920" height="1080" alt="Screenshot 2026-06-04 200912" src="https://github.com/user-attachments/assets/f7195df2-99b7-45ba-9692-83fedf02a4b4" /> <img width="1920" height="1080" alt="Screenshot 2026-06-04 200929" src="https://github.com/user-attachments/assets/55906b68-b9dc-4df3-a234-29ae61442e56" /> <img width="1920" height="1080" alt="Screenshot 2026-06-04 201003" src="https://github.com/user-attachments/assets/1493c119-fda2-4d88-a16b-c0974097055e" /> <img width="1920" height="1080" alt="Screenshot 2026-06-04 201406" src="https://github.com/user-attachments/assets/49b61ef5-617f-48f8-b4ac-e9e204f4566a" /> |
+
 ## 👥 Authors & Acknowledgments
 - **[Thi Nguyễn Thanh Trúc]** – *Backend Developer, Frontend Developer, UI/UX Design, Database Design & Data Crawling*
 - **[Trần Bá Thanh]** – *Backend Developer, AI Engineer & Data Processing*
