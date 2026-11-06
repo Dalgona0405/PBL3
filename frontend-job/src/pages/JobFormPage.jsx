@@ -334,7 +334,6 @@ function JobFormPage() {
                             </div>
 
                             {/* 🌟 HỘP THOẠI GỢI Ý (DROPDOWN) */}
-                            {/* 🌟 HỘP THOẠI GỢI Ý (DROPDOWN) */}
                             {showTagDropdown && (
                                 <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
                                     {isSuggesting ? (
