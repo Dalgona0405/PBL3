@@ -18,6 +18,7 @@ namespace JobSeekingAPI.Repositories
         
         // ===== LỌC THEO QUAN HỆ =====
         Task<IEnumerable<Job>> GetJobsByCompanyAsync(int companyId);
+        Task<IEnumerable<Job>> GetJobsByRecruiterAsync(int recruiterUserId);
         Task<IEnumerable<Job>> GetJobsByLocationAsync(int locationId);
         Task<IEnumerable<Job>> GetJobsByTagAsync(int tagId);
         

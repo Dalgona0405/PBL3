@@ -37,15 +37,16 @@ namespace JobSeekingAPI.Repositories
 
         public async Task MarkAllAsReadAsync(int userId)
         {
-            var unreadNotifs = await _context.Notifications
+            await _context.Notifications
                 .Where(n => n.UserId == userId && !n.IsRead)
-                .ToListAsync();
+                .ExecuteUpdateAsync(s => s.SetProperty(n => n.IsRead, true));
+        }
 
-            foreach (var notif in unreadNotifs)
-            {
-                notif.IsRead = true;
-            }
-            await _context.SaveChangesAsync();
+        public async Task<int> GetUnreadCountAsync(int userId)
+        {
+            return await _context.Notifications
+                .AsNoTracking()
+                .CountAsync(n => n.UserId == userId && !n.IsRead);
         }
     }
 }

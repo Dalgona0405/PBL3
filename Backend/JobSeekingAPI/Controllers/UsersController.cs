@@ -1,166 +1,108 @@
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Enums;
 using JobSeekingAPI.Helpers;
-using JobSeekingAPI.Models;
-using JobSeekingAPI.Repositories;
+using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JobSeekingAPI.Controllers
 {
+    /// <summary>
+    /// Quản lý tài khoản người dùng, tra cứu hồ sơ và đổi mật khẩu
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IUserService _userService;
 
-        public UsersController(IUserRepository userRepository)
+        public UsersController(IUserService userService)
         {
-            _userRepository = userRepository;
+            _userService = userService;
         }
 
-        // GET: api/users
+        /// <summary>
+        /// Lấy danh sách tất cả tài khoản người dùng có phân trang (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpGet]
         public async Task<IActionResult> GetAllUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 100)
         {
-            var users = await _userRepository.GetAllAsync();
-            var dtos = users.Select(u => MapToDTO(u));
-            var total = dtos.Count();
-            var paged = dtos.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-            var result = new
-            {
-                TotalCount = total,
-                Page = page,
-                PageSize = pageSize,
-                TotalPages = (int)System.Math.Ceiling(total / (double)pageSize),
-                Data = paged
-            };
-
+            var result = await _userService.GetAllUsersAsync(page, pageSize);
             return Ok(result);
         }
 
-        // GET: api/users/{id}
+        /// <summary>
+        /// Lấy thông tin chi tiết của một người dùng theo Id (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
-            var user = await _userRepository.GetUserDetailByIdAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-            var dto = MapToDTO(user);
-            return Ok(dto);
+            var userDto = await _userService.GetUserByIdAsync(id);
+            return Ok(userDto);
         }
 
-        // PUT: api/users/{id}
+        /// <summary>
+        /// Cập nhật thông tin tài khoản cá nhân (họ tên, ảnh đại diện, mật khẩu mới)
+        /// </summary>
         [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserDTO updateUserDto)
         {
-            if (id != User.GetUserIdFromToken())
-                return Forbid();
-
-            var existingUser = await _userRepository.GetUserDetailByIdAsync(id);
-            if (existingUser == null)
-                return NotFound("User not found");
-
-            if (!string.IsNullOrWhiteSpace(updateUserDto.NewPassword))
-            {
-                existingUser.Password = BCrypt.Net.BCrypt.HashPassword(updateUserDto.NewPassword);
-            }
-
-            // Update Candidate if exists
-            if (existingUser.Candidate != null)
-            {
-                existingUser.FullName = updateUserDto.FullName ?? existingUser.FullName;
-                existingUser.Candidate.User.Avatar = updateUserDto.Avatar ?? existingUser.Candidate.User.Avatar;
-                existingUser.Candidate.User.LastLogin = DateTime.UtcNow;
-            }
-            else if (existingUser.Role == "Recruiter")
-            {
-                // Update Recruiter nếu cần
-                // Code sẽ thêm sau
-            }
-
-            await _userRepository.UpdateAsync(existingUser);
-            return Ok(new { message = "User updated successfully" });
+            int currentUserId = User.GetUserIdFromToken();
+            await _userService.UpdateUserAsync(id, currentUserId, updateUserDto);
+            return Ok(new { message = "Cập nhật thông tin tài khoản thành công." });
         }
 
-        // DELETE: api/users/{id}
+        /// <summary>
+        /// Xóa mềm một tài khoản người dùng (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            var user = await _userRepository.GetUserDetailByIdAsync(id);
-
-            if (user == null)
-                return NotFound("User not found");
-
-            user.DeletedAt = DateTime.UtcNow;
-            await _userRepository.UpdateAsync(user);
-
-            return Ok(new { message = "User deleted successfully" });
+            await _userService.DeleteUserAsync(id);
+            return Ok(new { message = "Xóa tài khoản người dùng thành công." });
         }
 
-        // GET: api/users/search
+        /// <summary>
+        /// Tìm kiếm và lọc người dùng theo từ khóa và vai trò (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpGet("search")]
-        public async Task<IActionResult> SearchUsers([FromQuery] string? keyword,
-                                                     [FromQuery] string? role,
-                                                     [FromQuery] int page = 1,
-                                                     [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> SearchUsers(
+            [FromQuery] string? keyword,
+            [FromQuery] string? role,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
-            var result = await _userRepository.SearchUsersAsync(keyword, role, page, pageSize);
-
+            var result = await _userService.SearchUsersAsync(keyword, role, page, pageSize);
             return Ok(result);
         }
 
-        // GET: api/users/profile
+        /// <summary>
+        /// Lấy thông tin tài khoản của người dùng đang đăng nhập
+        /// </summary>
         [Authorize]
         [HttpGet("profile")]
         public async Task<IActionResult> GetCurrentUserProfile()
         {
-            var userId = User.GetUserIdFromToken();
-            return await GetUserById(userId);
+            int userId = User.GetUserIdFromToken();
+            var userDto = await _userService.GetUserByIdAsync(userId);
+            return Ok(userDto);
         }
 
-        // PATCH: api/users/{id}/change-password
+        /// <summary>
+        /// Đổi mật khẩu cho tài khoản hiện tại
+        /// </summary>
         [Authorize]
         [HttpPatch("{id}/change-password")]
         public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordDTO changePasswordDto)
         {
-            if (id != User.GetUserIdFromToken())
-                return Forbid();
-
-            var user = await _userRepository.GetByIdAsync(id);
-
-            if (user == null)
-                return NotFound("User not found");
-
-            if (!BCrypt.Net.BCrypt.Verify(changePasswordDto.CurrentPassword, user.Password))
-                return BadRequest(new { message = "Current password is incorrect" });
-
-            user.Password = BCrypt.Net.BCrypt.HashPassword(changePasswordDto.NewPassword);
-            await _userRepository.UpdateAsync(user);
-
-            return Ok(new { message = "Password changed successfully" });
-        }
-
-        private UserDetailDTO MapToDTO(User user)
-        {
-            return new UserDetailDTO
-            {
-                UserId = user.UserId,
-                Email = user.Email,
-                FullName = user.FullName,
-                Role = user.Role,
-                Avatar = user.Candidate != null ? user.Candidate.User != null ? user.Candidate.User.Avatar : null : (user.Recruiter != null ? user.Recruiter.User != null ? user.Recruiter.User.Avatar : null : null),
-                LastLogin = user.LastLogin,
-                DeletedAt = user.DeletedAt
-            };
+            int currentUserId = User.GetUserIdFromToken();
+            await _userService.ChangePasswordAsync(id, currentUserId, changePasswordDto);
+            return Ok(new { message = "Đổi mật khẩu thành công." });
         }
     }
 }

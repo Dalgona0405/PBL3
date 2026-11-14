@@ -24,6 +24,9 @@ namespace JobSeekingAPI.Data
         public DbSet<CompanyJoinRequest> CompanyJoinRequests { get; set; }
         public DbSet<SavedJob> SavedJobs { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Interview> Interviews { get; set; }
+        public DbSet<Message> Messages { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -34,15 +37,16 @@ namespace JobSeekingAPI.Data
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(u => u.UserId);
-                entity.Property(u => u.UserId).UseIdentityColumn(); // IDENTITY
+                entity.Property(u => u.UserId).UseIdentityColumn();
 
                 entity.HasIndex(u => u.Email).IsUnique();
+                entity.HasIndex(u => u.GoogleId).IsUnique().HasFilter("googleid IS NOT NULL");
+
                 entity.Property(u => u.Email).IsRequired().HasMaxLength(100);
                 entity.Property(u => u.Password).IsRequired().HasMaxLength(255);
                 entity.Property(u => u.Role).IsRequired();
                 entity.Property(u => u.Avatar).HasMaxLength(500);
-                entity.Property(u => u.LastLogin);
-                entity.Property(u => u.DeletedAt);
+                entity.Property(u => u.GoogleId).HasMaxLength(255);
 
                 entity.HasQueryFilter(u => u.DeletedAt == null);
             });
@@ -59,13 +63,19 @@ namespace JobSeekingAPI.Data
                 entity.Property(c => c.LogoImg).HasMaxLength(500);
                 entity.Property(c => c.Website).HasMaxLength(200);
                 entity.Property(c => c.Size).HasMaxLength(50);
-                entity.Property(c => c.DeletedAt);
+                entity.Property(c => c.TaxCode).HasMaxLength(50);
+                entity.Property(c => c.IsVerified).HasDefaultValue(false);
+
+                entity.HasOne(c => c.MasterUser)
+                    .WithMany()
+                    .HasForeignKey(c => c.MasterUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
 
                 entity.HasQueryFilter(c => c.DeletedAt == null);
             });
 
             // =================================================================
-            // 3. LOCATIONS
+            // 3. LOCATIONS & 4. TAGS
             // =================================================================
             modelBuilder.Entity<Location>(entity =>
             {
@@ -74,9 +84,6 @@ namespace JobSeekingAPI.Data
                 entity.Property(l => l.LocationName).IsRequired().HasMaxLength(100);
             });
 
-            // =================================================================
-            // 4. TAGS
-            // =================================================================
             modelBuilder.Entity<Tag>(entity =>
             {
                 entity.HasKey(t => t.TagId);
@@ -87,7 +94,7 @@ namespace JobSeekingAPI.Data
             });
 
             // =================================================================
-            // 5. CANDIDATES
+            // 5. CANDIDATES & 6. RECRUITERS
             // =================================================================
             modelBuilder.Entity<Candidate>(entity =>
             {
@@ -100,7 +107,6 @@ namespace JobSeekingAPI.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(c => c.Gender).HasMaxLength(10);
-                entity.Property(c => c.Birthday);
                 entity.Property(c => c.Phone).HasMaxLength(20);
                 entity.Property(c => c.Address).HasMaxLength(500);
                 entity.Property(c => c.CVUrl).HasMaxLength(500);
@@ -108,9 +114,6 @@ namespace JobSeekingAPI.Data
                 entity.HasQueryFilter(c => c.User != null && c.User.DeletedAt == null);
             });
 
-            // =================================================================
-            // 6. RECRUITERS
-            // =================================================================
             modelBuilder.Entity<Recruiter>(entity =>
             {
                 entity.HasKey(r => r.UserId);
@@ -121,14 +124,26 @@ namespace JobSeekingAPI.Data
                     .HasForeignKey<Recruiter>(r => r.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+                // Cho phép CompanyId là Null (Freelance Recruiter)
                 entity.HasOne(r => r.Company)
                     .WithMany(c => c.Recruiters)
                     .HasForeignKey(r => r.CompanyId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.SetNull);
 
                 entity.Property(r => r.Position).HasMaxLength(100);
 
                 entity.HasQueryFilter(r => r.User != null && r.User.DeletedAt == null);
+            });
+
+            modelBuilder.Entity<CompanyJoinRequest>(entity =>
+            {
+                entity.HasKey(r => r.RequestId);
+                entity.Property(r => r.RequestId).UseIdentityColumn();
+                entity.Property(r => r.CreatedAt).HasDefaultValueSql("now()");
+
+                entity.HasQueryFilter(r => r.Company != null && r.Company.DeletedAt == null &&
+                                           r.Recruiter != null && r.Recruiter.User != null && r.Recruiter.User.DeletedAt == null);
             });
 
             // =================================================================
@@ -142,7 +157,10 @@ namespace JobSeekingAPI.Data
                 entity.HasOne(j => j.Company)
                     .WithMany(c => c.Jobs)
                     .HasForeignKey(j => j.CompanyId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.Property(j => j.PostedByUserId).HasColumnName("postedbyuserid");
 
                 entity.HasOne(j => j.Location)
                     .WithMany(l => l.Jobs)
@@ -153,65 +171,42 @@ namespace JobSeekingAPI.Data
                 entity.Property(j => j.Title).IsRequired().HasMaxLength(200);
                 entity.Property(j => j.SalaryMin).HasPrecision(18, 2);
                 entity.Property(j => j.SalaryMax).HasPrecision(18, 2);
-                entity.Property(j => j.ExpYear);
                 entity.Property(j => j.Level).HasMaxLength(50);
                 entity.Property(j => j.PostedDate).HasDefaultValueSql("now()");
-                entity.Property(j => j.Deadline);
-                entity.Property(j => j.Description).HasColumnType("nvarchar(max)");
-                entity.Property(j => j.Requirement).HasColumnType("nvarchar(max)");
-                entity.Property(j => j.Benefits).HasColumnType("nvarchar(max)");
+
+                entity.Property(j => j.Description).HasColumnType("text");
+                entity.Property(j => j.Requirement).HasColumnType("text");
+                entity.Property(j => j.Benefits).HasColumnType("text");
+
                 entity.Property(j => j.Address).HasMaxLength(500);
                 entity.Property(j => j.ViewCount).HasDefaultValue(0);
                 entity.Property(j => j.Status).HasDefaultValue(1);
-                entity.Property(j => j.DeletedAt);
 
-                entity.HasQueryFilter(j => j.DeletedAt == null); // Không nên filter ở đây vì có thể cần lấy cả Job đã xóa để hiển thị lịch sử ứng tuyển hoặc báo cáo thống kê
+                // Đánh Composite Index giúp truy vấn trang chủ / lọc việc làm < 50ms
+                entity.HasIndex(j => new { j.Status, j.PostedDate });
+
+                entity.HasQueryFilter(j => j.DeletedAt == null);
             });
 
             // =================================================================
-            // 8. JOB TAGS
+            // 8. JOB TAGS & 9. CANDIDATE TAGS
             // =================================================================
             modelBuilder.Entity<JobTag>(entity =>
             {
-                // Composite key: JobId + TagId
                 entity.HasKey(jt => new { jt.JobId, jt.TagId });
+                entity.HasOne(jt => jt.Job).WithMany(j => j.JobTags).HasForeignKey(jt => jt.JobId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(jt => jt.Tag).WithMany(t => t.JobTags).HasForeignKey(jt => jt.TagId).OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(jt => jt.Job)
-                    .WithMany(j => j.JobTags)
-                    .HasForeignKey(jt => jt.JobId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(jt => jt.Tag)
-                    .WithMany(t => t.JobTags)
-                    .HasForeignKey(jt => jt.TagId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                // entity.HasQueryFilter(jt => jt.Job != null && jt.Job.DeletedAt == null); // Không nên filter ở đây vì có thể cần lấy cả JobTag của Job đã xóa để hiển thị lịch sử ứng tuyển
+                entity.HasQueryFilter(jt => jt.Job != null && jt.Job.DeletedAt == null);
             });
 
-            // =================================================================
-            // 9. CANDIDATE TAGS
-            // =================================================================
             modelBuilder.Entity<CandidateTag>(entity =>
             {
-                // Composite key: UserId + TagId
                 entity.HasKey(ct => new { ct.UserId, ct.TagId });
-
-                entity.HasOne(ct => ct.Candidate)
-                    .WithMany(c => c.CandidateTags)
-                    .HasForeignKey(ct => ct.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(ct => ct.Tag)
-                    .WithMany(t => t.CandidateTags)
-                    .HasForeignKey(ct => ct.TagId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
+                entity.HasOne(ct => ct.Candidate).WithMany(c => c.CandidateTags).HasForeignKey(ct => ct.UserId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(ct => ct.Tag).WithMany(t => t.CandidateTags).HasForeignKey(ct => ct.TagId).OnDelete(DeleteBehavior.Restrict);
                 entity.Property(ct => ct.Proficiency).HasMaxLength(50);
-
-                entity.HasQueryFilter(ct => ct.Candidate != null &&
-                                           ct.Candidate.User != null &&
-                                           ct.Candidate.User.DeletedAt == null);
+                entity.HasQueryFilter(ct => ct.Candidate != null && ct.Candidate.User != null && ct.Candidate.User.DeletedAt == null);
             });
 
             // =================================================================
@@ -222,122 +217,147 @@ namespace JobSeekingAPI.Data
                 entity.HasKey(a => a.AppId);
                 entity.Property(a => a.AppId).UseIdentityColumn();
 
-                entity.HasOne(a => a.Candidate)
-                    .WithMany(c => c.Applications)
-                    .HasForeignKey(a => a.UserId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(a => a.Job)
-                    .WithMany(j => j.Applications)
-                    .HasForeignKey(a => a.JobId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(a => a.Candidate).WithMany(c => c.Applications).HasForeignKey(a => a.UserId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(a => a.Job).WithMany(j => j.Applications).HasForeignKey(a => a.JobId).OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(a => a.AppliedDate).HasDefaultValueSql("now()");
                 entity.Property(a => a.Status).HasDefaultValue(1);
                 entity.Property(a => a.Message).HasMaxLength(1000);
-                entity.Property(a => a.InterviewTime);
                 entity.Property(a => a.InterviewLocation).HasMaxLength(500);
                 entity.Property(a => a.CVUrl).HasMaxLength(500);
-                entity.Property(a => a.DeletedAt);
+
+                // Lưu cấu thành điểm AI dưới dạng jsonb tối ưu của PostgreSQL
+                entity.Property(a => a.AiScoreBreakdown).HasColumnType("jsonb");
 
                 entity.HasIndex(a => new { a.UserId, a.JobId })
                     .IsUnique()
-                    .HasDatabaseName("IX_Applications_UserId_JobId_Unique")
+                    .HasDatabaseName("ix_applications_userid_jobid_unique")
                     .HasFilter("deletedat IS NULL");
 
-                entity.HasIndex(a => a.Status).HasDatabaseName("IX_Applications_Status");
+                // Composite Index phục vụ tải bảng Kanban theo từng Job cực nhanh
+                entity.HasIndex(a => new { a.JobId, a.Status }).HasDatabaseName("ix_applications_jobid_status");
 
                 entity.HasQueryFilter(a => a.DeletedAt == null &&
-                                          a.Candidate != null &&
-                                          a.Candidate.User != null &&
-                                          a.Candidate.User.DeletedAt == null);
+                                           a.Job != null && a.Job.DeletedAt == null &&
+                                           a.Candidate != null && a.Candidate.User != null && a.Candidate.User.DeletedAt == null);
             });
 
             // =================================================================
-            // 11. EXPERIENCES
+            // 11. EXPERIENCES, 12. SAVED JOBS, 13. NOTIFICATIONS
             // =================================================================
             modelBuilder.Entity<Experience>(entity =>
             {
                 entity.HasKey(e => e.ExpId);
                 entity.Property(e => e.ExpId).UseIdentityColumn();
-
-                entity.HasOne(e => e.Candidate)
-                    .WithMany(c => c.Experiences)
-                    .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
+                entity.HasOne(e => e.Candidate).WithMany(c => c.Experiences).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
                 entity.Property(e => e.CompanyName).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.JobTitle).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.StartDate).IsRequired();
-                entity.Property(e => e.EndDate);
                 entity.Property(e => e.Description).HasMaxLength(2000);
-
-                entity.HasQueryFilter(e => e.Candidate != null &&
-                                          e.Candidate.User != null &&
-                                          e.Candidate.User.DeletedAt == null);
+                entity.HasQueryFilter(e => e.Candidate != null && e.Candidate.User != null && e.Candidate.User.DeletedAt == null);
             });
 
-            // =================================================================
-            // 12. SAVED JOBS
-            // =================================================================
             modelBuilder.Entity<SavedJob>(entity =>
             {
                 entity.HasKey(sj => new { sj.UserId, sj.JobId });
-
-                entity.HasOne(sj => sj.Candidate)
-                    .WithMany()
-                    .HasForeignKey(sj => sj.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(sj => sj.Job)
-                    .WithMany()
-                    .HasForeignKey(sj => sj.JobId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(sj => sj.Candidate).WithMany().HasForeignKey(sj => sj.UserId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(sj => sj.Job).WithMany().HasForeignKey(sj => sj.JobId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasQueryFilter(sj => sj.Candidate != null && sj.Candidate.User != null && sj.Candidate.User.DeletedAt == null &&
+                                     sj.Job != null && sj.Job.DeletedAt == null);
             });
 
-            // =================================================================
-            // 13. NOTIFICATIONS (Thông báo)
-            // =================================================================
             modelBuilder.Entity<Notification>(entity =>
             {
                 entity.HasKey(n => n.NotificationId);
                 entity.Property(n => n.NotificationId).UseIdentityColumn();
-
                 entity.Property(n => n.Title).IsRequired().HasMaxLength(255);
                 entity.Property(n => n.Content).HasMaxLength(1000);
-                
                 entity.Property(n => n.IsRead).HasDefaultValue(false);
                 entity.Property(n => n.CreatedAt).HasDefaultValueSql("now()");
-
-                entity.HasOne(n => n.User)
-                    .WithMany()
-                    .HasForeignKey(n => n.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(n => n.User).WithMany().HasForeignKey(n => n.UserId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasQueryFilter(n => n.User != null && n.User.DeletedAt == null);
             });
 
             // =================================================================
-            // ÉP TẤT CẢ VỀ CHỮ THƯỜNG CHO POSTGRESQL
+            // 14. INTERVIEWS
+            // =================================================================
+            modelBuilder.Entity<Interview>(entity =>
+            {
+                entity.HasKey(i => i.InterviewId);
+                entity.Property(i => i.InterviewId).UseIdentityColumn();
+
+                entity.HasOne(i => i.Application)
+                    .WithMany(a => a.Interviews)
+                    .HasForeignKey(i => i.ApplicationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(i => i.InterviewType).IsRequired().HasMaxLength(50);
+                entity.Property(i => i.MeetingLink).HasMaxLength(500);
+                entity.Property(i => i.Location).HasMaxLength(255);
+                entity.Property(i => i.CalendarEventUid).HasMaxLength(255);
+                entity.Property(i => i.CreatedAt).HasDefaultValueSql("now()");
+                entity.HasQueryFilter(i => i.Application != null && i.Application.DeletedAt == null);
+            });
+
+            // =================================================================
+            // 15. MESSAGES
+            // =================================================================
+            modelBuilder.Entity<Message>(entity =>
+            {
+                entity.HasKey(m => m.MessageId);
+                entity.Property(m => m.MessageId).UseIdentityColumn();
+
+                entity.HasOne(m => m.Sender)
+                    .WithMany()
+                    .HasForeignKey(m => m.SenderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.Receiver)
+                    .WithMany()
+                    .HasForeignKey(m => m.ReceiverId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(m => m.Job)
+                    .WithMany()
+                    .HasForeignKey(m => m.JobId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.Property(m => m.Content).IsRequired().HasMaxLength(4000);
+                entity.Property(m => m.IsRead).HasDefaultValue(false);
+                entity.Property(m => m.SentAt).HasDefaultValueSql("now()");
+
+                // Composite Index cho truy vấn lịch sử chat 1-1 theo thời gian
+                entity.HasIndex(m => new { m.SenderId, m.ReceiverId, m.SentAt })
+                    .HasDatabaseName("ix_messages_conversation_timeline");
+
+                entity.HasQueryFilter(m => m.Sender != null && m.Sender.DeletedAt == null &&
+                                    m.Receiver != null && m.Receiver.DeletedAt == null);
+            });
+
+            // =================================================================
+            // GIỮ TƯƠNG THÍCH VỚI DỮ LIỆU CŨ (01_seed_data.sql) CỦA POSTGRESQL
             // =================================================================
             foreach (var entity in modelBuilder.Model.GetEntityTypes())
             {
-                // Đổi tên bảng (VD: Users -> users)
-                entity.SetTableName(entity.GetTableName()?.ToLower());
-
-                // Đổi tên cột (VD: UserId -> userid)
-                foreach (var property in entity.GetProperties())
+                var tableName = entity.GetTableName();
+                if (tableName != null && !tableName.StartsWith("__EF"))
                 {
-                    property.SetColumnName(property.Name.ToLower());
+                    entity.SetTableName(tableName.ToLowerInvariant());
                 }
 
-                // Đổi tên Khóa chính, Khóa ngoại, Index
+                foreach (var property in entity.GetProperties())
+                {
+                    property.SetColumnName(property.Name.ToLowerInvariant());
+                }
+
                 foreach (var key in entity.GetKeys())
-                    key.SetName(key.GetName()?.ToLower());
+                    key.SetName(key.GetName()?.ToLowerInvariant());
 
                 foreach (var fk in entity.GetForeignKeys())
-                    fk.SetConstraintName(fk.GetConstraintName()?.ToLower());
+                    fk.SetConstraintName(fk.GetConstraintName()?.ToLowerInvariant());
 
                 foreach (var index in entity.GetIndexes())
-                    index.SetDatabaseName(index.GetDatabaseName()?.ToLower());
+                    index.SetDatabaseName(index.GetDatabaseName()?.ToLowerInvariant());
             }
         }
     }

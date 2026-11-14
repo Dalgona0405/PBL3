@@ -1,237 +1,192 @@
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Enums;
 using JobSeekingAPI.Helpers;
-using JobSeekingAPI.Models;
-using JobSeekingAPI.Repositories;
 using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JobSeekingAPI.Controllers
 {
+    /// <summary>
+    /// Quản lý hồ sơ ứng viên, kinh nghiệm làm việc, kỹ năng, việc làm đã lưu và bóc tách CV bằng AI
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class CandidatesController : ControllerBase
     {
-        private readonly ICandidateRepository _candidateRepo;
-        private readonly IExperienceRepository _experienceRepo;
+        private readonly ICandidateService _candidateService;
         private readonly IJobService _jobService;
 
-        public CandidatesController(ICandidateRepository candidateRepo, IExperienceRepository experienceRepo, IJobService jobService)
+        public CandidatesController(ICandidateService candidateService, IJobService jobService)
         {
-            _candidateRepo = candidateRepo;
-            _experienceRepo = experienceRepo;
+            _candidateService = candidateService;
             _jobService = jobService;
         }
 
-        // GET: api/candidates/{id}
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        /// <summary>
+        /// Lấy thông tin chi tiết của một ứng viên theo UserId
+        /// </summary>
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCandidateById(int id)
         {
-            var candidate = await _candidateRepo.GetCandidateDetailByIdAsync(id);
-            if (candidate == null)
-                return NotFound(new { message = "Candidate not found" });
-            return Ok(MapToDetailDTO(candidate));
+            var result = await _candidateService.GetCandidateByIdAsync(id);
+            return Ok(result);
         }
 
-        // GET: api/candidates/me => Cân nhắc, nếu giữ thì cần xác thực người dùng và lấy ID từ token
+        /// <summary>
+        /// Lấy thông tin hồ sơ cá nhân của ứng viên đang đăng nhập
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate)]
         [HttpGet("me")]
         public async Task<IActionResult> GetMyProfile()
         {
             int userId = User.GetUserIdFromToken();
-            var candidate = await _candidateRepo.GetCandidateDetailByIdAsync(userId);
-            if (candidate == null)
-                return NotFound(new { message = "Candidate not found" });
-            return Ok(MapToDetailDTO(candidate));
+            var result = await _candidateService.GetCandidateByIdAsync(userId);
+            return Ok(result);
         }
 
-        // PUT: api/candidates/me
+        /// <summary>
+        /// Cập nhật thông tin hồ sơ cá nhân của ứng viên đang đăng nhập
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate)]
         [HttpPut("me")]
         public async Task<IActionResult> UpdateCandidateProfile([FromBody] UpdateCandidateDTO dto)
         {
             int userId = User.GetUserIdFromToken();
-            var existingCandidate = await _candidateRepo.GetCandidateEntityByIdAsync(userId);
-            if (existingCandidate == null)
-                return NotFound(new { message = "Candidate not found" });
-
-            if (existingCandidate.User != null)
-            {
-                existingCandidate.User.FullName = dto.FullName ?? existingCandidate.User.FullName;
-                existingCandidate.User.Avatar = dto.Avatar ?? existingCandidate.User.Avatar;
-            }
-
-            existingCandidate.Gender = dto.Gender ?? existingCandidate.Gender;
-            existingCandidate.Birthday = dto.Birthday ?? existingCandidate.Birthday;
-            existingCandidate.Phone = dto.Phone ?? existingCandidate.Phone;
-            existingCandidate.Address = dto.Address ?? existingCandidate.Address;
-            existingCandidate.CVUrl = dto.CVUrl ?? existingCandidate.CVUrl;
-
-            await _candidateRepo.UpdateAsync(existingCandidate);
-
-            // Cập nhật riêng các kỹ năng (nếu có gửi lên)
-            if (dto.Tags != null)
-            {
-                await _candidateRepo.UpdateCandidateTagsAsync(userId, dto.Tags);
-            }
-
-            return Ok(new { message = "Candidate profile updated successfully." });
+            await _candidateService.UpdateCandidateProfileAsync(userId, dto);
+            return Ok(new { message = "Cập nhật hồ sơ ứng viên thành công." });
         }
 
-        // GET: api/candidates/search
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter)]
+        /// <summary>
+        /// Tìm kiếm và lọc ứng viên theo từ khóa và kỹ năng (phân trang)
+        /// </summary>
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("search")]
-        public async Task<IActionResult> SearchCandidates([FromQuery] string? keyword, [FromQuery] int? tagId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> SearchCandidates(
+            [FromQuery] string? keyword,
+            [FromQuery] int? tagId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
-            var result = await _candidateRepo.SearchCandidatesAsync(keyword, tagId, page, pageSize);
+            var result = await _candidateService.SearchCandidatesAsync(keyword, tagId, page, pageSize);
             return Ok(result);
         }
 
-        // API VỀ EXPERIENCE
-        // GET: api/candidates/{id}/experiences
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Candidate)]
+        /// <summary>
+        /// Lấy danh sách kinh nghiệm làm việc của một ứng viên
+        /// </summary>
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company + ", " + UserRoles.Candidate)]
         [HttpGet("{id}/experiences")]
         public async Task<IActionResult> GetExperiences(int id)
         {
-            var experiences = await _experienceRepo.GetExperiencesByCandidateIdAsync(id);
-            return Ok(experiences.Select(e => MapExperienceToDTO(e)));
+            var result = await _candidateService.GetExperiencesAsync(id);
+            return Ok(result);
         }
 
-        // POST: /api/candidates/me/experiences
+        /// <summary>
+        /// Thêm mới một mốc kinh nghiệm làm việc cho ứng viên hiện tại
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate)]
         [HttpPost("me/experiences")]
         public async Task<IActionResult> AddExperience([FromBody] CreateExperienceDTO dto)
         {
-            int userId = User.GetUserIdFromToken(); 
-            var experience = new Experience
-            {
-                UserId = userId,
-                JobTitle = dto.JobTitle,
-                CompanyName = dto.CompanyName,
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
-                Description = dto.Description
-            };
-            
-            var created = await _experienceRepo.AddExperienceAsync(experience);
-            return CreatedAtAction(nameof(GetExperiences), new { id = userId }, MapExperienceToDTO(created));
+            int userId = User.GetUserIdFromToken();
+            var created = await _candidateService.AddExperienceAsync(userId, dto);
+            return CreatedAtAction(nameof(GetExperiences), new { id = userId }, created);
         }
 
-        // PUT: api/candidates/me/experiences/{expId}
+        /// <summary>
+        /// Cập nhật thông tin một mốc kinh nghiệm làm việc
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate)]
         [HttpPut("me/experiences/{expId}")]
         public async Task<IActionResult> UpdateExperience(int expId, [FromBody] UpdateExperienceDTO dto)
         {
             int userId = User.GetUserIdFromToken();
-            var existing = await _experienceRepo.GetExperienceByIdAsync(expId);
-            if (existing == null || existing.UserId != userId)
-                return NotFound(new { message = "Không tìm thấy kinh nghiệm hoặc bạn không có quyền sửa!" });
-
-            existing.JobTitle = dto.JobTitle ?? existing.JobTitle;
-            existing.CompanyName = dto.CompanyName ?? existing.CompanyName;
-            existing.StartDate = dto.StartDate ?? existing.StartDate;
-            existing.EndDate = dto.EndDate ?? existing.EndDate;
-            existing.Description = dto.Description ?? existing.Description;
-            
-            await _experienceRepo.UpdateExperienceAsync(existing);
-            return Ok(MapExperienceToDTO(existing));
+            var updated = await _candidateService.UpdateExperienceAsync(userId, expId, dto);
+            return Ok(updated);
         }
 
-        // DELETE: api/candidates/me/experiences/{expId}
+        /// <summary>
+        /// Xóa một mốc kinh nghiệm làm việc của ứng viên hiện tại
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate)]
         [HttpDelete("me/experiences/{expId}")]
         public async Task<IActionResult> DeleteExperience(int expId)
         {
             int userId = User.GetUserIdFromToken();
-            var existing = await _experienceRepo.GetExperienceByIdAsync(expId);
-            if (existing == null || existing.UserId != userId)
-                return NotFound(new { message = "Experience not found" });
-            await _experienceRepo.DeleteExperienceAsync(expId);
+            await _candidateService.DeleteExperienceAsync(userId, expId);
             return NoContent();
         }
 
-        // CÁC API VỀ SKILLS
-        // GET: api/candidates/{id}/skills => Cân nhắc
-        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Candidate + ", " + UserRoles.Recruiter)]
+        /// <summary>
+        /// Lấy danh sách kỹ năng (Tags) của một ứng viên
+        /// </summary>
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Candidate + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("{id}/skills")]
         public async Task<IActionResult> GetCandidateSkills(int id)
         {
-            var skills = await _candidateRepo.GetTagsByCandidateIdAsync(id);
-            var dtos = skills.Select(s => new
-            {
-                s.TagId,
-                TagName = s.Tag?.TagName,
-                s.Proficiency
-            });
-            return Ok(dtos);
+            var result = await _candidateService.GetCandidateSkillsAsync(id);
+            return Ok(result);
         }
 
-        // PUT: api/candidates/me/skills - Cập nhật toàn bộ skill của chính ứng viên
+        /// <summary>
+        /// Cập nhật toàn bộ danh sách kỹ năng của ứng viên hiện tại
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate)]
         [HttpPut("me/skills")]
         public async Task<IActionResult> UpdateCandidateSkills([FromBody] List<CandidateTagDTO> dtos)
         {
             int userId = User.GetUserIdFromToken();
-            await _candidateRepo.UpdateCandidateTagsAsync(userId, dtos);
-            return Ok(new { message = "Skills updated successfully." });
+            await _candidateService.UpdateCandidateSkillsAsync(userId, dtos);
+            return Ok(new { message = "Cập nhật danh sách kỹ năng thành công." });
         }
 
-        // PATCH: api/candidates/me/default-cv - Cập nhật CV mặc định của ứng viên
+        /// <summary>
+        /// Đặt đường dẫn CV mặc định cho ứng viên hiện tại
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate)]
         [HttpPatch("me/default-cv")]
         public async Task<IActionResult> UpdateDefaultCV([FromBody] UpdateDefaultCVDTO dto)
         {
             int userId = User.GetUserIdFromToken();
-            var candidate = await _candidateRepo.GetCandidateEntityByIdAsync(userId);
-            if (candidate == null)
-                return NotFound(new { message = "Candidate not found" });
-            candidate.CVUrl = dto.CVUrl;
-            await _candidateRepo.UpdateAsync(candidate);
-            return Ok(new { message = "Default CV updated successfully.", cvUrl = candidate.CVUrl });
+            var cvUrl = await _candidateService.UpdateDefaultCVAsync(userId, dto.CVUrl);
+            return Ok(new { message = "Cập nhật CV mặc định thành công.", cvUrl });
         }
 
-        // GET: api/candidates/me/saved-jobs
+        /// <summary>
+        /// Lấy danh sách tin tuyển dụng đã lưu (Bookmark) của ứng viên hiện tại
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate)]
         [HttpGet("me/saved-jobs")]
         public async Task<IActionResult> GetMySavedJobs()
         {
             int userId = User.GetUserIdFromToken();
             var savedJobs = await _jobService.GetSavedJobsAsync(userId);
-
             return Ok(savedJobs);
         }
 
-        // === Private Mapping Methods ===
-        private CandidateDetailDTO MapToDetailDTO(Candidate c)
+        /// <summary>
+        /// Tải lên tệp CV PDF và gọi AI Service tự động trích xuất thông tin hồ sơ
+        /// </summary>
+        [Authorize(Roles = UserRoles.Candidate)]
+        [HttpPost("me/parse-cv")]
+        public async Task<IActionResult> ParseResumePdf(IFormFile file, CancellationToken cancellationToken)
         {
-            return new CandidateDetailDTO
-            {
-                UserId = c.UserId,
-                FullName = c.User?.FullName ?? "",
-                Gender = c.Gender,
-                Birthday = c.Birthday,
-                Phone = c.Phone,
-                Address = c.Address,
-                CVUrl = c.CVUrl,
-                Skills = c.CandidateTags.Select(ct => ct.Tag?.TagName ?? "").ToList(),
-                Experiences = c.Experiences.Select(e => MapExperienceToDTO(e)).ToList()
-            };
-        }
+            int userId = User.GetUserIdFromToken();
+            var (data, storedCvUrl, aiSuccess) = await _candidateService.ParseResumePdfAsync(userId, file, cancellationToken);
 
-        private ExperienceDetailDTO MapExperienceToDTO(Experience e)
-        {
-            return new ExperienceDetailDTO
+            if (!aiSuccess)
             {
-                ExpId = e.ExpId,
-                UserId = e.UserId,
-                JobTitle = e.JobTitle,
-                CompanyName = e.CompanyName,
-                StartDate = e.StartDate ?? DateTime.MinValue,
-                EndDate = e.EndDate,
-                Description = e.Description
-            };
+                return StatusCode(502, new
+                {
+                    message = "Dịch vụ AI Parse đang bận, nhưng tệp CV của bạn đã được tải lên thành công.",
+                    cvUrl = storedCvUrl
+                });
+            }
+
+            return Ok(data);
         }
     }
 }

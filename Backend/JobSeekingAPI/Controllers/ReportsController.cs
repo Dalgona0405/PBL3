@@ -6,6 +6,9 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace JobSeekingAPI.Controllers
 {
+    /// <summary>
+    /// Cung cấp các số liệu thống kê tổng quan, biểu đồ thị trường, dự báo lương và đồ thị kỹ năng AI
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class ReportsController : ControllerBase
@@ -19,6 +22,9 @@ namespace JobSeekingAPI.Controllers
             _cache = cache;
         }
 
+        /// <summary>
+        /// Lấy xu hướng kỹ năng được tuyển dụng nhiều nhất (có MemoryCache 1 giờ)
+        /// </summary>
         [HttpGet("market-trend")]
         public async Task<IActionResult> GetMarketTrend([FromQuery] int limit = 10)
         {
@@ -31,6 +37,9 @@ namespace JobSeekingAPI.Controllers
             return Ok(trends);
         }
 
+        /// <summary>
+        /// Thống kê mức lương trung bình theo từng địa điểm
+        /// </summary>
         [HttpGet("salary-by-location")]
         public async Task<IActionResult> GetSalaryByLocation()
         {
@@ -38,6 +47,9 @@ namespace JobSeekingAPI.Controllers
             return Ok(salaryReport);
         }
 
+        /// <summary>
+        /// Lấy bộ chỉ số tổng quan cho Dashboard (có MemoryCache 30 phút)
+        /// </summary>
         [HttpGet("dashboard-summary")]
         public async Task<IActionResult> GetDashboardSummary()
         {
@@ -50,10 +62,13 @@ namespace JobSeekingAPI.Controllers
             return Ok(stats);
         }
 
+        /// <summary>
+        /// Lấy kết quả dự báo xu hướng lương từ AI Cache
+        /// </summary>
         [HttpGet("salary-forecast-ai")]
         public IActionResult GetSalaryForecastFromAI()
         {
-            if (_cache.TryGetValue("SalaryForecastAI", out object forecastData))
+            if (_cache.TryGetValue("SalaryForecastAI", out object? forecastData) && forecastData != null)
             {
                 return Ok(forecastData);
             }
@@ -61,10 +76,13 @@ namespace JobSeekingAPI.Controllers
             return Ok(new
             {
                 status = "processing",
-                message = "AI is processing the data. Please check back in a few minutes."
+                message = "Hệ thống AI đang xử lý dữ liệu dự báo. Vui lòng thử lại sau ít phút."
             });
         }
 
+        /// <summary>
+        /// Thống kê số lượng đơn ứng tuyển theo dòng thời gian (ngày, tuần, tháng, năm)
+        /// </summary>
         [HttpGet("application-timeline")]
         public async Task<IActionResult> GetApplicationTimeline(
             [FromQuery] string period = "month",
@@ -74,6 +92,9 @@ namespace JobSeekingAPI.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Lấy danh sách các doanh nghiệp tuyển dụng nổi bật nhất
+        /// </summary>
         [HttpGet("top-companies")]
         public async Task<IActionResult> GetTopCompanies([FromQuery] int limit = 5)
         {
@@ -81,28 +102,22 @@ namespace JobSeekingAPI.Controllers
             return Ok(topCompanies);
         }
 
+        /// <summary>
+        /// Lấy dữ liệu đồ thị mối liên hệ kỹ năng kèm các cạnh dự đoán từ mô hình GNN
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("graph-skills")]
         public async Task<IActionResult> GetGraphSkills([FromQuery] int limit = 50)
         {
-            var graphData = (dynamic)await _reportService.GetSkillsGraphAsync(limit);
+            var graphData = await _reportService.GetSkillsGraphAsync(limit);
 
-            if (_cache.TryGetValue("GnnSkillEdges", out List<GraphEdgeDTO> aiEdges))
-            {
-                return Ok(new
-                {
-                    nodes = graphData.nodes,
-                    edges = graphData.edges,
-                    aiSuggestedEdges = aiEdges
-                });
-            }
+            _cache.TryGetValue("GnnSkillEdges", out List<GraphEdgeDTO>? aiEdges);
 
-            return Ok(new
-            {
-                nodes = graphData.nodes,
-                edges = graphData.edges,
-                aiSuggestedEdges = new List<GraphEdgeDTO>()
-            });
+            return Ok(new SkillsGraphResultDTO(
+                graphData.Nodes,
+                graphData.Edges,
+                aiEdges ?? new List<GraphEdgeDTO>()
+            ));
         }
     }
 }

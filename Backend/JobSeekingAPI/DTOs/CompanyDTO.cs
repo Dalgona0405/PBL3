@@ -6,6 +6,7 @@ namespace JobSeekingAPI.DTOs
         public string? LogoImg { get; set; }
         public string? Website { get; set; }
         public string? Size { get; set; }
+        public string? TaxCode { get; set; }
     }
 
     public class UpdateCompanyDTO
@@ -14,6 +15,7 @@ namespace JobSeekingAPI.DTOs
         public string? LogoImg { get; set; }
         public string? Website { get; set; }
         public string? Size { get; set; }
+        public string? TaxCode { get; set; }
     }
 
     // Dùng cho màn hình danh sách các Công ty
@@ -24,6 +26,9 @@ namespace JobSeekingAPI.DTOs
         public string? LogoImg { get; set; }
         public string? Website { get; set; }
         public string? Size { get; set; }
+        public string? TaxCode { get; set; }
+        public bool IsVerified { get; set; }
+        public DateTime? VerifiedAt { get; set; }
         public int JobCount { get; set; }
         public List<JobSummaryDTO> RecentJobs { get; set; } = new();
     }

@@ -1,102 +1,100 @@
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Enums;
 using JobSeekingAPI.Helpers;
-using JobSeekingAPI.Models;
-using JobSeekingAPI.Repositories;
 using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JobSeekingAPI.Controllers
 {
+    /// <summary>
+    /// Quản lý tin tuyển dụng, tìm kiếm nâng cao, lưu việc làm và gợi ý việc làm phù hợp bằng AI
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class JobsController : ControllerBase
     {
-        private readonly IJobRepository _jobRepository;
-        private readonly IMatchingService _matchingService;
         private readonly IJobService _jobService;
-        private readonly ICompanyRepository _companyRepo;
+        private readonly IMatchingService _matchingService;
 
-        public JobsController(IJobRepository jobRepository, IMatchingService matchingService, IJobService jobService, ICompanyRepository companyRepo)
+        public JobsController(IJobService jobService, IMatchingService matchingService)
         {
-            _jobRepository = jobRepository;
-            _matchingService = matchingService;
             _jobService = jobService;
-            _companyRepo = companyRepo;
+            _matchingService = matchingService;
         }
 
-        // GET: api/jobs/{id}
+        /// <summary>
+        /// Lấy chi tiết tin tuyển dụng theo Id và tự động tăng lượt xem
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetJobById(int id)
         {
-            var jobDto = await _jobRepository.GetJobDetailByIdAsync(id);
-            if (jobDto == null)
-                return NotFound(new { message = "Job not found" });
-
-            await _jobRepository.IncrementViewCountAsync(id);
+            var jobDto = await _jobService.GetJobByIdAsync(id);
             return Ok(jobDto);
         }
 
-        // GET: api/jobs/search
+        /// <summary>
+        /// Tìm kiếm và lọc tin tuyển dụng theo nhiều tiêu chí (phân trang)
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("search")]
         public async Task<IActionResult> SearchJobs([FromQuery] JobSearchDTO searchParams)
         {
-            var result = await _jobRepository.SearchJobsAsync(searchParams);
-            // (Lưu ý: Nếu Job cần MapToDTO thì map xong bỏ vào PagedResultDTO mới rồi return Ok)
-            var mappedItems = result.Items.Select(j => MapToDTO(j)).ToList();
-
-            var finalResult = new PagedResultDTO<JobDetailDTO>
-            {
-                TotalCount = result.TotalCount,
-                Page = result.Page,
-                PageSize = result.PageSize,
-                TotalPages = result.TotalPages,
-                Items = mappedItems
-            };
-            return Ok(finalResult);
+            var result = await _jobService.SearchJobsAsync(searchParams);
+            return Ok(result);
         }
 
-        // GET: api/jobs/recent?count=8
+        /// <summary>
+        /// Lấy danh sách tin tuyển dụng mới nhất
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("recent")]
         public async Task<IActionResult> GetRecentJobs([FromQuery] int count = 8)
         {
-            var jobs = await _jobRepository.GetRecentJobsAsync(count);
-            var jobDTOs = jobs.Select(j => MapToDTO(j));
+            var jobDTOs = await _jobService.GetRecentJobsAsync(count);
             return Ok(jobDTOs);
         }
 
-        // GET: api/jobs/company/{companyId}
+        /// <summary>
+        /// Lấy danh sách tin tuyển dụng của một doanh nghiệp
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("company/{companyId}")]
         public async Task<IActionResult> GetJobsByCompany(int companyId)
         {
-            var jobs = await _jobRepository.GetJobsByCompanyAsync(companyId);
-            var jobDTOs = jobs.Select(j => MapToDTO(j));
+            var jobDTOs = await _jobService.GetJobsByCompanyAsync(companyId);
             return Ok(jobDTOs);
         }
 
-        // POST: api/jobs
+        /// <summary>
+        /// Lấy danh sách tin tuyển dụng của nhà tuyển dụng hiện tại (bao gồm Freelance Recruiter)
+        /// </summary>
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
+        [HttpGet("my-jobs")]
+        public async Task<IActionResult> GetMyJobs()
+        {
+            var userId = User.GetUserIdFromToken();
+            var jobDTOs = await _jobService.GetMyJobsAsync(userId);
+            return Ok(jobDTOs);
+        }
+
+        /// <summary>
+        /// Đăng tin tuyển dụng mới
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpPost]
         public async Task<IActionResult> CreateJob([FromBody] CreateJobDTO dto)
         {
             var userId = User.GetUserIdFromToken();
-            if (!User.IsInRole(UserRoles.Admin))
-            {
-                var myCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
-                if (myCompanyId == null) return Forbid();
-
-                dto.CompanyId = myCompanyId.Value;
-            }
-            var createdJob = await _jobService.CreateJobAsync(dto);
-            return CreatedAtAction(nameof(GetJobById), new { id = createdJob.JobId }, MapToDTO(createdJob));
+            bool isAdmin = User.IsInRole(UserRoles.Admin);
+            var createdJob = await _jobService.CreateJobAsync(dto, userId, isAdmin);
+            return CreatedAtAction(nameof(GetJobById), new { id = createdJob.JobId }, createdJob);
         }
 
-        // PUT: api/jobs/{id}
+        /// <summary>
+        /// Cập nhật nội dung tin tuyển dụng
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateJob(int id, [FromBody] UpdateJobDTO dto)
@@ -105,10 +103,12 @@ namespace JobSeekingAPI.Controllers
             bool isRecruiter = User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Company);
 
             await _jobService.UpdateJobAsync(id, dto, userId, isRecruiter);
-            return Ok(new { message = "Update Success" });
+            return Ok(new { message = "Cập nhật tin tuyển dụng thành công." });
         }
 
-        // PATCH: api/jobs/{id}/status
+        /// <summary>
+        /// Đóng hoặc mở lại trạng thái hiển thị của tin tuyển dụng
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateJobStatus(int id, [FromBody] JobUpdateStatusDTO dto)
@@ -117,10 +117,12 @@ namespace JobSeekingAPI.Controllers
             bool isRecruiter = User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Company);
 
             await _jobService.UpdateJobStatusAsync(id, dto, userId, isRecruiter);
-            return Ok(new { message = "Status update success" });
+            return Ok(new { message = "Cập nhật trạng thái tin tuyển dụng thành công." });
         }
 
-        // DELETE: api/jobs/{id}
+        /// <summary>
+        /// Xóa mềm tin tuyển dụng
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteJob(int id)
@@ -129,22 +131,26 @@ namespace JobSeekingAPI.Controllers
             bool isRecruiter = User.IsInRole(UserRoles.Recruiter) || User.IsInRole(UserRoles.Company);
 
             await _jobService.DeleteJobAsync(id, userId, isRecruiter);
-            return Ok(new { message = "Delete success" });
+            return Ok(new { message = "Xóa tin tuyển dụng thành công." });
         }
 
-        // GET: api/jobs/{jobId}/match/{candidateId}
+        /// <summary>
+        /// Tính điểm độ phù hợp (AI Match Score) giữa một tin tuyển dụng và một ứng viên
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate + ", " + UserRoles.Admin)]
         [HttpGet("{jobId}/match/{candidateId}")]
         public async Task<IActionResult> GetJobMatchScore(int jobId, int candidateId)
         {
             int currentUserId = User.GetUserIdFromToken();
             if (User.IsInRole(UserRoles.Candidate) && currentUserId != candidateId)
-                return Forbid();
+                throw new ForbiddenAccessException("Bạn không có quyền xem điểm phù hợp của ứng viên khác.");
             var result = await _matchingService.GetJobMatchScoreAsync(jobId, candidateId);
             return Ok(result);
         }
 
-        // GET: api/jobs/suggested?topN=6
+        /// <summary>
+        /// Lấy danh sách tin tuyển dụng được AI gợi ý phù hợp nhất cho ứng viên hiện tại
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate + ", " + UserRoles.Admin)]
         [HttpGet("suggested")]
         public async Task<IActionResult> GetSuggestedJobs([FromQuery] int topN = 6)
@@ -154,7 +160,9 @@ namespace JobSeekingAPI.Controllers
             return Ok(suggestions);
         }
 
-        // POST: api/jobs/{id}/save
+        /// <summary>
+        /// Lưu tin tuyển dụng vào danh sách quan tâm của ứng viên
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate)]
         [HttpPost("{id}/save")]
         public async Task<IActionResult> SaveJob(int id)
@@ -162,62 +170,47 @@ namespace JobSeekingAPI.Controllers
             int userId = User.GetUserIdFromToken();
             await _jobService.SaveJobAsync(userId, id);
 
-            return Ok(new { message = "Saved job successfully!" });
+            return Ok(new { message = "Đã lưu tin tuyển dụng thành công." });
         }
 
-        // DELETE: api/jobs/{id}/save
+        /// <summary>
+        /// Bỏ lưu tin tuyển dụng khỏi danh sách quan tâm của ứng viên
+        /// </summary>
         [Authorize(Roles = UserRoles.Candidate)]
         [HttpDelete("{id}/save")]
         public async Task<IActionResult> UnsaveJob(int id)
         {
             int userId = User.GetUserIdFromToken();
-
             await _jobService.UnsaveJobAsync(userId, id);
 
-            return Ok(new { message = "Unsaved job successfully!" });
+            return Ok(new { message = "Đã bỏ lưu tin tuyển dụng." });
         }
 
-        private JobDetailDTO MapToDTO(Job j)
+        /// <summary>
+        /// Bật hoặc tắt hiển thị các tin tuyển dụng tổng hợp (cào từ thị trường)
+        /// </summary>
+        [Authorize(Roles = UserRoles.Admin)]
+        [HttpPatch("scraped-visibility")]
+        public IActionResult ToggleScrapedJobsVisibility([FromQuery] bool show)
         {
-            return new JobDetailDTO
+            var showScrapedJobs = _jobService.ToggleScrapedJobsVisibility(show);
+            return Ok(new
             {
-                JobId = j.JobId,
-                CompanyId = j.CompanyId,
-                OriginalId = j.OriginalId,
-                Title = j.Title,
-                SalaryMin = j.SalaryMin,
-                SalaryMax = j.SalaryMax,
-                ExpYear = j.ExpYear,
-                Level = j.Level,
-                PostedDate = j.PostedDate,
-                Deadline = j.Deadline,
-                Description = j.Description,
-                Requirement = j.Requirement,
-                Benefits = j.Benefits,
-                Address = j.Address,
-                Status = j.Status,
-                ViewCount = j.ViewCount ?? 0,
-                Company = j.Company != null ? new CompanySummaryDTO
-                {
-                    CompanyId = j.Company.CompanyId,
-                    CompanyName = j.Company.CompanyName,
-                    LogoImg = j.Company.LogoImg,
-                    Website = j.Company.Website
-                } : null,
-                Location = j.Location != null ? new LocationSummaryDTO
-                {
-                    LocationId = j.Location.LocationId,
-                    LocationName = j.Location.LocationName
-                } : null,
-                Tags = j.JobTags?.Where(jt => jt.Tag != null)
-                    .Select(jt => new TagSummaryDTO
-                    {
-                        TagId = jt.Tag!.TagId,
-                        TagName = jt.Tag.TagName,
-                        Type = jt.Tag.Type
-                    }).ToList() ?? new List<TagSummaryDTO>(),
-                ApplicationCount = j.Applications?.Count(a => a.DeletedAt == null) ?? 0
-            };
+                showScrapedJobs,
+                message = showScrapedJobs
+                    ? "Đã BẬT hiển thị các tin tuyển dụng tổng hợp thị trường."
+                    : "Đã TẮT hiển thị tin cào (Chỉ hiển thị tin đăng nội bộ trên hệ thống)."
+            });
+        }
+
+        /// <summary>
+        /// Kiểm tra trạng thái hiển thị hiện tại của nhóm tin tuyển dụng tổng hợp
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("scraped-visibility")]
+        public IActionResult GetScrapedJobsVisibility()
+        {
+            return Ok(new { showScrapedJobs = _jobService.GetScrapedJobsVisibility() });
         }
     }
 }

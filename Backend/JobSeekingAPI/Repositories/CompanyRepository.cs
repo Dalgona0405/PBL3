@@ -15,13 +15,14 @@ namespace JobSeekingAPI.Repositories
         {
             return await _context.Companies
                 .AsNoTracking()
-                .Where(c => c.DeletedAt == null)
                 .Select(c => new CompanySummaryDTO
                 {
                     CompanyId = c.CompanyId,
                     CompanyName = c.CompanyName,
                     LogoImg = c.LogoImg,
                     Website = c.Website,
+                    IsVerified = c.IsVerified,
+                    TaxCode = c.TaxCode,
                     Size = c.Size,
                     JobCount = c.Jobs.Count,
                     RecentJobs = c.Jobs.OrderByDescending(j => j.PostedDate).Take(5)
@@ -42,13 +43,15 @@ namespace JobSeekingAPI.Repositories
         {
             return await _context.Companies
                 .AsNoTracking()
-                .Where(c => c.CompanyId == id && c.DeletedAt == null)
+                .Where(c => c.CompanyId == id)
                 .Select(c => new CompanyDetailDTO
                 {
                     CompanyId = c.CompanyId,
                     CompanyName = c.CompanyName,
                     LogoImg = c.LogoImg,
                     Website = c.Website,
+                    IsVerified = c.IsVerified,
+                    TaxCode = c.TaxCode,
                     Size = c.Size,
                     ActiveJobs = c.Jobs
                         .OrderByDescending(j => j.PostedDate)
@@ -90,11 +93,10 @@ namespace JobSeekingAPI.Repositories
                                     TagName = jt.Tag!.TagName,
                                     Type = jt.Tag!.Type
                                 }).ToList(),
-                            ApplicationCount = j.Applications.Count(a => a.DeletedAt == null)
+                            ApplicationCount = j.Applications.Count
                         }).ToList(),
 
                     Recruiters = c.Recruiters
-                        .Where(r => r.User != null && r.User.DeletedAt == null)
                         .Select(r => new RecruiterSummaryDTO
                         {
                             UserId = r.UserId,
@@ -110,7 +112,7 @@ namespace JobSeekingAPI.Repositories
         {
             var query = _context.Companies
                 .AsNoTracking()
-                .Where(c => c.DeletedAt == null);
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(keyword))
             {
@@ -129,7 +131,9 @@ namespace JobSeekingAPI.Repositories
                     CompanyName = c.CompanyName,
                     LogoImg = c.LogoImg,
                     Website = c.Website,
-                    JobCount = c.Jobs.Count(j => j.DeletedAt == null)
+                    IsVerified = c.IsVerified,
+                    TaxCode = c.TaxCode,
+                    JobCount = c.Jobs.Count
                 })
                 .ToListAsync();
 
@@ -146,21 +150,21 @@ namespace JobSeekingAPI.Repositories
         public async Task<Company?> GetCompanyEntityByIdAsync(int id)
         {
             return await _context.Companies
-                .FirstOrDefaultAsync(c => c.CompanyId == id && c.DeletedAt == null);
+                .FirstOrDefaultAsync(c => c.CompanyId == id);
         }
 
-        public async Task<string> SoftDeleteCompanyAsync(int id)
+        public async Task SoftDeleteCompanyAsync(int id)
         {
             var company = await _context.Companies
                 .Include(c => c.Jobs)
                 .Include(c => c.Recruiters).ThenInclude(r => r.User)
-                .FirstOrDefaultAsync(c => c.CompanyId == id && c.DeletedAt == null);
+                .FirstOrDefaultAsync(c => c.CompanyId == id);
 
             if (company == null)
-                return "Company not found";
+                throw new KeyNotFoundException("Không tìm thấy doanh nghiệp.");
 
-            if (company.Jobs.Any(j => j.DeletedAt == null))
-                return "Has active jobs";
+            if (company.Jobs.Any())
+                throw new ArgumentException("Không thể xóa doanh nghiệp đang có tin tuyển dụng hoạt động.");
 
             company.DeletedAt = DateTime.UtcNow;
 
@@ -170,13 +174,12 @@ namespace JobSeekingAPI.Repositories
                     recruiter.User.DeletedAt = DateTime.UtcNow;
             }
             await _context.SaveChangesAsync();
-            return "Delete sucess";
         }
         public async Task<int?> GetCompanyIdByRecruiterIdAsync(int recruiterId)
         {
             var recruiter = await _context.Recruiters
                 .AsNoTracking()
-                .FirstOrDefaultAsync(r => r.UserId == recruiterId && r.User != null && r.User.DeletedAt == null);
+                .FirstOrDefaultAsync(r => r.UserId == recruiterId);
             return recruiter?.CompanyId;
         }
     }

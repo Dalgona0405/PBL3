@@ -13,5 +13,6 @@ namespace JobSeekingAPI.Services
         Task UpdateApplicationStatusAsync(int id, UpdateApplicationStatusDTO dto, int userId, string role);
         Task WithdrawApplicationAsync(int id, int userId);
         Task<object> GetApplicationStatisticsAsync(int jobId, int userId, string role);
+        Task VerifyCvAccessAsync(string cvPath, int currentUserId, string userRole, CancellationToken cancellationToken = default);
     }
 }

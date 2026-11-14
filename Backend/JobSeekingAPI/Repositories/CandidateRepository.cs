@@ -20,7 +20,6 @@ namespace JobSeekingAPI.Repositories
                 .Include(c => c.Experiences)
                 .Include(c => c.CandidateTags)
                     .ThenInclude(ct => ct.Tag)
-                .Where(c => c.User != null && c.User.DeletedAt == null)
                 .ToListAsync();
         }
 
@@ -32,7 +31,7 @@ namespace JobSeekingAPI.Repositories
                 .Include(c => c.Experiences)
                 .Include(c => c.CandidateTags)
                     .ThenInclude(ct => ct.Tag)
-                .FirstOrDefaultAsync(c => c.UserId == id && c.User != null && c.User.DeletedAt == null);
+                .FirstOrDefaultAsync(c => c.UserId == id);
         }
 
         public async Task<Candidate?> GetCandidateEntityByIdAsync(int id)
@@ -41,7 +40,7 @@ namespace JobSeekingAPI.Repositories
                 .Include(c => c.User)
                 .Include(c => c.Experiences)
                 .Include(c => c.CandidateTags)
-                .FirstOrDefaultAsync(c => c.UserId == id && c.User != null && c.User.DeletedAt == null);
+                .FirstOrDefaultAsync(c => c.UserId == id);
         }
 
         // Tìm kiếm Ứng viên
@@ -49,7 +48,6 @@ namespace JobSeekingAPI.Repositories
         {
             var query = _context.Candidates
                 .AsNoTracking()
-                .Where(c => c.User != null && c.User.DeletedAt == null)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -58,7 +56,7 @@ namespace JobSeekingAPI.Repositories
                 query = query.Where(c =>
                     (c.User != null && c.User.FullName.ToLower().Contains(keyword)) ||
                     (c.Phone != null && c.Phone.Contains(keyword)) ||
-                    c.Experiences.Any(e => e.JobTitle.ToLower().Contains(keyword) || e.CompanyName.ToLower().Contains(keyword)));
+                    c.Experiences.Any(e => e.JobTitle.ToLower().Contains(keyword) || (e.CompanyName != null && e.CompanyName.ToLower().Contains(keyword))));
             }
 
             if (tagId.HasValue)
@@ -96,7 +94,7 @@ namespace JobSeekingAPI.Repositories
         {
             return await _context.Candidates
                .AsNoTracking()
-               .CountAsync(c => c.User != null && c.User.DeletedAt == null);
+               .CountAsync();
         }
 
         // Các hàm quản lý kỹ năng (Tag)
@@ -163,19 +161,24 @@ namespace JobSeekingAPI.Repositories
         {
             return await _context.SavedJobs
                 .AsNoTracking()
-                .Where(sj => sj.UserId == userId && sj.Job!.DeletedAt == null && sj.Job.Status == 1)
+                .Where(sj => sj.UserId == userId && sj.Job != null && sj.Job.Status == 1)
                 .OrderByDescending(sj => sj.SavedAt)
                 .Select(sj => new JobSummaryDTO
                 {
                     JobId = sj.Job!.JobId,
+                    CompanyId = sj.Job.CompanyId,
+                    PostedByUserId = sj.Job.PostedByUserId,
+                    IsFreelanceRecruiter = sj.Job.CompanyId == null,
+                    OriginalId = sj.Job.OriginalId,
                     Title = sj.Job.Title,
                     SalaryMin = sj.Job.SalaryMin,
                     SalaryMax = sj.Job.SalaryMax,
                     ExpYear = sj.Job.ExpYear,
                     Level = sj.Job.Level,
-                    CompanyName = sj.Job.Company!.CompanyName,
-                    LogoImg = sj.Job.Company.LogoImg,
-                    LocationName = sj.Job.Location!.LocationName,
+                    CompanyName = sj.Job.Company != null ? sj.Job.Company.CompanyName : "Nhà tuyển dụng độc lập (Chưa xác minh doanh nghiệp)",
+                    LogoImg = sj.Job.Company != null ? sj.Job.Company.LogoImg : null,
+                    IsCompanyVerified = sj.Job.Company != null && sj.Job.Company.IsVerified,
+                    LocationName = sj.Job.Location != null ? sj.Job.Location.LocationName : string.Empty,
                     PostedDate = sj.Job.PostedDate,
                     Deadline = sj.Job.Deadline,
                     Status = sj.Job.Status

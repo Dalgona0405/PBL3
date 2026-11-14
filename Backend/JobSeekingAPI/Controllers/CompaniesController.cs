@@ -1,116 +1,97 @@
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Enums;
 using JobSeekingAPI.Helpers;
-using JobSeekingAPI.Models;
-using JobSeekingAPI.Repositories;
+using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JobSeekingAPI.Controllers
 {
+    /// <summary>
+    /// Quản lý thông tin doanh nghiệp và trạng thái xác thực thương hiệu (Tick xanh)
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class CompaniesController : ControllerBase
     {
-        private readonly ICompanyRepository _companyRepo;
-        public CompaniesController(ICompanyRepository companyRepo)
+        private readonly ICompanyService _companyService;
+
+        public CompaniesController(ICompanyService companyService)
         {
-            _companyRepo = companyRepo;
+            _companyService = companyService;
         }
 
-        // GET: api/companies
+        /// <summary>
+        /// Lấy danh sách tóm tắt toàn bộ doanh nghiệp đang hoạt động
+        /// </summary>
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllCompanies()
         {
-            var companies = await _companyRepo.GetAllCompaniesSummaryAsync();
+            var companies = await _companyService.GetAllCompaniesAsync();
             return Ok(companies);
         }
 
-        // GET: api/companies/{id}
+        /// <summary>
+        /// Lấy thông tin chi tiết một doanh nghiệp cùng danh sách việc làm và nhà tuyển dụng
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCompanyById(int id)
         {
-            var company = await _companyRepo.GetCompanyDetailByIdAsync(id);
-            if (company == null)
-                return NotFound(new { message = "Company not found" });
+            var company = await _companyService.GetCompanyByIdAsync(id);
             return Ok(company);
         }
 
-        // GET: api/companies/recruiters/{recruiterId}
+        /// <summary>
+        /// Tra cứu mã doanh nghiệp thuộc quyền quản lý hoặc liên kết với nhà tuyển dụng
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("recruiters/{recruiterId}")]
         public async Task<IActionResult> GetCompanyIdByRecruiterId(int recruiterId)
         {
             var userId = User.GetUserIdFromToken();
-            if (User.IsInRole(UserRoles.Recruiter) && userId != recruiterId)
-                return Forbid();
-
-            var companyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(recruiterId);
-            if (companyId == null)
-                return NotFound(new { message = "Company not found for the given recruiter" });
-
+            var companyId = await _companyService.GetCompanyIdByRecruiterIdAsync(recruiterId, userId, User.IsInRole(UserRoles.Recruiter));
             return Ok(new { CompanyId = companyId });
         }
 
-        // POST: api/companies
+        /// <summary>
+        /// Tạo mới hồ sơ doanh nghiệp (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpPost]
         public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyDTO dto)
         {
-            var company = new Company
-            {
-                CompanyName = dto.CompanyName,
-                LogoImg = dto.LogoImg,
-                Website = dto.Website,
-                Size = dto.Size
-            };
-            await _companyRepo.CreateAsync(company);
+            var company = await _companyService.CreateCompanyAsync(dto);
             return CreatedAtAction(nameof(GetCompanyById), new { id = company.CompanyId }, company);
         }
 
-        // PUT: api/companies/{id}
+        /// <summary>
+        /// Cập nhật thông tin doanh nghiệp của tài khoản Company Master
+        /// </summary>
         [Authorize(Roles = UserRoles.Company)]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCompany(int id, [FromBody] UpdateCompanyDTO dto)
         {
             var userId = User.GetUserIdFromToken();
-            var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
-            if (recruiterCompanyId == null || recruiterCompanyId != id)
-            {
-                return Forbid();
-            }
-
-            var existingCompany = await _companyRepo.GetCompanyEntityByIdAsync(id);
-            if (existingCompany == null || existingCompany.DeletedAt != null)
-                return NotFound(new { message = "Company not found" });
-
-            existingCompany.CompanyName = dto.CompanyName ?? existingCompany.CompanyName;
-            existingCompany.LogoImg = dto.LogoImg ?? existingCompany.LogoImg;
-            existingCompany.Website = dto.Website ?? existingCompany.Website;
-            existingCompany.Size = dto.Size ?? existingCompany.Size;
-
-            await _companyRepo.UpdateAsync(existingCompany);
-            return Ok(new { message = "Update success" });
+            await _companyService.UpdateCompanyAsync(id, dto, userId);
+            return Ok(new { message = "Cập nhật thông tin doanh nghiệp thành công." });
         }
 
-        // DELETE: api/companies/{id}
+        /// <summary>
+        /// Xóa mềm một doanh nghiệp (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCompany(int id)
         {
-            var result = await _companyRepo.SoftDeleteCompanyAsync(id);
-            if (result == "Company not found")
-                return NotFound(new { message = "Company not found" });
-
-            if (result == "Has active jobs")
-                return BadRequest(new { message = "Cannot delete company with active jobs" });
-
-            return Ok(new { message = "Detele success" });
+            await _companyService.DeleteCompanyAsync(id);
+            return Ok(new { message = "Xóa doanh nghiệp thành công." });
         }
 
-        // GET: api/companies/search
+        /// <summary>
+        /// Tìm kiếm doanh nghiệp theo tên (phân trang)
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("search")]
         public async Task<IActionResult> SearchCompanies(
@@ -118,20 +99,25 @@ namespace JobSeekingAPI.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
         {
-            var result = await _companyRepo.SearchCompaniesAsync(keyword, page, pageSize);
+            var result = await _companyService.SearchCompaniesAsync(keyword, page, pageSize);
             return Ok(result);
         }
 
-        // GET: api/companies/{id}/jobs => đã có ở JobController, nếu muốn lấy thông tin công ty kèm theo danh sách việc làm thì có thể gọi api này ở JobController
-        //[HttpGet("{id}/jobs")]
-        //public async Task<IActionResult> GetCompanyJobs(int id)
-        //{
-        //    var company = await _companyRepository.GetCompanyEntityByIdAsync(id);
-        //    if (company == null)
-        //        return NotFound(new { message = "Company not found" });
-
-        //    var jobs = await _jobRepository.GetJobsByCompanyAsync(id);
-        //    return Ok(jobs);
-        //}
+        /// <summary>
+        /// Cấp hoặc thu hồi Tick Xanh xác thực cho doanh nghiệp (Chỉ dành cho Admin)
+        /// </summary>
+        [Authorize(Roles = UserRoles.Admin)]
+        [HttpPatch("{id}/verify")]
+        public async Task<IActionResult> VerifyCompanyBadge(int id, [FromQuery] bool isVerified = true)
+        {
+            var (message, companyId, verified, verifiedAt) = await _companyService.VerifyCompanyBadgeAsync(id, isVerified);
+            return Ok(new
+            {
+                message,
+                companyId,
+                isVerified = verified,
+                verifiedAt
+            });
+        }
     }
 }

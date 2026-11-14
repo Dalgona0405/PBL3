@@ -1,134 +1,114 @@
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Enums;
-using JobSeekingAPI.Models;
-using JobSeekingAPI.Repositories;
+using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JobSeekingAPI.Controllers
 {
+    /// <summary>
+    /// Quản lý danh mục địa điểm tuyển dụng và tra cứu việc làm theo khu vực
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class LocationsController : ControllerBase
     {
-        private readonly ILocationRepository _locationRepository;
+        private readonly ILocationService _locationService;
 
-        public LocationsController(ILocationRepository locationRepository)
+        public LocationsController(ILocationService locationService)
         {
-            _locationRepository = locationRepository;
+            _locationService = locationService;
         }
 
-        // GET: api/locations
+        /// <summary>
+        /// Lấy danh sách tất cả địa điểm kèm số lượng việc làm đang mở
+        /// </summary>
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllLocations()
         {
-            var locations = await _locationRepository.GetAllLocationsSummaryAsync();
+            var locations = await _locationService.GetAllLocationsAsync();
             return Ok(locations);
         }
 
-        // GET: api/locations/{id}
+        /// <summary>
+        /// Lấy chi tiết một địa điểm và danh sách việc làm thuộc địa điểm đó
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetLocationById(int id)
         {
-            var location = await _locationRepository.GetLocationDetailByIdAsync(id);
-            if (location == null)
-                return NotFound(new { message = "Location not found" });
+            var location = await _locationService.GetLocationByIdAsync(id);
             return Ok(location);
         }
 
-        // POST: api/locations
+        /// <summary>
+        /// Thêm mới một địa điểm (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpPost]
         public async Task<IActionResult> CreateLocation([FromBody] CreateLocationDTO dto)
         {
-            var location = new Location
-            {
-                LocationName = dto.LocationName
-            };
-
-            var createdLocation = await _locationRepository.CreateAsync(location);
-
-            return CreatedAtAction(nameof(GetLocationById), new { id = createdLocation.LocationId }, new LocationSummaryDTO
-            {
-                LocationId = createdLocation.LocationId,
-                LocationName = createdLocation.LocationName,
-                JobCount = 0
-            });
+            var created = await _locationService.CreateLocationAsync(dto);
+            return CreatedAtAction(nameof(GetLocationById), new { id = created.LocationId }, created);
         }
 
-        // PATCH: api/locations/{id}
+        /// <summary>
+        /// Cập nhật tên địa điểm (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateLocation(int id, [FromBody] UpdateLocationDTO dto)
         {
-            var location = await _locationRepository.GetLocationEntityByIdAsync(id);
-            if (location == null)
-                return NotFound(new { message = "Location not found!" });
-
-            location.LocationName = dto.LocationName ?? location.LocationName;
-
-            await _locationRepository.UpdateAsync(location);
-
-            return Ok(new { message = "Location updated successfully!" });
+            await _locationService.UpdateLocationAsync(id, dto);
+            return Ok(new { message = "Cập nhật địa điểm thành công." });
         }
 
-        // DELETE: api/locations/{id}
+        /// <summary>
+        /// Xóa địa điểm nếu chưa có tin tuyển dụng liên kết (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteLocation(int id)
         {
-            var location = await _locationRepository.GetLocationEntityByIdAsync(id);
-            if (location == null)
-                return NotFound(new { message = "Location not found!" });
-
-            var detail = await _locationRepository.GetLocationDetailByIdAsync(id);
-            if (detail != null && detail.JobCount > 0)
-            {
-                return BadRequest(new { message = "Cannot delete location with active jobs!" });
-            }
-
-            await _locationRepository.DeleteAsync(id);
-
-            return Ok(new { message = "Location deleted successfully!" });
+            await _locationService.DeleteLocationAsync(id);
+            return Ok(new { message = "Xóa địa điểm thành công." });
         }
 
-        // GET: api/locations/search
+        /// <summary>
+        /// Tìm kiếm địa điểm theo từ khóa
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("search")]
         public async Task<IActionResult> SearchLocations([FromQuery] string keyword)
         {
-            if (string.IsNullOrWhiteSpace(keyword))
-                return BadRequest(new { message = "Keyword is required" });
-
-            var locations = await _locationRepository.SearchLocationsAsync(keyword);
+            var locations = await _locationService.SearchLocationsAsync(keyword);
             return Ok(locations);
         }
 
-        // GET: api/locations/popular
+        /// <summary>
+        /// Lấy danh sách các địa điểm có nhiều tin tuyển dụng nhất
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("popular")]
         public async Task<IActionResult> GetPopularLocations([FromQuery] int limit = 10)
         {
-            var popularLocations = await _locationRepository.GetPopularLocationsAsync(limit);
+            var popularLocations = await _locationService.GetPopularLocationsAsync(limit);
             return Ok(popularLocations);
         }
 
-        // GET: api/locations/{id}/jobs
+        /// <summary>
+        /// Lấy danh sách việc làm theo mã địa điểm (phân trang)
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("{id}/jobs")]
         public async Task<IActionResult> GetJobsByLocation(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var location = await _locationRepository.GetLocationEntityByIdAsync(id);
-            if (location == null)
-                return NotFound(new { message = "Location not found" });
-
-            var result = await _locationRepository.GetJobsByLocationAsync(id, page, pageSize);
+            var (locationName, result) = await _locationService.GetJobsByLocationAsync(id, page, pageSize);
             return Ok(new
             {
                 LocationId = id,
-                LocationName = location.LocationName,
+                LocationName = locationName,
                 TotalCount = result.TotalCount,
                 Page = result.Page,
                 PageSize = result.PageSize,

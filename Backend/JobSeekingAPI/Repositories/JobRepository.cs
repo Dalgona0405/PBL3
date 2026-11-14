@@ -1,3 +1,4 @@
+using System.Text.Json;
 using JobSeekingAPI.Data;
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
@@ -7,20 +8,85 @@ namespace JobSeekingAPI.Repositories
 {
     public class JobRepository : BaseRepository<Job>, IJobRepository
     {
+        private static readonly string SettingsFilePath = Path.Combine(AppContext.BaseDirectory, "scraped_jobs_setting.json");
+        private static readonly object SettingsLock = new();
+        private static bool _showScrapedJobs = LoadShowScrapedJobsSetting();
+
         public JobRepository(ApplicationDbContext context) : base(context)
         {
+        }
+
+        public static bool ShowScrapedJobs
+        {
+            get
+            {
+                lock (SettingsLock)
+                {
+                    return _showScrapedJobs;
+                }
+            }
+            set
+            {
+                lock (SettingsLock)
+                {
+                    _showScrapedJobs = value;
+                    SaveShowScrapedJobsSetting(value);
+                }
+            }
+        }
+
+        private static bool LoadShowScrapedJobsSetting()
+        {
+            try
+            {
+                if (File.Exists(SettingsFilePath))
+                {
+                    var json = File.ReadAllText(SettingsFilePath);
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("showScrapedJobs", out var prop) &&
+                        (prop.ValueKind == JsonValueKind.True || prop.ValueKind == JsonValueKind.False))
+                    {
+                        return prop.GetBoolean();
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback to default true if config file cannot be read
+            }
+            return true;
+        }
+
+        private static void SaveShowScrapedJobsSetting(bool show)
+        {
+            try
+            {
+                var payload = JsonSerializer.Serialize(new { showScrapedJobs = show });
+                File.WriteAllText(SettingsFilePath, payload);
+            }
+            catch
+            {
+                // Keep in-memory state if disk write is restricted
+            }
         }
 
         // CRUD ĐẶC THÙ
         public async Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync()
         {
-            return await _context.Jobs
+            var query = _context.Jobs
                 .AsNoTracking()
+                .AsQueryable();
+
+            if (!ShowScrapedJobs)
+            {
+                query = query.Where(j => j.OriginalId == null);
+            }
+
+            return await query
                 .Include(j => j.Company)
                 .Include(j => j.Location)
                 .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-                .Where(j => j.DeletedAt == null)
-                .OrderByDescending(j => j.PostedDate) //việc mới lên đầu
+                .OrderByDescending(j => j.PostedDate) // Sắp xếp tin mới nhất lên đầu
                 .ToListAsync();
         }
 
@@ -28,11 +94,13 @@ namespace JobSeekingAPI.Repositories
         {
             return await _context.Jobs
                 .AsNoTracking()
-                .Where(j => j.JobId == id && j.DeletedAt == null)
+                .Where(j => j.JobId == id)
                 .Select(j => new JobDetailDTO
                 {
                     JobId = j.JobId,
                     CompanyId = j.CompanyId,
+                    PostedByUserId = j.PostedByUserId,
+                    IsFreelanceRecruiter = j.CompanyId == null,
                     OriginalId = j.OriginalId,
                     Title = j.Title,
                     SalaryMin = j.SalaryMin,
@@ -53,7 +121,9 @@ namespace JobSeekingAPI.Repositories
                         CompanyId = j.Company.CompanyId,
                         CompanyName = j.Company.CompanyName,
                         LogoImg = j.Company.LogoImg,
-                        Website = j.Company.Website
+                        Website = j.Company.Website,
+                        IsVerified = j.Company.IsVerified,
+                        TaxCode = j.Company.TaxCode
                     } : null,
 
                     Location = j.Location != null ? new LocationSummaryDTO
@@ -68,22 +138,22 @@ namespace JobSeekingAPI.Repositories
                         TagName = jt.Tag.TagName,
                         Type = jt.Tag.Type
                     }).ToList(),
-                    ApplicationCount = j.Applications.Count(a => a.DeletedAt == null)
+                    ApplicationCount = j.Applications.Count
                 })
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<Job?> GetJobEntityByIdAsync(int id) //dùng cho UPDATE
+        public async Task<Job?> GetJobEntityByIdAsync(int id) // Kèm JobTags để phục vụ cập nhật
         {
             return await _context.Jobs
                 .Include(j => j.JobTags)
-                .FirstOrDefaultAsync(j => j.JobId == id && j.DeletedAt == null);
+                .FirstOrDefaultAsync(j => j.JobId == id);
         }
 
         public async Task<Job> CreateJobWithDefaultsAsync(Job job)
         {
             job.PostedDate = DateTime.UtcNow;
-            job.Status = 1; //1: Active
+            job.Status = 1; // 1: Đang hoạt động
             job.ViewCount = 0;
             return await base.CreateAsync(job);
         }
@@ -113,7 +183,7 @@ namespace JobSeekingAPI.Repositories
             if (job != null)
             {
                 job.DeletedAt = DateTime.UtcNow;
-                job.Status = 0; //0: Inactive
+                job.Status = 0; // 0: Ngừng hoạt động
                 await _context.SaveChangesAsync();
             }
         }
@@ -126,9 +196,14 @@ namespace JobSeekingAPI.Repositories
                 .Include(j => j.Company)
                 .Include(j => j.Location)
                 .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-                .Where(j => j.DeletedAt == null && j.Status == 1);
+                .Where(j => j.Status == 1);
 
-            // 🔍 Lọc theo từ khóa
+            if (!ShowScrapedJobs)
+            {
+                query = query.Where(j => j.OriginalId == null);
+            }
+
+            // Lọc theo từ khóa
             if (!string.IsNullOrWhiteSpace(searchParams.Keyword))
             {
                 var keyword = searchParams.Keyword.ToLower();
@@ -140,19 +215,19 @@ namespace JobSeekingAPI.Repositories
                      j.Company.CompanyName.ToLower().Contains(keyword)));
             }
 
-            // 📍 Lọc theo địa điểm
+            // Lọc theo địa điểm
             if (searchParams.LocationId.HasValue)
             {
                 query = query.Where(j => j.LocationId == searchParams.LocationId.Value);
             }
 
-            // 🏷️ Lọc theo tag
+            // Lọc theo kỹ năng/thẻ
             if (searchParams.TagId.HasValue)
             {
                 query = query.Where(j => j.JobTags.Any(jt => jt.TagId == searchParams.TagId));
             }
 
-            // 💰 Lọc theo lương
+            // Lọc theo mức lương
             if (searchParams.MinSalary.HasValue)
             {
                 query = query.Where(j =>
@@ -167,31 +242,31 @@ namespace JobSeekingAPI.Repositories
                     (j.SalaryMax.HasValue && j.SalaryMax <= searchParams.MaxSalary));
             }
 
-            //📊 Lọc theo kinh nghiệm
+            // Lọc theo kinh nghiệm
             if (!string.IsNullOrWhiteSpace(searchParams.ExpYear))
             {
                 query = query.Where(j => j.ExpYear != null && j.ExpYear == searchParams.ExpYear);
             }
 
-            // 🎯 Lọc theo cấp bậc
+            // Lọc theo cấp bậc
             if (!string.IsNullOrWhiteSpace(searchParams.Level))
             {
                 query = query.Where(j => j.Level != null && j.Level == searchParams.Level);
             }
 
-            // 📄 Đếm tổng số
+            // Đếm tổng số bản ghi phù hợp
             var totalCount = await query.CountAsync();
             var pageNumber = searchParams.Page > 0 ? searchParams.Page : 1;
             var pageSize = searchParams.PageSize > 0 ? searchParams.PageSize : 10;
 
-            // 📑 Phân trang
+            // Phân trang kết quả
             var items = await query
                 .OrderByDescending(j => j.PostedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            // 📦 Đóng gói kết quả
+            // Đóng gói kết quả phân trang
             return new PagedResultDTO<Job>
             {
                 TotalCount = totalCount,
@@ -205,9 +280,38 @@ namespace JobSeekingAPI.Repositories
         // ===== LỌC THEO QUAN HỆ =====
         public async Task<IEnumerable<Job>> GetJobsByCompanyAsync(int companyId)
         {
-            return await _context.Jobs
+            var query = _context.Jobs
                 .AsNoTracking()
-                .Where(j => j.CompanyId == companyId && j.DeletedAt == null)
+                .Where(j => j.CompanyId == companyId);
+
+            if (!ShowScrapedJobs)
+            {
+                query = query.Where(j => j.OriginalId == null);
+            }
+
+            return await query
+                .Include(j => j.Company)
+                .Include(j => j.Location)
+                .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
+                .OrderByDescending(j => j.PostedDate)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Job>> GetJobsByRecruiterAsync(int recruiterUserId)
+        {
+            var recruiterCompanyId = await _context.Recruiters
+                .AsNoTracking()
+                .Where(r => r.UserId == recruiterUserId)
+                .Select(r => r.CompanyId)
+                .FirstOrDefaultAsync();
+
+            var query = _context.Jobs
+                .AsNoTracking()
+                .Where(j => j.PostedByUserId == recruiterUserId ||
+                            (recruiterCompanyId != null && j.CompanyId == recruiterCompanyId));
+
+            return await query
+                .Include(j => j.Company)
                 .Include(j => j.Location)
                 .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
                 .OrderByDescending(j => j.PostedDate)
@@ -216,9 +320,16 @@ namespace JobSeekingAPI.Repositories
 
         public async Task<IEnumerable<Job>> GetJobsByLocationAsync(int locationId)
         {
-            return await _context.Jobs
+            var query = _context.Jobs
                 .AsNoTracking()
-                .Where(j => j.LocationId == locationId && j.DeletedAt == null)
+                .Where(j => j.LocationId == locationId);
+
+            if (!ShowScrapedJobs)
+            {
+                query = query.Where(j => j.OriginalId == null);
+            }
+
+            return await query
                 .Include(j => j.Company)
                 .OrderByDescending(j => j.PostedDate)
                 .ToListAsync();
@@ -226,9 +337,16 @@ namespace JobSeekingAPI.Repositories
 
         public async Task<IEnumerable<Job>> GetJobsByTagAsync(int tagId)
         {
-            return await _context.Jobs
+            var query = _context.Jobs
                 .AsNoTracking()
-                .Where(j => j.JobTags.Any(jt => jt.TagId == tagId) && j.DeletedAt == null)
+                .Where(j => j.JobTags.Any(jt => jt.TagId == tagId));
+
+            if (!ShowScrapedJobs)
+            {
+                query = query.Where(j => j.OriginalId == null);
+            }
+
+            return await query
                 .Include(j => j.Company)
                 .Include(j => j.Location)
                 .OrderByDescending(j => j.PostedDate)
@@ -239,7 +357,7 @@ namespace JobSeekingAPI.Repositories
         public async Task<int> GetTotalJobsCountAsync()
         {
             return await _context.Jobs
-                .Where(j => j.DeletedAt == null && j.Status == 1)
+                .Where(j => j.Status == 1)
                 .CountAsync();
         }
 
@@ -247,7 +365,7 @@ namespace JobSeekingAPI.Repositories
         {
             return await _context.Jobs
                 .AsNoTracking()
-                .Where(j => j.DeletedAt == null && j.Level != null)
+                .Where(j => j.Level != null)
                 .GroupBy(j => j.Level)
                 .Select(g => new { Level = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.Level!, x => x.Count);
@@ -255,15 +373,24 @@ namespace JobSeekingAPI.Repositories
 
         public async Task<IEnumerable<Job>> GetRecentJobsAsync(int count)
         {
-            return await _context.Jobs
+            var query = _context.Jobs
                 .AsNoTracking()
-                .Where(j => j.DeletedAt == null && j.Status == 1)
+                .Where(j => j.Status == 1);
+
+            if (!ShowScrapedJobs)
+            {
+                query = query.Where(j => j.OriginalId == null);
+            }
+
+            return await query
                 .Include(j => j.Company)
                 .Include(j => j.Location)
+                .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
                 .OrderByDescending(j => j.PostedDate)
                 .Take(count)
                 .ToListAsync();
         }
+
         public async Task IncrementViewCountAsync(int jobId)
         {
             var job = await _context.Jobs.FindAsync(jobId);

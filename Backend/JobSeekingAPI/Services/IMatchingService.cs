@@ -6,5 +6,6 @@ namespace JobSeekingAPI.Services
     {
         Task<JobMatchResultDTO> GetJobMatchScoreAsync(int jobId, int candidateId);
         Task<List<JobSuggestionDTO>> GetTopJobSuggestionsForCandidateAsync(int candidateId, int topN = 6);
+        Task TriggerRetrainAsync();
     }
 }

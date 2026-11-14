@@ -11,6 +11,7 @@ namespace JobSeekingAPI.Repositories
 
         // Hàm Register
         Task<User> RegisterUserAsync(CreateUserDTO userDto);
+        Task<User> FindOrCreateGoogleUserAsync(string email, string fullName, string? avatarUrl, string googleId, string defaulRole);
 
         // CRUD
         Task<PagedResultDTO<UserListDTO>> GetAllUsersWithDetailsAsync(int page, int pageSize);
