@@ -8,5 +8,6 @@ namespace JobSeekingAPI.Repositories
         Task<IEnumerable<Notification>> GetAllNotificationsByUserIdAsync(int userId);
         Task MarkAsReadAsync(int notificationId);
         Task MarkAllAsReadAsync(int userId);
+        Task<int> GetUnreadCountAsync(int userId);
     }
 }

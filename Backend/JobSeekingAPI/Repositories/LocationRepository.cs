@@ -19,7 +19,7 @@ namespace JobSeekingAPI.Repositories
                 {
                     LocationId = l.LocationId,
                     LocationName = l.LocationName,
-                    JobCount = l.Jobs.Count(j => j.DeletedAt == null)
+                    JobCount = l.Jobs.Count
                 })
                 .OrderBy(l => l.LocationName)
                 .ToListAsync();
@@ -34,8 +34,8 @@ namespace JobSeekingAPI.Repositories
                 {
                     LocationId = l.LocationId,
                     LocationName = l.LocationName,
-                    JobCount = l.Jobs.Count(j => j.DeletedAt == null),
-                    Jobs = l.Jobs.Where(j => j.DeletedAt == null)
+                    JobCount = l.Jobs.Count,
+                    Jobs = l.Jobs
                                  .OrderByDescending(j => j.PostedDate)
                                  .Select(j => new JobSummaryDTO
                                  {
@@ -65,7 +65,7 @@ namespace JobSeekingAPI.Repositories
                 {
                     LocationId = l.LocationId,
                     LocationName = l.LocationName,
-                    JobCount = l.Jobs.Count(j => j.DeletedAt == null)
+                    JobCount = l.Jobs.Count
                 })
                 .OrderBy(l => l.LocationName)
                 .ToListAsync();
@@ -79,7 +79,7 @@ namespace JobSeekingAPI.Repositories
                 {
                     LocationId = l.LocationId,
                     LocationName = l.LocationName,
-                    JobCount = l.Jobs.Count(j => j.DeletedAt == null)
+                    JobCount = l.Jobs.Count
                 })
                 .Where(l => l.JobCount > 0)
                 .OrderByDescending(l => l.JobCount)
@@ -91,7 +91,7 @@ namespace JobSeekingAPI.Repositories
         {
             var query = _context.Jobs
                 .AsNoTracking()
-                .Where(j => j.LocationId == locationId && j.DeletedAt == null);
+                .Where(j => j.LocationId == locationId);
 
             var totalCount = await query.CountAsync();
             var jobs = await query

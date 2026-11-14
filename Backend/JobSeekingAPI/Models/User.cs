@@ -11,14 +11,17 @@ namespace JobSeekingAPI.Models
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-        public string Role { get; set; } = string.Empty;      // Candidate, Recruiter, Admin
-        
+        public string Role { get; set; } = string.Empty;
+
         public string FullName { get; set; } = string.Empty;
         public string? Avatar { get; set; }
-        
-        public DateTime? DeletedAt { get; set; }              // Soft delete
+
+        // Phục vụ đăng nhập Google
+        public string? GoogleId { get; set; }
+
+        public DateTime? DeletedAt { get; set; }
         public DateTime? LastLogin { get; set; }
-        
+
         // Navigation properties
         public Candidate? Candidate { get; set; }
         public Recruiter? Recruiter { get; set; }

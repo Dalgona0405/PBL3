@@ -1,19 +1,22 @@
+using JobSeekingAPI.Enums;
+using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JobSeekingAPI.Controllers
 {
+    /// <summary>
+    /// Điều phối các tác vụ kích hoạt và huấn luyện mô hình AI gợi ý việc làm
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class AIController : ControllerBase
     {
-        private readonly HttpClient _httpClient;
-        private readonly string _pythonBaseUrl;
+        private readonly IMatchingService _matchingService;
 
-        public AIController(HttpClient httpClient, IConfiguration config)
+        public AIController(IMatchingService matchingService)
         {
-            _httpClient = httpClient;
-            _pythonBaseUrl = config["PythonAI:BaseUrl"] ?? "http://localhost:8000";
+            _matchingService = matchingService;
         }
 
         // Chỉ Admin mới có quyền retrain AI!
@@ -24,25 +27,12 @@ namespace JobSeekingAPI.Controllers
         /// Quá trình này sẽ chạy ngầm (Background) bên server Python. 
         /// Không làm gián đoạn hệ thống. Thời gian hoàn thành khoảng 1-2 phút.
         /// </remarks>
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpPost("retrain")]
         public async Task<IActionResult> RetrainAIModel()
         {
-            try
-            {
-                var response = await _httpClient.PostAsync($"{_pythonBaseUrl}/api/train", null);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    return Ok(new { message = "Lệnh huấn luyện AI đã được gửi thành công! AI đang cập nhật bản đồ sao." });
-                }
-                
-                return StatusCode(500, new { message = "AI Server từ chối yêu cầu. Vui lòng kiểm tra lại." });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = $"Không thể kết nối tới AI Server: {ex.Message}" });
-            }
+            await _matchingService.TriggerRetrainAsync();
+            return Ok(new { message = "Lệnh huấn luyện AI đã được gửi thành công! AI đang cập nhật bản đồ sao." });
         }
     }
 }

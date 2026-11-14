@@ -6,8 +6,11 @@ namespace JobSeekingAPI.DTOs
     public class JobDetailDTO
     {
         public int JobId { get; set; }
-        public int CompanyId { get; set; }
+        public int? CompanyId { get; set; }
+        public int? PostedByUserId { get; set; }
+        public bool IsFreelanceRecruiter { get; set; }
         public string? OriginalId { get; set; }
+        public bool IsScraped => !string.IsNullOrWhiteSpace(OriginalId);
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? Requirement { get; set; }
@@ -21,8 +24,8 @@ namespace JobSeekingAPI.DTOs
         public string? Address { get; set; }
         public int? ViewCount { get; set; }
         public string? LocationName { get; set; }
-        public CompanySummaryDTO? Company { get; set; } = null!;
-        public LocationSummaryDTO? Location { get; set; } = null!;
+        public CompanySummaryDTO? Company { get; set; }
+        public LocationSummaryDTO? Location { get; set; }
         public List<TagSummaryDTO> Tags { get; set; } = new();
         public int ApplicationCount { get; set; }
         public int? Status { get; set; }
@@ -46,6 +49,11 @@ namespace JobSeekingAPI.DTOs
     public class JobSummaryDTO
     {
         public int JobId { get; set; }
+        public int? CompanyId { get; set; }
+        public int? PostedByUserId { get; set; }
+        public bool IsFreelanceRecruiter { get; set; }
+        public string? OriginalId { get; set; }
+        public bool IsScraped => !string.IsNullOrWhiteSpace(OriginalId);
         public string Title { get; set; } = string.Empty;
         public decimal? SalaryMin { get; set; }
         public decimal? SalaryMax { get; set; }
@@ -57,12 +65,12 @@ namespace JobSeekingAPI.DTOs
         public DateTime PostedDate { get; set; }
         public DateTime? Deadline { get; set; }
         public int? Status { get; set; }
+        public bool IsCompanyVerified { get; set; }
     }
 
     public class CreateJobDTO
     {
-        [Required(ErrorMessage = "Please choose Company")]
-        public int CompanyId { get; set; }
+        public int? CompanyId { get; set; }
         [Required(ErrorMessage = "Please choose Location")]
         public int LocationId { get; set; }
         [Required(ErrorMessage = "Please enter Title")]

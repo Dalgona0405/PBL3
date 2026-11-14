@@ -68,4 +68,19 @@ namespace JobSeekingAPI.DTOs
     {
         public string CVUrl { get; set; } = string.Empty;
     }
+
+    public class ParsedResumeResultDTO
+    {
+        public string? CVUrl { get; set; }
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public DateTime? Birthday { get; set; }
+        public string? Gender { get; set; }
+        public string? Address { get; set; }
+        public string? Education { get; set; }
+
+        public List<TagSummaryDTO> MatchedSkills { get; set; } = new();
+        public List<CreateExperienceDTO> ExtractedExperiences { get; set; } = new();
+    }
 }

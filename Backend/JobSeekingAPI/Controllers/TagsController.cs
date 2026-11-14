@@ -1,156 +1,121 @@
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Enums;
-using JobSeekingAPI.Models;
-using JobSeekingAPI.Repositories;
+using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JobSeekingAPI.Controllers
 {
+    /// <summary>
+    /// Quản lý danh mục nhãn kỹ năng, ngôn ngữ, vai trò (Tags) phục vụ gắn thẻ và tìm kiếm
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class TagsController : ControllerBase
     {
-        private readonly ITagRepository _tagRepository;
+        private readonly ITagService _tagService;
 
-        public TagsController(ITagRepository tagRepository)
+        public TagsController(ITagService tagService)
         {
-            _tagRepository = tagRepository;
+            _tagService = tagService;
         }
 
-        // GET: api/tags
+        /// <summary>
+        /// Lấy toàn bộ danh sách nhãn kỹ năng kèm số lượt sử dụng
+        /// </summary>
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllTags()
         {
-            var tags = await _tagRepository.GetAllTagsSummaryAsync();
+            var tags = await _tagService.GetAllTagsAsync();
             return Ok(tags);
         }
 
-        // GET: api/tags/{id}
+        /// <summary>
+        /// Lấy thông tin chi tiết một nhãn kỹ năng cùng danh sách việc làm và ứng viên liên quan
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTagById(int id)
         {
-            var tagDetail = await _tagRepository.GetTagDetailByIdAsync(id);
-            if (tagDetail == null)
-                return NotFound(new { message = "Tag not found" });
-
+            var tagDetail = await _tagService.GetTagByIdAsync(id);
             return Ok(tagDetail);
         }
 
-        // GET: api/tags/popular?count=10
+        /// <summary>
+        /// Lấy danh sách các nhãn kỹ năng phổ biến nhất
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("popular")]
         public async Task<IActionResult> GetPopularTags([FromQuery] int count = 10)
         {
-            var popularTags = await _tagRepository.GetPopularTagsAsync(count);
+            var popularTags = await _tagService.GetPopularTagsAsync(count);
             return Ok(popularTags);
         }
 
-        // GET: api/tags/suggest?keyword=react&limit=5 => trùng với GET: api/tags/search?keyword=react nhưng có thêm tham số limit để giới hạn số lượng kết quả trả về
+        /// <summary>
+        /// Gợi ý nhanh nhãn kỹ năng theo tiền tố từ khóa (tối thiểu 2 ký tự)
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("suggest")]
         public async Task<IActionResult> SuggestTags([FromQuery] string keyword, [FromQuery] int limit = 5)
         {
-            if (string.IsNullOrWhiteSpace(keyword) || keyword.Length < 2)
-                return Ok(new List<TagSummaryDTO>());
-
-            var tags = await _tagRepository.SuggestTagsAsync(keyword, limit);
+            var tags = await _tagService.SuggestTagsAsync(keyword, limit);
             return Ok(tags);
         }
 
-        // POST: api/tags
+        /// <summary>
+        /// Tạo mới một nhãn kỹ năng (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpPost]
         public async Task<IActionResult> CreateTag([FromBody] CreateTagDTO dto)
         {
-            // Kiểm tra tag đã tồn tại
-            var existingTag = await _tagRepository.IsTagNameExistsAsync(dto.TagName);
-            if (existingTag)
-                return BadRequest("Tag already exists");
-
-            var tag = new Tag
-            {
-                TagName = dto.TagName,
-                Type = dto.Type
-            };
-
-            await _tagRepository.CreateAsync(tag);
-
-            var tagDto = new TagSummaryDTO
-            {
-                TagId = tag.TagId,
-                TagName = tag.TagName,
-                Type = tag.Type
-            };
-
-            return CreatedAtAction(nameof(GetTagById), new { id = tag.TagId }, tagDto);
+            var created = await _tagService.CreateTagAsync(dto);
+            return CreatedAtAction(nameof(GetTagById), new { id = created.TagId }, created);
         }
 
-        // PATCH: api/tags/{id}
+        /// <summary>
+        /// Cập nhật tên hoặc phân loại của nhãn kỹ năng (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateTag(int id, [FromBody] UpdateTagDTO dto)
         {
-            var existingTag = await _tagRepository.GetTagEntityByIdAsync(id);
-            if (existingTag == null)
-                return NotFound("Tag not found");
-
-            // Kiểm tra tên mới không trùng
-            if (!string.IsNullOrWhiteSpace(dto.TagName) && dto.TagName != existingTag.TagName)
-            {
-                var isDuplicate = await _tagRepository.IsTagNameExistsAsync(dto.TagName, id);
-                if (isDuplicate)
-                    return BadRequest("Tag name already exists");
-                existingTag.TagName = dto.TagName;
-            }
-
-            if (!string.IsNullOrWhiteSpace(dto.Type))
-            {
-                existingTag.Type = dto.Type;
-            }
-
-            await _tagRepository.UpdateAsync(existingTag);
-            return Ok(new { message = "Update success" });
+            await _tagService.UpdateTagAsync(id, dto);
+            return Ok(new { message = "Cập nhật nhãn kỹ năng thành công." });
         }
 
-        // DELETE: api/tags/{id}
+        /// <summary>
+        /// Xóa nhãn kỹ năng nếu chưa được gắn vào công việc hoặc ứng viên nào (Chỉ dành cho Admin)
+        /// </summary>
         [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTag(int id)
         {
-            var tag = await _tagRepository.GetTagEntityByIdAsync(id);
-            if (tag == null)
-                return NotFound(new { message = "Tag not found" });
-
-            // Kiểm tra xem Tag có đang được gắn cho Job hay Candidate nào không
-            var isInUse = await _tagRepository.IsTagInUseAsync(id);
-            if (isInUse)
-                return BadRequest(new { message = "Cannot delete tag that is being used" });
-
-            await _tagRepository.SoftDeleteTagAsync(id);
-            return Ok(new { message = "Delete sucess" });
+            await _tagService.DeleteTagAsync(id);
+            return Ok(new { message = "Xóa nhãn kỹ năng thành công." });
         }
 
-        // GET: api/tags/search
+        /// <summary>
+        /// Tìm kiếm nhãn kỹ năng theo từ khóa
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("search")]
         public async Task<IActionResult> SearchTags([FromQuery] string keyword)
         {
-            if (string.IsNullOrWhiteSpace(keyword))
-                return BadRequest(new { message = "Keyword is required" });
-
-            var tags = await _tagRepository.SearchTagsAsync(keyword);
+            var tags = await _tagService.SearchTagsAsync(keyword);
             return Ok(tags);
         }
 
-        // GET: api/tags/type/{type}
+        /// <summary>
+        /// Lọc danh sách nhãn kỹ năng theo phân loại (Skill, Language, Role, Domain)
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("type/{type}")]
         public async Task<IActionResult> GetTagsByType(string type)
         {
-            var tags = await _tagRepository.GetTagsByTypeAsync(type);
+            var tags = await _tagService.GetTagsByTypeAsync(type);
             return Ok(tags);
         }
     }

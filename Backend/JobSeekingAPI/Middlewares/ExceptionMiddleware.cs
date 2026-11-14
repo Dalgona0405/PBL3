@@ -1,8 +1,12 @@
 ﻿using System.Net;
 using System.Text.Json;
+using JobSeekingAPI.Helpers;
 
 namespace JobSeekingAPI.Middlewares
 {
+    /// <summary>
+    /// Middleware xử lý ngoại lệ tập trung, chuyển đổi Exception nghiệp vụ thành mã HTTP Status và JSON thống nhất
+    /// </summary>
     public class ExceptionMiddleware
     {
         private readonly RequestDelegate _next;
@@ -14,6 +18,9 @@ namespace JobSeekingAPI.Middlewares
             _logger = logger;
         }
 
+        /// <summary>
+        /// Chặn và xử lý mọi ngoại lệ phát sinh trong quá trình thực thi HTTP Request
+        /// </summary>
         public async Task InvokeAsync(HttpContext httpContext)
         {
             try
@@ -22,36 +29,45 @@ namespace JobSeekingAPI.Middlewares
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Something went wrong: {ex}");
+                _logger.LogError(ex, "Unhandled exception occurred while processing request.");
                 await HandleExceptionAsync(httpContext, ex);
             }
         }
 
+        /// <summary>
+        /// Ánh xạ loại ngoại lệ sang HTTP Status Code và thông điệp phản hồi chuẩn hóa
+        /// </summary>
         private static Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
 
-            // Mặc định là lỗi 500 (Lỗi hệ thống sập, đứt cáp, AI chết...)
+            // Mặc định trả về lỗi 500 cho các ngoại lệ hệ thống chưa được xử lý tường minh
             var statusCode = (int)HttpStatusCode.InternalServerError;
             var message = "Hệ thống đang bận, vui lòng thử lại sau!";
 
-            // Phân loại lỗi để trả về đúng mã HTTP Status Code
             switch (exception)
             {
                 case ArgumentException e:
-                    statusCode = (int)HttpStatusCode.BadRequest; // 400 - Lỗi do user nhập sai
+                    statusCode = (int)HttpStatusCode.BadRequest; // 400 - Dữ liệu đầu vào hoặc nghiệp vụ không hợp lệ
+                    message = e.Message;
+                    break;
+                case InvalidOperationException e:
+                    statusCode = (int)HttpStatusCode.BadRequest; // 400 - Trạng thái hoặc thao tác không hợp lệ
+                    message = e.Message;
+                    break;
+                case UnauthorizedAccessException e:
+                    statusCode = (int)HttpStatusCode.Unauthorized; // 401 - Chưa xác thực hoặc thông tin đăng nhập không hợp lệ
+                    message = e.Message;
+                    break;
+                case ForbiddenAccessException e:
+                    statusCode = (int)HttpStatusCode.Forbidden; // 403 - Không có quyền truy cập
                     message = e.Message;
                     break;
                 case KeyNotFoundException e:
                     statusCode = (int)HttpStatusCode.NotFound; // 404 - Không tìm thấy dữ liệu
                     message = e.Message;
                     break;
-                case UnauthorizedAccessException e:
-                    statusCode = (int)HttpStatusCode.Forbidden; // 403 - Không có quyền truy cập
-                    message = e.Message;
-                    break;
                 default:
-                    // message = exception.Message; // Mở khi cần debug lỗi hệ thống, đóng khi deploy để tránh lộ thông tin nhạy cảm
                     break;
             }
 

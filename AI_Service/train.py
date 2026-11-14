@@ -1,18 +1,24 @@
 import torch
 import torch.nn.functional as F
 from torch_geometric.utils import negative_sampling
-from sklearn.metrics import roc_auc_score, mean_absolute_error # 👈 THÊM DÒNG NÀY
-import numpy as np
+from sklearn.metrics import roc_auc_score, mean_absolute_error
 
 from data_loader import fetch_and_process_data
 from model import GCNNet, LinkPredictor, SalaryRegressor
 
+
 def train_gnn():
+    """
+    Huấn luyện đa nhiệm (Multi-task Learning) cho mô hình GNN gồm hai mục tiêu:
+    1. Dự đoán liên kết giữa các kỹ năng (Link Prediction).
+    2. Hồi quy chỉ số tiềm năng mức lương của kỹ năng (Salary Regression).
+    Kết thúc quá trình học, lưu trọng số ra hai tệp gnn_encoder.pth và gnn_regressor.pth.
+    """
     print("Starting GNN training...")
 
     graph_data, _, _, _ = fetch_and_process_data()
     if graph_data is None or graph_data.num_nodes == 0:
-        print("Have no data to train!")
+        print("No graph data available for training.")
         return
 
     x = graph_data.x
@@ -37,7 +43,7 @@ def train_gnn():
         encoder.train()
         predictor.train()
         regressor.train()
-        
+
         optimizer.zero_grad()
         z = encoder(x, pos_edge_index)
 
@@ -55,7 +61,7 @@ def train_gnn():
 
         loss_reg = torch.tensor(0.0)
         if salary_mask.sum() > 0:
-            pred_salaries = regressor(z[salary_mask]).squeeze()
+            pred_salaries = regressor(z[salary_mask]).squeeze(-1)
             loss_reg = F.mse_loss(pred_salaries, salaries_true[salary_mask])
 
         loss = loss_link + 2.0 * loss_reg
@@ -63,36 +69,36 @@ def train_gnn():
         optimizer.step()
 
         if epoch % 10 == 0:
-            print(f'Epoch {epoch:03d}, Total Loss: {loss.item():.4f}')
+            print(f"Epoch {epoch:03d}, Total Loss: {loss.item():.4f}")
 
     encoder.eval()
     predictor.eval()
     regressor.eval()
     with torch.no_grad():
         z = encoder(x, pos_edge_index)
-        
-        # 1. Kiểm chứng Gợi ý kỹ năng (Link Prediction) bằng AUC Score
+
+        # Đánh giá độ phân tách liên kết kỹ năng bằng ROC-AUC trên tập cạnh huấn luyện
         final_preds = predictor(z, total_edge_index).sigmoid().numpy()
         final_labels = true_labels.numpy()
         auc_score = roc_auc_score(final_labels, final_preds)
-        
-        # 2. Kiểm chứng Dự báo lương (Salary Regression) bằng MAE
+
+        # Đánh giá sai số hồi quy lương chuẩn hóa bằng MAE
         if salary_mask.sum() > 0:
-            final_pred_salaries = regressor(z[salary_mask]).squeeze().numpy()
+            final_pred_salaries = regressor(z[salary_mask]).squeeze(-1).numpy()
             final_true_salaries = salaries_true[salary_mask].numpy()
             mae_score = mean_absolute_error(final_true_salaries, final_pred_salaries)
         else:
             mae_score = 0.0
 
-    print("\n" + "="*40)
-    print("📊 KẾT QUẢ KIỂM CHỨNG MÔ HÌNH (VALIDATION METRICS)")
-    print(f"✅ Độ chính xác gợi ý kỹ năng (AUC Score): {auc_score * 100:.2f}%")
-    print(f"✅ Sai số dự báo lương (MAE): {mae_score:.4f} (Đã chuẩn hóa)")
-    print("="*40 + "\n")
+    print("\n" + "=" * 40)
+    print("VALIDATION METRICS")
+    print(f"Link Prediction AUC Score: {auc_score * 100:.2f}%")
+    print(f"Salary Regression MAE (Normalized): {mae_score:.4f}")
+    print("=" * 40 + "\n")
 
-    torch.save(encoder.state_dict(), 'gnn_encoder.pth')
-    torch.save(regressor.state_dict(), 'gnn_regressor.pth')
-    print("Saved model!")
+    torch.save(encoder.state_dict(), "gnn_encoder.pth")
+    torch.save(regressor.state_dict(), "gnn_regressor.pth")
+    print("Saved GNN encoder and regressor weights successfully.")
 
 if __name__ == "__main__":
     train_gnn()

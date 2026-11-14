@@ -1,4 +1,7 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using JobSeekingAPI.Data;
+using JobSeekingAPI.Hubs;
 using JobSeekingAPI.Middlewares;
 using JobSeekingAPI.Repositories;
 using JobSeekingAPI.Services;
@@ -14,13 +17,19 @@ using System.Text.Json;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
+// =========================================================================
+// 1. INFRASTRUCTURE & DATABASE CONFIGURATION
+// =========================================================================
 builder.Services.AddMemoryCache();
-builder.Services.AddHostedService<SalaryAnalyticsWorker>();
-builder.Services.AddHostedService<GNNUpdateWorker>();
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
 
-// Register: Repositories & Services
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// =========================================================================
+// 2. REPOSITORIES & DOMAIN SERVICES (DEPENDENCY INJECTION)
+// =========================================================================
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
 builder.Services.AddScoped<ICandidateRepository, CandidateRepository>();
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
@@ -32,6 +41,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IExperienceRepository, ExperienceRepository>();
 builder.Services.AddScoped<ICompanyJoinRequestRepository, CompanyJoinRequestRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IReportService, ReportService>();
@@ -40,115 +51,142 @@ builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<ICompanyRequestService, CompanyRequestService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMatchingService, MatchingService>();
+builder.Services.AddScoped<IStorageService, CloudStorageService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<ICandidateService, CandidateService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICompanyService, CompanyService>();
+builder.Services.AddScoped<IRecruiterService, RecruiterService>();
+builder.Services.AddScoped<ITagService, TagService>();
+builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
-// Đăng ký HttpClient để C# có thể gửi request đi các server khác (như server Python)
-builder.Services.AddHttpClient();
+// Background AI Coordination Workers
+builder.Services.AddHostedService<SalaryAnalyticsWorker>();
+builder.Services.AddHostedService<GNNUpdateWorker>();
 
-
-// Database Context
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowReactApp", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
-
+// =========================================================================
+// 3. WEB API, SIGNALR & CORS POLICIES
+// =========================================================================
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
     });
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-// JWT Authentication
+builder.Services.AddSignalR();
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// =========================================================================
+// 4. AUTHENTICATION & SWAGGER DOCUMENTATION
+// =========================================================================
 var jwtKey = builder.Configuration.GetValue<string>("Jwt:SecretKey")
-             ?? builder.Configuration.GetValue<string>("Logging:Jwt:SecretKey");
-
-if (string.IsNullOrWhiteSpace(jwtKey))
-    throw new InvalidOperationException("Configuration value 'Jwt:SecretKey' is missing. Set it in appsettings or env variable.");
+             ?? throw new InvalidOperationException("Configuration value 'Jwt:SecretKey' is missing.");
 
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false,
+            ValidateIssuer = true,
             ValidIssuer = "JobSeekingAPI",
-            ValidateAudience = false,
+            ValidateAudience = true,
             ValidAudience = "JobSeekingClient",
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = signingKey,
             RoleClaimType = ClaimTypes.Role,
-            ClockSkew = TimeSpan.FromMinutes(30)
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/chat"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
-// Swagger Configuration
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "JobSeeking API",
-        Version = "v1",
-        Description = "Hệ thống môi giới và gợi ý việc làm",
-        Contact = new OpenApiContact
-        {
-            Name = "Your Name",
-            Email = "your.email@example.com",
-            Url = new Uri("https://yourwebsite.com")
-        },
-        License = new OpenApiLicense
-        {
-            Name = "MIT License",
-            Url = new Uri("https://opensource.org/licenses/MIT")
-        }
+        Title = "Smart Job Seeking & ATS Platform API",
+        Version = "v2.0 (Production-Ready)",
+        Description = "Nền tảng Tìm kiếm Việc làm & Quản trị Tuyển dụng tích hợp GNN AI & Real-time SignalR"
     });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Copy and paste your JWT Token into the field below",
+        Description = "Nhập JWT Token vào ô bên dưới",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT"
     });
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            new OpenApiSecurityScheme {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
-            new string[] { }
+            Array.Empty<string>()
         }
     });
 });
 
-
+// =========================================================================
+// 5. HTTP REQUEST PIPELINE (MIDDLEWARE ORDER)
+// =========================================================================
 var app = builder.Build();
 
-// ===== Middleware =====
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await db.Database.ExecuteSqlRawAsync(@"
+            ALTER TABLE public.jobs ALTER COLUMN companyid DROP NOT NULL;
+            ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS postedbyuserid integer NULL;
+        ");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[SchemaCheck] Warning: {ex.Message}");
+    }
+}
+
 app.UseMiddleware<ExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-}
-else
-{
-    //app.UseHttpsRedirection();
 }
 
 app.UseStaticFiles();
@@ -158,6 +196,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.Run();

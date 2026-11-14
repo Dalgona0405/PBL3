@@ -31,6 +31,14 @@ namespace JobSeekingAPI.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AppId"));
 
+                    b.Property<double?>("AiMatchScore")
+                        .HasColumnType("double precision")
+                        .HasColumnName("aimatchscore");
+
+                    b.Property<string>("AiScoreBreakdown")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("aiscorebreakdown");
+
                     b.Property<DateTime>("AppliedDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp without time zone")
@@ -81,11 +89,8 @@ namespace JobSeekingAPI.Migrations
                     b.HasKey("AppId")
                         .HasName("pk_applications");
 
-                    b.HasIndex("JobId")
-                        .HasDatabaseName("ix_applications_jobid");
-
-                    b.HasIndex("Status")
-                        .HasDatabaseName("ix_applications_status");
+                    b.HasIndex("JobId", "Status")
+                        .HasDatabaseName("ix_applications_jobid_status");
 
                     b.HasIndex("UserId", "JobId")
                         .IsUnique()
@@ -174,15 +179,34 @@ namespace JobSeekingAPI.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("deletedat");
 
+                    b.Property<bool>("IsVerified")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("isverified");
+
                     b.Property<string>("LogoImg")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("logoimg");
 
+                    b.Property<int?>("MasterUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("masteruserid");
+
                     b.Property<string>("Size")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("size");
+
+                    b.Property<string>("TaxCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("taxcode");
+
+                    b.Property<DateTime?>("VerifiedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("verifiedat");
 
                     b.Property<string>("Website")
                         .HasMaxLength(200)
@@ -191,6 +215,9 @@ namespace JobSeekingAPI.Migrations
 
                     b.HasKey("CompanyId")
                         .HasName("pk_companies");
+
+                    b.HasIndex("MasterUserId")
+                        .HasDatabaseName("ix_companies_masteruserid");
 
                     b.ToTable("companies");
                 });
@@ -280,6 +307,67 @@ namespace JobSeekingAPI.Migrations
                     b.ToTable("experiences");
                 });
 
+            modelBuilder.Entity("JobSeekingAPI.Models.Interview", b =>
+                {
+                    b.Property<int>("InterviewId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("interviewid");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InterviewId"));
+
+                    b.Property<int>("ApplicationId")
+                        .HasColumnType("integer")
+                        .HasColumnName("applicationid");
+
+                    b.Property<string>("CalendarEventUid")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("calendareventuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("createdat")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTime>("EndAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("endat");
+
+                    b.Property<string>("InterviewType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("interviewtype");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("location");
+
+                    b.Property<string>("MeetingLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("meetinglink");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<DateTime>("ScheduledAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("scheduledat");
+
+                    b.HasKey("InterviewId")
+                        .HasName("pk_interviews");
+
+                    b.HasIndex("ApplicationId")
+                        .HasDatabaseName("ix_interviews_applicationid");
+
+                    b.ToTable("interviews");
+                });
+
             modelBuilder.Entity("JobSeekingAPI.Models.Job", b =>
                 {
                     b.Property<int>("JobId")
@@ -295,7 +383,7 @@ namespace JobSeekingAPI.Migrations
                         .HasColumnName("address");
 
                     b.Property<string>("Benefits")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("benefits");
 
                     b.Property<int>("CompanyId")
@@ -311,7 +399,7 @@ namespace JobSeekingAPI.Migrations
                         .HasColumnName("deletedat");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("description");
 
                     b.Property<string>("ExpYear")
@@ -339,7 +427,7 @@ namespace JobSeekingAPI.Migrations
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("Requirement")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("requirement");
 
                     b.Property<decimal?>("SalaryMax")
@@ -378,6 +466,9 @@ namespace JobSeekingAPI.Migrations
 
                     b.HasIndex("LocationId")
                         .HasDatabaseName("ix_jobs_locationid");
+
+                    b.HasIndex("Status", "PostedDate")
+                        .HasDatabaseName("ix_jobs_status_posteddate");
 
                     b.ToTable("jobs");
                 });
@@ -420,6 +511,60 @@ namespace JobSeekingAPI.Migrations
                         .HasName("pk_locations");
 
                     b.ToTable("locations");
+                });
+
+            modelBuilder.Entity("JobSeekingAPI.Models.Message", b =>
+                {
+                    b.Property<int>("MessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("messageid");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MessageId"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("content");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("isread");
+
+                    b.Property<int?>("JobId")
+                        .HasColumnType("integer")
+                        .HasColumnName("jobid");
+
+                    b.Property<int>("ReceiverId")
+                        .HasColumnType("integer")
+                        .HasColumnName("receiverid");
+
+                    b.Property<int>("SenderId")
+                        .HasColumnType("integer")
+                        .HasColumnName("senderid");
+
+                    b.Property<DateTime>("SentAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("sentat")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("MessageId")
+                        .HasName("pk_messages");
+
+                    b.HasIndex("JobId")
+                        .HasDatabaseName("ix_messages_jobid");
+
+                    b.HasIndex("ReceiverId")
+                        .HasDatabaseName("ix_messages_receiverid");
+
+                    b.HasIndex("SenderId", "ReceiverId", "SentAt")
+                        .HasDatabaseName("ix_messages_conversation_timeline");
+
+                    b.ToTable("messages");
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Notification", b =>
@@ -474,7 +619,7 @@ namespace JobSeekingAPI.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("userid");
 
-                    b.Property<int>("CompanyId")
+                    b.Property<int?>("CompanyId")
                         .HasColumnType("integer")
                         .HasColumnName("companyid");
 
@@ -574,6 +719,11 @@ namespace JobSeekingAPI.Migrations
                         .HasColumnType("text")
                         .HasColumnName("fullname");
 
+                    b.Property<string>("GoogleId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("googleid");
+
                     b.Property<DateTime?>("LastLogin")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("lastlogin");
@@ -595,6 +745,11 @@ namespace JobSeekingAPI.Migrations
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
+
+                    b.HasIndex("GoogleId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_googleid")
+                        .HasFilter("googleid IS NOT NULL");
 
                     b.ToTable("users");
                 });
@@ -653,6 +808,17 @@ namespace JobSeekingAPI.Migrations
                     b.Navigation("Tag");
                 });
 
+            modelBuilder.Entity("JobSeekingAPI.Models.Company", b =>
+                {
+                    b.HasOne("JobSeekingAPI.Models.User", "MasterUser")
+                        .WithMany()
+                        .HasForeignKey("MasterUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_companies_users_masteruserid");
+
+                    b.Navigation("MasterUser");
+                });
+
             modelBuilder.Entity("JobSeekingAPI.Models.CompanyJoinRequest", b =>
                 {
                     b.HasOne("JobSeekingAPI.Models.Company", "Company")
@@ -684,6 +850,18 @@ namespace JobSeekingAPI.Migrations
                         .HasConstraintName("fk_experiences_candidates_userid");
 
                     b.Navigation("Candidate");
+                });
+
+            modelBuilder.Entity("JobSeekingAPI.Models.Interview", b =>
+                {
+                    b.HasOne("JobSeekingAPI.Models.Application", "Application")
+                        .WithMany("Interviews")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_interviews_applications_applicationid");
+
+                    b.Navigation("Application");
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Job", b =>
@@ -728,6 +906,35 @@ namespace JobSeekingAPI.Migrations
                     b.Navigation("Tag");
                 });
 
+            modelBuilder.Entity("JobSeekingAPI.Models.Message", b =>
+                {
+                    b.HasOne("JobSeekingAPI.Models.Job", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_messages_jobs_jobid");
+
+                    b.HasOne("JobSeekingAPI.Models.User", "Receiver")
+                        .WithMany()
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_messages_users_receiverid");
+
+                    b.HasOne("JobSeekingAPI.Models.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_messages_users_senderid");
+
+                    b.Navigation("Job");
+
+                    b.Navigation("Receiver");
+
+                    b.Navigation("Sender");
+                });
+
             modelBuilder.Entity("JobSeekingAPI.Models.Notification", b =>
                 {
                     b.HasOne("JobSeekingAPI.Models.User", "User")
@@ -745,8 +952,7 @@ namespace JobSeekingAPI.Migrations
                     b.HasOne("JobSeekingAPI.Models.Company", "Company")
                         .WithMany("Recruiters")
                         .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_recruiters_companies_companyid");
 
                     b.HasOne("JobSeekingAPI.Models.User", "User")
@@ -780,6 +986,11 @@ namespace JobSeekingAPI.Migrations
                     b.Navigation("Candidate");
 
                     b.Navigation("Job");
+                });
+
+            modelBuilder.Entity("JobSeekingAPI.Models.Application", b =>
+                {
+                    b.Navigation("Interviews");
                 });
 
             modelBuilder.Entity("JobSeekingAPI.Models.Candidate", b =>

@@ -27,7 +27,7 @@ namespace JobSeekingAPI.Repositories
                     TotalUsage = t.JobTags.Count + t.CandidateTags.Count,
 
                     Jobs = t.JobTags
-                        .Where(jt => jt.Job != null && jt.Job.DeletedAt == null)
+                        .Where(jt => jt.Job != null)
                         .OrderByDescending(jt => jt.Job!.PostedDate)
                         .Take(10)
                         .Select(jt => new JobSummaryDTO
@@ -40,7 +40,7 @@ namespace JobSeekingAPI.Repositories
                         }).ToList(),
 
                     Candidates = t.CandidateTags
-                        .Where(ct => ct.Candidate != null && ct.Candidate.User != null && ct.Candidate.User.DeletedAt == null)
+                        .Where(ct => ct.Candidate != null && ct.Candidate.User != null)
                         .Take(10)
                         .Select(ct => new CandidateSummaryDTO
                         {

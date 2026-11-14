@@ -16,15 +16,15 @@ namespace JobSeekingAPI.Repositories
                 .AsNoTracking()
                 .Include(r => r.User)
                 .Include(r => r.Company)
-                .Include(r => r.Company!.Jobs.Where(j => j.DeletedAt == null && j.Status == 1))
-                .FirstOrDefaultAsync(r => r.UserId == id && r.User != null && r.User.DeletedAt == null);
+                .Include(r => r.Company!.Jobs.Where(j => j.Status == 1))
+                .FirstOrDefaultAsync(r => r.UserId == id);
         }
 
         public async Task<Recruiter?> GetRecruiterEntityByIdAsync(int id)
         {
             return await _context.Recruiters
                 .Include(r => r.User)
-                .FirstOrDefaultAsync(r => r.UserId == id && r.User != null && r.User.DeletedAt == null);
+                .FirstOrDefaultAsync(r => r.UserId == id);
         }
 
         public async Task<IEnumerable<Recruiter>> GetRecruitersByCompanyAsync(int companyId)
@@ -32,7 +32,7 @@ namespace JobSeekingAPI.Repositories
             return await _context.Recruiters
                .AsNoTracking()
                .Include(r => r.User)
-               .Where(r => r.CompanyId == companyId && r.User != null && r.User.DeletedAt == null)
+               .Where(r => r.CompanyId == companyId)
                .ToListAsync();
         }
     }

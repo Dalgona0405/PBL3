@@ -77,4 +77,22 @@ namespace JobSeekingAPI.DTOs
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
+
+    public class GoogleLoginDTO
+    {
+        [Required(ErrorMessage = "Google ID Token is required")]
+        public string IdToken { get; set; } = string.Empty;
+
+        // Chỉ áp dụng nếu đây là lần đầu tiên email Google này đăng nhập vào hệ thống
+        [RegularExpression("^(Candidate|Recruiter|Company)$", ErrorMessage = "Role must be Candidate, Recruiter or Company")]
+        public string Role { get; set; } = "Candidate";
+    }
+
+    public class RegisterResponseDTO
+    {
+        public int UserId { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+    }
 }

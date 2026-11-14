@@ -1,71 +1,66 @@
-﻿using JobSeekingAPI.DTOs;
-using JobSeekingAPI.Helpers;
-using JobSeekingAPI.Repositories;
+﻿using JobSeekingAPI.Helpers;
+using JobSeekingAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JobSeekingAPI.Controllers
 {
+    /// <summary>
+    /// Quản lý thông báo hệ thống của người dùng đang đăng nhập
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class NotificationsController : ControllerBase
     {
-        private readonly INotificationRepository _notifRepo;
+        private readonly INotificationService _notifService;
 
-        public NotificationsController(INotificationRepository notifRepo)
+        public NotificationsController(INotificationService notifService)
         {
-            _notifRepo = notifRepo;
+            _notifService = notifService;
         }
 
-        // GET: api/notifications/me
+        /// <summary>
+        /// Lấy 50 thông báo gần nhất của người dùng hiện tại
+        /// </summary>
         [HttpGet("me")]
         public async Task<IActionResult> GetMyNotifications()
         {
             int userId = User.GetUserIdFromToken();
-            var notifs = await _notifRepo.GetAllNotificationsByUserIdAsync(userId);
-
-            var dtos = notifs.Select(n => new NotificationDTO
-            {
-                NotificationId = n.NotificationId,
-                Title = n.Title,
-                Content = n.Content,
-                IsRead = n.IsRead,
-                CreatedAt = n.CreatedAt
-            });
-
+            var dtos = await _notifService.GetMyNotificationsAsync(userId);
             return Ok(dtos);
         }
 
-        // GET: api/notifications/me/unread-count
+        /// <summary>
+        /// Đếm số lượng thông báo chưa đọc của người dùng hiện tại
+        /// </summary>
         [HttpGet("me/unread-count")]
         public async Task<IActionResult> GetUnreadCount()
         {
             int userId = User.GetUserIdFromToken();
-            var unreadNotifs = await _notifRepo.GetUnreadNotificationsAsync(userId);
-            return Ok(new { count = unreadNotifs.Count() });
+            int count = await _notifService.GetUnreadCountAsync(userId);
+            return Ok(new { count });
         }
 
-        // PATCH: api/notifications/{id}/read
+        /// <summary>
+        /// Đánh dấu một thông báo là đã đọc
+        /// </summary>
         [HttpPatch("{id}/read")]
         public async Task<IActionResult> MarkAsRead(int id)
         {
             int currentUserId = User.GetUserIdFromToken();
-            var notif = await _notifRepo.GetByIdAsync(id);
-            if (notif == null) 
-                return NotFound("Not found notification.");
-            if (notif.UserId != currentUserId) 
-                return Forbid();
-
-            await _notifRepo.MarkAsReadAsync(id);
-            return Ok(new { message = "Mask as read" });
+            await _notifService.MarkAsReadAsync(id, currentUserId);
+            return Ok(new { message = "Đã đánh dấu đã đọc." });
         }
-        // PATCH: api/notifications/read-all
+
+        /// <summary>
+        /// Đánh dấu toàn bộ thông báo của người dùng hiện tại là đã đọc
+        /// </summary>
         [HttpPatch("read-all")]
         public async Task<IActionResult> MarkAllAsRead()
         {
             int userId = User.GetUserIdFromToken();
-            await _notifRepo.MarkAllAsReadAsync(userId);
+            await _notifService.MarkAllAsReadAsync(userId);
             return Ok(new { message = "Đã đánh dấu đọc tất cả." });
         }
     }

@@ -26,7 +26,7 @@ The system is divided into four distinct components to ensure scalability and ma
     - **Styling:** TailwindCSS for a responsive and modern UI.
 2. **Backend (Core API):**
     - **Framework:** C# .NET Core Web API.
-    - **ORM & Database:** Entity Framework Core with **Microsoft SQL Server**.
+    - **ORM & Database:** Entity Framework Core with **PostgreSQL 18**.
     - **Background Services:** Asynchronous workers for syncing data with the AI model (`GNNUpdateWorker`, `SalaryAnalyticsWorker`).
 3. **AI Service:**
     - **Language/Libraries:** Python, PyTorch.
@@ -38,18 +38,18 @@ The system is divided into four distinct components to ensure scalability and ma
 ├── AI_Service/          # Python service containing GNN models and prediction endpoints
 ├── Backend/             # C# .NET Core Web API (Controllers, Services, Repositories, DTOs)
 ├── Crawl/               # Python crawler scripts and raw data (.csv, .sql)
-├── frontend-job/        # ReactJS frontend application (Components, Pages, Hooks)
+├── Frontend/            # ReactJS frontend application (Components, Pages, Hooks)
 └── README.md
 ```
 ## ⚙️ Getting Started
 Follow these steps to set up the project on your local machine.
 ### 1. Database & Crawl Data Setup
-- Open **SQL Server Management Studio (SSMS)**.
-- Execute the `JobSeeking_DB.sql` script located in the `Crawl/` folder to generate the schema and seed initial data.
-- *Alternatively:* Run EF Core migrations in the Backend folder: `dotnet ef database update`.
+- Open **pgAdmin 4** or `psql` (PostgreSQL 18).
+- Execute the `JobSeeking_DB.sql` script located in the `Crawl/` folder (or run `docker compose up -d postgres-db` using the init scripts in `db_init/`) to generate the schema and seed initial data.
+- *Alternatively:* Run EF Core migrations in the `Backend/JobSeekingAPI` folder: `dotnet ef database update`.
 ### 2. Backend (.NET API) Setup
-- Navigate to the `Backend/Backend` folder and open the solution in **Visual Studio 2022** or VS Code.
-- Update your SQL Server connection string in the `appsettings.json` file.
+- Navigate to the `Backend/JobSeekingAPI` folder and open the solution in **Visual Studio 2022** or VS Code.
+- Update your PostgreSQL 18 connection string in the `appsettings.json` file.
 - Run the application (`dotnet run`). The API will typically run on `http://localhost:5000` or `https://localhost:5001`.
 ### 3. AI Service (Python) Setup
 - Navigate to the `AI_Service` directory.
@@ -62,7 +62,7 @@ Follow these steps to set up the project on your local machine.
     python main.py
     ```
 ### 4. Frontend (React) Setup
-- Navigate to the `frontend-job` directory.
+- Navigate to the `Frontend` directory.
 - Install NPM packages:
     ```bash
     npm install

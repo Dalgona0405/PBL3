@@ -16,12 +16,12 @@ namespace JobSeekingAPI.Repositories
             return await _context.Users
                 .Include(u => u.Candidate)
                 .Include(u => u.Recruiter)
-                .FirstOrDefaultAsync(u => u.Email == email && u.DeletedAt == null);
+                .FirstOrDefaultAsync(u => u.Email == email);
         }
 
         public async Task<bool> IsEmailExistsAsync(string email)
         {
-            return await _context.Users.AnyAsync(u => u.Email == email && u.DeletedAt == null);
+            return await _context.Users.AnyAsync(u => u.Email == email);
         }
 
         // HÀM ĐĂNG KÝ
@@ -55,22 +55,21 @@ namespace JobSeekingAPI.Repositories
                 }
                 else if (user.Role == UserRoles.Recruiter)
                 {
-                    var rectuiter = new Recruiter
+                    var recruiter = new Recruiter
                     {
                         UserId = user.UserId,
-                        Company = new Company
-                        {
-                            CompanyName = "Default Company Name"
-                        }
+                        CompanyId = null
                     };
-                    _context.Recruiters.Add(rectuiter);
+                    _context.Recruiters.Add(recruiter);
                 }
                 else if (user.Role == UserRoles.Company)
                 {
                     var newCompany = new Company
                     {
                         CompanyName = userDto.FullName + "Company",
-                        Size = "1-50"
+                        Size = "1-50",
+                        IsVerified = false,
+                        MasterUserId = user.UserId
                     };
                     var companyOwner = new Recruiter
                     {
@@ -92,11 +91,83 @@ namespace JobSeekingAPI.Repositories
             }
         }
 
+        public async Task<User> FindOrCreateGoogleUserAsync(string email, string fullName, string? avatarUrl, string googleId, string defaultRole)
+        {
+            var existingUser = await GetByEmailAsync(email);
+            if (existingUser != null)
+            {
+                // Nếu tài khoản đã tồn tại bằng Email thường -> Tự động liên kết GoogleId và cập nhật LastLogin
+                if (string.IsNullOrWhiteSpace(existingUser.GoogleId))
+                    existingUser.GoogleId = googleId;
+
+                if (string.IsNullOrWhiteSpace(existingUser.Avatar) && !string.IsNullOrWhiteSpace(avatarUrl))
+                    existingUser.Avatar = avatarUrl;
+
+                existingUser.LastLogin = DateTime.UtcNow;
+                await UpdateAsync(existingUser);
+                return existingUser;
+            }
+
+            // Nếu chưa tồn tại -> Khởi tạo User mới + Profile tương ứng trong 1 Transaction
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var newUser = new User
+                {
+                    Email = email,
+                    // Sinh mật khẩu ngẫu nhiên bảo mật cho tài khoản OAuth
+                    Password = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N") + "A1@"),
+                    FullName = fullName,
+                    Avatar = avatarUrl,
+                    GoogleId = googleId,
+                    Role = string.IsNullOrWhiteSpace(defaultRole) ? UserRoles.Candidate : defaultRole,
+                    LastLogin = DateTime.UtcNow
+                };
+
+                _context.Users.Add(newUser);
+                await _context.SaveChangesAsync();
+
+                if (newUser.Role == UserRoles.Candidate)
+                {
+                    _context.Candidates.Add(new Candidate { UserId = newUser.UserId });
+                }
+                else if (newUser.Role == UserRoles.Recruiter)
+                {
+                    // Mặc định là Freelance Recruiter (CompanyId = null, chưa có tick xanh)
+                    _context.Recruiters.Add(new Recruiter { UserId = newUser.UserId, CompanyId = null });
+                }
+                else if (newUser.Role == UserRoles.Company)
+                {
+                    var newCompany = new Company
+                    {
+                        CompanyName = $"{fullName} Organization",
+                        Size = "1-50",
+                        IsVerified = false,
+                        MasterUserId = newUser.UserId
+                    };
+                    _context.Recruiters.Add(new Recruiter
+                    {
+                        UserId = newUser.UserId,
+                        Company = newCompany,
+                        Position = "Company Master"
+                    });
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return newUser;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
         public async Task<PagedResultDTO<UserListDTO>> GetAllUsersWithDetailsAsync(int page, int pageSize)
         {
             var query = _context.Users
-                .AsNoTracking()
-                .Where(u => u.DeletedAt == null);
+                .AsNoTracking();
 
             var totalCount = await query.CountAsync();
 
@@ -130,7 +201,7 @@ namespace JobSeekingAPI.Repositories
             return await _context.Users
                 .Include(u => u.Candidate)
                 .Include(u => u.Recruiter)
-                .FirstOrDefaultAsync(u => u.UserId == id && u.DeletedAt == null);
+                .FirstOrDefaultAsync(u => u.UserId == id);
         }
 
         public async Task SoftDeleteUserAsync(int id)
@@ -159,10 +230,9 @@ namespace JobSeekingAPI.Repositories
 
         public async Task<PagedResultDTO<UserListDTO>> SearchUsersAsync(string? keyword, string? role, int page, int pageSize)
         {
-            // 1. Tạo câu truy vấn (Chưa chạy ngay) và Include các bảng cần thiết
+            // Khởi tạo truy vấn ở mức IQueryable để kết hợp điều kiện lọc trước khi thực thi
             var query = _context.Users
-                .AsNoTracking()
-                .Where(u => u.DeletedAt == null);
+                .AsNoTracking();
 
             // 2. Lọc theo từ khóa
             if (!string.IsNullOrWhiteSpace(keyword))
@@ -180,10 +250,10 @@ namespace JobSeekingAPI.Repositories
                 query = query.Where(u => u.Role == role);
             }
 
-            // 4. Đếm tổng số lượng (Để phân trang)
+            // Đếm tổng số lượng bản ghi phục vụ phân trang
             var totalCount = await query.CountAsync();
 
-            // 5. Phân trang và Map ra DTO (Lấy trực tiếp FullName và Avatar)
+            // Thực thi phân trang và ánh xạ sang DTO
             var users = await query
                 .OrderBy(u => u.FullName)
                 .Skip((page - 1) * pageSize)
@@ -192,13 +262,13 @@ namespace JobSeekingAPI.Repositories
                 {
                     UserId = u.UserId,
                     Email = u.Email,
-                    FullName = u.FullName, // Lấy trực tiếp, không cần check lằng nhằng nữa!
+                    FullName = u.FullName,
                     Role = u.Role,
-                    Avatar = u.Avatar,     // Lấy trực tiếp luôn!
+                    Avatar = u.Avatar,
                     CompanyName = u.Recruiter != null && u.Recruiter.Company != null ? u.Recruiter.Company.CompanyName : null,
                     LastLogin = u.LastLogin
                 })
-                .ToListAsync(); // Lúc này mới thực sự chạy xuống Database lấy data lên
+                .ToListAsync();
 
             return new PagedResultDTO<UserListDTO>
             {
