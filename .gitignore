@@ -15,5 +15,8 @@ node_modules/
 *.bak
 *.backup
 *.rar
-*.zip__pycache__/ 
-*.pyc 
+*.zip
+__pycache__/
+*.pyc
+dist/
+.env
