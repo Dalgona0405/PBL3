@@ -37,7 +37,8 @@ The system is divided into four distinct components to ensure scalability and ma
 ```
 ├── AI_Service/          # Python service containing GNN models and prediction endpoints
 ├── Backend/             # C# .NET Core Web API (Controllers, Services, Repositories, DTOs)
-├── Crawl/               # Python crawler scripts and raw data (.csv, .sql)
+├── crawler_backup/      # Python crawler scripts and raw data (.csv)
+├── db_init/             # Seed data for demo
 ├── Frontend/            # ReactJS frontend application (Components, Pages, Hooks)
 └── README.md
 ```
