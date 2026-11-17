@@ -201,8 +201,9 @@ namespace JobSeekingAPI.Services
                 throw new ArgumentException("Tệp tải lên lớn hơn 5MB. Vui lòng tải tệp khác.");
 
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (ext != ".pdf")
-                throw new ArgumentException("Hệ thống AI Parser chỉ hỗ trợ định dạng tệp .pdf.");
+            if (!await FileSignatureValidator.IsValidSignatureAsync(file, ext, cancellationToken))
+                throw new ArgumentException("Tệp PDF không hợp lệ hoặc bị hỏng cấu trúc nhị phân.");
+
 
             var storedCvUrl = await _storageService.UploadResumePdfAsync(file, userId, cancellationToken);
             await UpdateDefaultCVAsync(userId, storedCvUrl);
