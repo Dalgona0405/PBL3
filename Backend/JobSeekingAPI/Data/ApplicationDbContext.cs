@@ -185,6 +185,9 @@ namespace JobSeekingAPI.Data
                 // Đánh Composite Index giúp truy vấn trang chủ / lọc việc làm < 50ms
                 entity.HasIndex(j => new { j.Status, j.PostedDate });
 
+                // Đánh Index cho người đăng tin để truy vấn GetMyJobs của Freelance Recruiter nhanh tức thì
+                entity.HasIndex(j => j.PostedByUserId).HasDatabaseName("ix_jobs_postedbyuserid");
+
                 entity.HasQueryFilter(j => j.DeletedAt == null);
             });
 

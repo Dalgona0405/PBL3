@@ -236,8 +236,10 @@ namespace JobSeekingAPI.Migrations
                         .HasColumnName("companyid");
 
                     b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp without time zone")
-                        .HasColumnName("createdat");
+                        .HasColumnName("createdat")
+                        .HasDefaultValueSql("now()");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
@@ -386,7 +388,7 @@ namespace JobSeekingAPI.Migrations
                         .HasColumnType("text")
                         .HasColumnName("benefits");
 
-                    b.Property<int>("CompanyId")
+                    b.Property<int?>("CompanyId")
                         .HasColumnType("integer")
                         .HasColumnName("companyid");
 
@@ -419,6 +421,10 @@ namespace JobSeekingAPI.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("originalid");
+
+                    b.Property<int?>("PostedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("postedbyuserid");
 
                     b.Property<DateTime>("PostedDate")
                         .ValueGeneratedOnAdd()
@@ -466,6 +472,9 @@ namespace JobSeekingAPI.Migrations
 
                     b.HasIndex("LocationId")
                         .HasDatabaseName("ix_jobs_locationid");
+
+                    b.HasIndex("PostedByUserId")
+                        .HasDatabaseName("ix_jobs_postedbyuserid");
 
                     b.HasIndex("Status", "PostedDate")
                         .HasDatabaseName("ix_jobs_status_posteddate");
@@ -869,8 +878,7 @@ namespace JobSeekingAPI.Migrations
                     b.HasOne("JobSeekingAPI.Models.Company", "Company")
                         .WithMany("Jobs")
                         .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
+                        .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_jobs_companies_companyid");
 
                     b.HasOne("JobSeekingAPI.Models.Location", "Location")
