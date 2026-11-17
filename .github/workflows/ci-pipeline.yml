@@ -1,0 +1,57 @@
+name: SJSP Backend & AI CI Pipeline
+
+# Tự động kích hoạt đường ống CI mỗi khi có lệnh git push hoặc tạo Pull Request vào nhánh main/master/develop
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master", "develop" ]
+
+jobs:
+  build-and-test-backend:
+    name: Build & Unit Test (.NET 8 Web API)
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Kéo mã nguồn từ kho lưu trữ GitHub về máy ảo Ubuntu
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Cài đặt bộ công cụ .NET 8 SDK
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # 3. Khôi phục các gói thư viện NuGet (Tận dụng bộ nhớ đệm để chạy nhanh)
+      - name: Restore NuGet Dependencies
+        working-directory: ./Backend
+        run: dotnet restore JobSeekingAPI/JobSeekingAPI.csproj
+
+      # 4. Biên dịch mã nguồn ở chế độ Release (Đảm bảo 0 lỗi cú pháp)
+      - name: Build Backend API
+        working-directory: ./Backend
+        run: dotnet build JobSeekingAPI/JobSeekingAPI.csproj --configuration Release --no-restore
+
+      # 5. Thực thi tự động toàn bộ bộ Unit Test (xUnit + Moq)
+      - name: Run Automated Unit Tests
+        working-directory: ./Backend
+        run: dotnet test JobSeekingAPI.Tests/JobSeekingAPI.Tests.csproj --configuration Release --verbosity normal
+
+  validate-python-ai:
+    name: Validate Python AI Service Syntax
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Kiểm tra toàn bộ các file Python trong AI_Service không có lỗi cú pháp (Syntax Error)
+      - name: Compile & Lint Python AI Files
+        working-directory: ./AI_Service
+        run: python -m py_compile main.py model.py data_loader.py train.py

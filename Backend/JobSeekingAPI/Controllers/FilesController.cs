@@ -41,7 +41,7 @@ namespace JobSeekingAPI.Controllers
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
             // Kiểm tra chữ ký byte thực tế của file (Magic Bytes) để chống giả mạo đuôi file (.exe đổi thành .pdf)
-            if (!await IsValidFileSignatureAsync(file, extension))
+            if (!await FileSignatureValidator.IsValidSignatureAsync(file, extension, cancellationToken))
                 throw new ArgumentException("Định dạng tệp tin không hợp lệ hoặc bị hỏng (Chỉ hỗ trợ JPG, PNG, WEBP, PDF chuẩn).");
 
             string storedUrl;
@@ -86,30 +86,6 @@ namespace JobSeekingAPI.Controllers
                 signedUrl,
                 expiresInSeconds = 900
             });
-        }
-
-        /// <summary>
-        /// Đọc 4 byte đầu tiên (Magic Bytes) để xác thực định dạng thực sự của file
-        /// </summary>
-        private static async Task<bool> IsValidFileSignatureAsync(IFormFile file, string extension)
-        {
-            var headerBytes = new byte[4];
-            await using var stream = file.OpenReadStream();
-            var bytesRead = await stream.ReadAsync(headerBytes.AsMemory(0, 4));
-            if (bytesRead < 4) return false;
-
-            return extension switch
-            {
-                // PDF bắt đầu bằng "%PDF" (0x25, 0x50, 0x44, 0x46)
-                ".pdf" => headerBytes[0] == 0x25 && headerBytes[1] == 0x50 && headerBytes[2] == 0x44 && headerBytes[3] == 0x46,
-                // PNG bắt đầu bằng (0x89, 0x50, 0x4E, 0x47)
-                ".png" => headerBytes[0] == 0x89 && headerBytes[1] == 0x50 && headerBytes[2] == 0x4E && headerBytes[3] == 0x47,
-                // JPEG bắt đầu bằng (0xFF, 0xD8)
-                ".jpg" or ".jpeg" => headerBytes[0] == 0xFF && headerBytes[1] == 0xD8,
-                // WEBP bắt đầu bằng "RIFF" (0x52, 0x49, 0x46, 0x46)
-                ".webp" => headerBytes[0] == 0x52 && headerBytes[1] == 0x49 && headerBytes[2] == 0x46 && headerBytes[3] == 0x46,
-                _ => false
-            };
         }
     }
 }

@@ -74,6 +74,29 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+    })
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var firstError = context.ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault() ?? "Dữ liệu đầu vào không hợp lệ.";
+
+            var allErrors = context.ModelState
+                .Where(x => x.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+                );
+
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(new
+            {
+                message = firstError,
+                errors = allErrors
+            });
+        };
     });
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -158,28 +181,19 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+    }
 });
 
 // =========================================================================
 // 5. HTTP REQUEST PIPELINE (MIDDLEWARE ORDER)
 // =========================================================================
 var app = builder.Build();
-
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await db.Database.ExecuteSqlRawAsync(@"
-            ALTER TABLE public.jobs ALTER COLUMN companyid DROP NOT NULL;
-            ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS postedbyuserid integer NULL;
-        ");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[SchemaCheck] Warning: {ex.Message}");
-    }
-}
 
 app.UseMiddleware<ExceptionMiddleware>();
 
