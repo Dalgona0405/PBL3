@@ -1,4 +1,5 @@
 using JobSeekingAPI.Models;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -7,15 +8,17 @@ using System.Text;
 namespace JobSeekingAPI.Services
 {
     /// <summary>
-    /// Sinh chuỗi JWT Token xác thực cho người dùng sau khi đăng nhập
+    /// Quản lý cấp phát, xác thực và thu hồi (Revocation) chuỗi JWT Access Token và Refresh Token
     /// </summary>
     public class JwtService
     {
         private readonly IConfiguration _configuration;
+        private readonly IMemoryCache _cache;
 
-        public JwtService(IConfiguration configuration)
+        public JwtService(IConfiguration configuration, IMemoryCache cache)
         {
             _configuration = configuration;
+            _cache = cache;
         }
 
         /// <summary>
@@ -24,7 +27,6 @@ namespace JobSeekingAPI.Services
         private byte[] GetSigningKeyBytes()
         {
             var keyString = _configuration.GetValue<string>("Jwt:SecretKey")
-                        ?? _configuration.GetValue<string>("Logging:Jwt:SecretKey")
                         ?? throw new InvalidOperationException("Chưa cấu hình khóa bí mật JWT (Jwt:SecretKey).");
             return Encoding.UTF8.GetBytes(keyString);
         }
@@ -50,6 +52,7 @@ namespace JobSeekingAPI.Services
         {
             var claims = new List<Claim>
             {
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.Role ?? "Candidate"),
@@ -59,10 +62,12 @@ namespace JobSeekingAPI.Services
             return CreateSignedToken(claims, DateTime.UtcNow.AddMinutes(15));
         }
 
+
         public string GenerateRefreshToken(User user)
         {
             var claims = new List<Claim>
             {
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                 new Claim("token_type", "refresh")
             };
@@ -70,9 +75,21 @@ namespace JobSeekingAPI.Services
             return CreateSignedToken(claims, DateTime.UtcNow.AddDays(7));
         }
 
+        /// <summary>
+        /// Thu hồi (Blacklist) một Refresh Token khi người dùng Đăng xuất hoặc khi đã xoay vòng (Token Rotation)
+        /// </summary>
+        public void RevokeRefreshToken(string refreshToken)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken)) return;
+            _cache.Set($"RevokedRT_{refreshToken}", true, TimeSpan.FromDays(7));
+        }
+
         public int? ValidateRefreshToken(string refreshToken)
         {
             if (string.IsNullOrWhiteSpace(refreshToken)) return null;
+
+            // Kiểm tra xem Refresh Token này đã bị thu hồi (Logout / Rotated) chưa
+            if (_cache.TryGetValue($"RevokedRT_{refreshToken}", out _)) return null;
 
             try
             {

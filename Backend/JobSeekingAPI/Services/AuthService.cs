@@ -159,6 +159,7 @@ namespace JobSeekingAPI.Services
                 throw new UnauthorizedAccessException("Tài khoản không tồn tại hoặc đã bị khóa.");
             }
 
+            _jwtService.RevokeRefreshToken(refreshToken);
             return BuildAuthResult(user, "Làm mới phiên đăng nhập thành công.");
         }
     }
