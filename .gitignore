@@ -20,3 +20,5 @@ __pycache__/
 *.pyc
 dist/
 .env
+**/scraped_jobs_setting.json
+**/wwwroot/uploads/*
