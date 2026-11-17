@@ -97,6 +97,11 @@ namespace JobSeekingAPI.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
+            if (Request.Cookies.TryGetValue(RefreshCookieName, out var refreshToken))
+            {
+                _authService.Logout(refreshToken); // Thu hồi Refresh Token trên Server trước khi xóa Cookie
+            }
+
             Response.Cookies.Delete(RefreshCookieName, BuildRefreshCookieOptions(DateTimeOffset.UtcNow.AddDays(-1)));
             return Ok(new { message = "Đã đăng xuất." });
         }

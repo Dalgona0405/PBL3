@@ -10,5 +10,6 @@ namespace JobSeekingAPI.Services
         Task<(object Response, string RefreshToken)> LoginWithRefreshAsync(LoginDTO loginDto);
         Task<(object Response, string RefreshToken)> GoogleLoginWithRefreshAsync(GoogleLoginDTO googleDto, CancellationToken cancellationToken = default);
         Task<(object Response, string RefreshToken)> RefreshTokenAsync(string refreshToken);
+        void Logout(string? refreshToken);
     }
 }

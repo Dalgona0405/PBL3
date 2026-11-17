@@ -113,19 +113,22 @@ namespace JobSeekingAPI.Services
         /// </summary>
         public async Task<MessageResponseDTO> SendMessageAsync(int senderId, SendMessageDTO dto, CancellationToken cancellationToken = default)
         {
-            if (senderId == dto.ReceiverId)
-                throw new ArgumentException("Không thể tự gửi tin nhắn cho chính mình.");
+            var sender = await _messageRepo.GetUserBasicByIdAsync(senderId, cancellationToken)
+                ?? throw new UnauthorizedAccessException("Tài khoản người gửi không hợp lệ.");
 
-            if (string.IsNullOrWhiteSpace(dto.Content))
-                throw new ArgumentException("Nội dung tin nhắn không được để trống.");
+            var receiver = await _messageRepo.GetUserBasicByIdAsync(dto.ReceiverId, cancellationToken)
+                ?? throw new KeyNotFoundException("Không tìm thấy người nhận tin nhắn.");
 
-            var sender = await _messageRepo.GetUserBasicByIdAsync(senderId, cancellationToken);
-            if (sender == null)
-                throw new UnauthorizedAccessException("Tài khoản người gửi không hợp lệ.");
+            // Kiểm tra ma trận RBAC trong giao tiếp 1-1:
+            // 1. Admin không tham gia nhắn tin tuyển dụng.
+            // 2. Ứng viên (Candidate) chỉ trao đổi với Nhà tuyển dụng (Recruiter/Company) và ngược lại.
+            if (sender.Role == Enums.UserRoles.Admin || receiver.Role == Enums.UserRoles.Admin)
+                throw new Helpers.ForbiddenAccessException("Tài khoản Quản trị viên hệ thống không tham gia luồng nhắn tin tuyển dụng.");
 
-            var receiverExists = await _messageRepo.UserExistsAsync(dto.ReceiverId, cancellationToken);
-            if (!receiverExists)
-                throw new KeyNotFoundException("Không tìm thấy người nhận tin nhắn.");
+            bool isSenderCandidate = sender.Role == Enums.UserRoles.Candidate;
+            bool isReceiverCandidate = receiver.Role == Enums.UserRoles.Candidate;
+            if (isSenderCandidate == isReceiverCandidate)
+                throw new Helpers.ForbiddenAccessException("Hệ thống chỉ hỗ trợ nhắn tin trao đổi trực tiếp giữa Ứng viên và Nhà tuyển dụng.");
 
             string? jobTitle = null;
             if (dto.JobId.HasValue)
@@ -179,6 +182,15 @@ namespace JobSeekingAPI.Services
         public async Task<bool> MarkConversationAsReadAsync(int currentUserId, int partnerId, CancellationToken cancellationToken = default)
         {
             return await _messageRepo.MarkConversationAsReadAsync(currentUserId, partnerId, cancellationToken);
+        }
+
+
+        /// <summary>
+        /// Lấy danh sách những người đang trò chuyện cùng
+        /// </summary>
+        public async Task<List<int>> GetConversationPartnerIdsAsync(int userId, CancellationToken cancellationToken = default)
+        {
+            return await _messageRepo.GetConversationPartnerIdsAsync(userId, cancellationToken);
         }
     }
 }

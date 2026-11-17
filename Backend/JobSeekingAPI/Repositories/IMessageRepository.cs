@@ -20,5 +20,6 @@ namespace JobSeekingAPI.Repositories
         Task<string?> GetJobTitleByIdAsync(int jobId, CancellationToken cancellationToken = default);
         Task AddMessageAndOptionalNotificationAsync(Message message, Notification? notification, CancellationToken cancellationToken = default);
         Task<bool> MarkConversationAsReadAsync(int currentUserId, int partnerId, CancellationToken cancellationToken = default);
+        Task<List<int>> GetConversationPartnerIdsAsync(int userId, CancellationToken cancellationToken = default);
     }
 }

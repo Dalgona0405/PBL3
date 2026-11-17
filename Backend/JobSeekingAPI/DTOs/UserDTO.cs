@@ -17,7 +17,6 @@ namespace JobSeekingAPI.DTOs
     {
         public string? FullName { get; set; }
         public string? Avatar { get; set; }
-        public string? NewPassword { get; set; }
     }
 
     // Chi tiết User (Bao gồm Profile con bên trong)

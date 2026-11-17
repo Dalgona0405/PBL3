@@ -110,5 +110,15 @@ namespace JobSeekingAPI.Repositories
 
             return updatedRows > 0;
         }
+
+        public async Task<List<int>> GetConversationPartnerIdsAsync(int userId, CancellationToken cancellationToken = default)
+        {
+            return await _context.Messages
+                .AsNoTracking()
+                .Where(m => m.SenderId == userId || m.ReceiverId == userId)
+                .Select(m => m.SenderId == userId ? m.ReceiverId : m.SenderId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+        }
     }
 }

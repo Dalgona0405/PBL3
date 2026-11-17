@@ -231,12 +231,27 @@ namespace JobSeekingAPI.Repositories
 
         public async Task<bool> CanUserAccessCvAsync(string cvPath, int currentUserId, string userRole, CancellationToken cancellationToken = default)
         {
+            // Chặn tuyệt đối tấn công Path Traversal (../, \, %2e%2e)
+            if (string.IsNullOrWhiteSpace(cvPath) ||
+                cvPath.Contains("..", StringComparison.Ordinal) ||
+                cvPath.Contains('\\') ||
+                cvPath.Contains("%2e", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
             if (userRole == UserRoles.Admin)
                 return true;
 
             if (userRole == UserRoles.Candidate)
             {
-                return cvPath.Contains($"/candidate_{currentUserId}/", StringComparison.OrdinalIgnoreCase)
+                // Chỉ khớp nếu đường dẫn bắt đầu chính xác bằng supabase://<bucket>/candidate_<id>/<filename>.pdf (không có thư mục con hay ../)
+                bool isStrictOwnerPath = System.Text.RegularExpressions.Regex.IsMatch(
+                    cvPath,
+                    $@"^supabase://[a-zA-Z0-9_\-]+/candidate_{currentUserId}/[a-zA-Z0-9_\-]+\.pdf$",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                return isStrictOwnerPath
                     || await _context.Candidates.AsNoTracking().AnyAsync(c => c.UserId == currentUserId && c.CVUrl == cvPath, cancellationToken)
                     || await _context.Applications.AsNoTracking().AnyAsync(a => a.UserId == currentUserId && a.CVUrl == cvPath, cancellationToken);
             }

@@ -48,9 +48,21 @@ namespace JobSeekingAPI.Services
                 if (ownerProfile?.CompanyId == null || existingRecruiter.CompanyId != ownerProfile.CompanyId)
                     throw new ForbiddenAccessException("Nhân sự này không thuộc doanh nghiệp của bạn.");
 
+                // Company Master chỉ được phép GỠ nhân sự khỏi công ty mình (CompanyId = null)
+                // hoặc giữ nguyên trong công ty mình, TUYỆT ĐỐI không được gán sang CompanyId của công ty khác
+                if (dto.CompanyId.HasValue && dto.CompanyId.Value != ownerProfile.CompanyId.Value)
+                    throw new ForbiddenAccessException("Không thể chuyển nhân sự sang một doanh nghiệp khác.");
+
                 existingRecruiter.CompanyId = dto.CompanyId;
+                if (!string.IsNullOrWhiteSpace(dto.Position))
+                {
+                    existingRecruiter.Position = dto.Position;
+                }
+
                 await _recruiterRepo.UpdateAsync(existingRecruiter);
-                return "Đã cập nhật trạng thái nhân sự trong doanh nghiệp.";
+                return dto.CompanyId == null
+                    ? "Đã gỡ nhân sự khỏi doanh nghiệp."
+                    : "Đã cập nhật thông tin nhân sự trong doanh nghiệp.";
             }
 
             if (existingRecruiter.User != null)

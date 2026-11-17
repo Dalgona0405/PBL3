@@ -125,8 +125,12 @@ namespace JobSeekingAPI.Services
         /// </summary>
         public async Task<string> GetResumePreSignedUrlAsync(string storedCvPathOrUrl, int expiresInSeconds = 900, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(storedCvPathOrUrl))
+            if (string.IsNullOrWhiteSpace(storedCvPathOrUrl) ||
+                storedCvPathOrUrl.Contains("..", StringComparison.Ordinal) ||
+                storedCvPathOrUrl.Contains('\\'))
+            {
                 throw new ArgumentException("Đường dẫn CV không hợp lệ.");
+            }
 
             // Nếu là URL thông thường (dữ liệu cũ hoặc Local Fallback) -> Trả về nguyên bản
             if (!storedCvPathOrUrl.StartsWith("supabase://", StringComparison.OrdinalIgnoreCase))

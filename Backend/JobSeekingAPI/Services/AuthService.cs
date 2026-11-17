@@ -153,14 +153,24 @@ namespace JobSeekingAPI.Services
                 throw new UnauthorizedAccessException("Phiên đăng nhập không hợp lệ hoặc đã hết hạn.");
             }
 
+            // Thu hồi ngay Refresh Token cũ vừa sử dụng (Token Rotation)
+            _jwtService.RevokeRefreshToken(refreshToken);
+
             var user = await _userRepo.GetByIdAsync(userId.Value);
             if (user == null || user.DeletedAt != null)
             {
                 throw new UnauthorizedAccessException("Tài khoản không tồn tại hoặc đã bị khóa.");
             }
 
-            _jwtService.RevokeRefreshToken(refreshToken);
             return BuildAuthResult(user, "Làm mới phiên đăng nhập thành công.");
+        }
+
+        public void Logout(string? refreshToken)
+        {
+            if (!string.IsNullOrWhiteSpace(refreshToken))
+            {
+                _jwtService.RevokeRefreshToken(refreshToken);
+            }
         }
     }
 }

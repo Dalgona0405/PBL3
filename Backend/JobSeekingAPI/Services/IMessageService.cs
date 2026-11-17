@@ -28,5 +28,10 @@ namespace JobSeekingAPI.Services
         /// Đánh dấu toàn bộ tin nhắn chưa đọc từ đối phương là đã xem
         /// </summary>
         Task<bool> MarkConversationAsReadAsync(int currentUserId, int partnerId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Lấy danh sách những người đang trò chuyện cùng
+        /// </summary>
+        Task<List<int>> GetConversationPartnerIdsAsync(int userId, CancellationToken cancellationToken = default);
     }
 }

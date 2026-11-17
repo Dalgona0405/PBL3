@@ -1,5 +1,6 @@
 using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Services;
+using JobSeekingAPI.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -11,6 +12,7 @@ namespace JobSeekingAPI.Controllers
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ReportsController : ControllerBase
     {
         private readonly IReportService _reportService;
@@ -25,6 +27,7 @@ namespace JobSeekingAPI.Controllers
         /// <summary>
         /// Lấy xu hướng kỹ năng được tuyển dụng nhiều nhất (có MemoryCache 1 giờ)
         /// </summary>
+        [AllowAnonymous]
         [HttpGet("market-trend")]
         public async Task<IActionResult> GetMarketTrend([FromQuery] int limit = 10)
         {
@@ -40,6 +43,7 @@ namespace JobSeekingAPI.Controllers
         /// <summary>
         /// Thống kê mức lương trung bình theo từng địa điểm
         /// </summary>
+        [AllowAnonymous]
         [HttpGet("salary-by-location")]
         public async Task<IActionResult> GetSalaryByLocation()
         {
@@ -50,6 +54,7 @@ namespace JobSeekingAPI.Controllers
         /// <summary>
         /// Lấy bộ chỉ số tổng quan cho Dashboard (có MemoryCache 30 phút)
         /// </summary>
+        [AllowAnonymous]
         [HttpGet("dashboard-summary")]
         public async Task<IActionResult> GetDashboardSummary()
         {
@@ -65,6 +70,7 @@ namespace JobSeekingAPI.Controllers
         /// <summary>
         /// Lấy kết quả dự báo xu hướng lương từ AI Cache
         /// </summary>
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("salary-forecast-ai")]
         public IActionResult GetSalaryForecastFromAI()
         {
@@ -83,6 +89,7 @@ namespace JobSeekingAPI.Controllers
         /// <summary>
         /// Thống kê số lượng đơn ứng tuyển theo dòng thời gian (ngày, tuần, tháng, năm)
         /// </summary>
+        [Authorize(Roles = UserRoles.Admin + ", " + UserRoles.Recruiter + ", " + UserRoles.Company)]
         [HttpGet("application-timeline")]
         public async Task<IActionResult> GetApplicationTimeline(
             [FromQuery] string period = "month",
@@ -95,6 +102,7 @@ namespace JobSeekingAPI.Controllers
         /// <summary>
         /// Lấy danh sách các doanh nghiệp tuyển dụng nổi bật nhất
         /// </summary>
+        [AllowAnonymous]
         [HttpGet("top-companies")]
         public async Task<IActionResult> GetTopCompanies([FromQuery] int limit = 5)
         {

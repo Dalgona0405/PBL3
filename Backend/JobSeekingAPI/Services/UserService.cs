@@ -46,11 +46,6 @@ namespace JobSeekingAPI.Services
             var existingUser = await _userRepo.GetUserDetailByIdAsync(targetUserId)
                 ?? throw new KeyNotFoundException("Không tìm thấy người dùng.");
 
-            if (!string.IsNullOrWhiteSpace(dto.NewPassword))
-            {
-                existingUser.Password = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
-            }
-
             existingUser.FullName = dto.FullName ?? existingUser.FullName;
             existingUser.Avatar = dto.Avatar ?? existingUser.Avatar;
 

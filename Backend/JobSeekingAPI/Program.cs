@@ -150,6 +150,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Token = accessToken;
                 }
                 return Task.CompletedTask;
+            },
+            // Chặn đứng tấn công Token Confusion (Không cho phép dùng Refresh Token làm Access Token)
+            OnTokenValidated = context =>
+            {
+                var tokenType = context.Principal?.FindFirst("token_type")?.Value;
+                if (!string.Equals(tokenType, "access", StringComparison.Ordinal))
+                {
+                    context.Fail("Loại Token không hợp lệ. Chỉ chấp nhận Access Token.");
+                }
+                return Task.CompletedTask;
             }
         };
     });

@@ -397,6 +397,11 @@ def _extract_candidate_name(lines: List[str]) -> str:
 async def parse_resume_pdf(file: UploadFile = File(...)):
     """Bóc tách nội dung văn bản và các trường thông tin cơ bản từ tệp CV PDF sang JSON cho Backend C#."""
     try:
+        max_bytes = 5 * 1024 * 1024
+        pdf_bytes = await file.read(max_bytes + 1)
+        if len(pdf_bytes) > max_bytes:
+            return JSONResponse(status_code=400, content={"error": "The PDF file size has exceeded the 5MB."})
+
         pdf_bytes = await file.read()
         reader = PdfReader(io.BytesIO(pdf_bytes))
 

@@ -31,13 +31,29 @@ namespace JobSeekingAPI.Hubs
             {
                 int userId = Context.User.GetUserIdFromToken();
                 var connections = OnlineUsers.GetOrAdd(userId, _ => new HashSet<string>());
+                bool becameOnline = false;
+
                 lock (connections)
                 {
                     connections.Add(Context.ConnectionId);
+                    // Chỉ phát sự kiện khi đây là tab đầu tiên của User được mở lên
+                    if (connections.Count == 1)
+                    {
+                        becameOnline = true;
+                    }
                 }
 
-                // Thông báo cho các client khác biết user này vừa Online
-                await Clients.Others.SendAsync("UserStatusChanged", new { userId, isOnline = true });
+                if (becameOnline)
+                {
+                    // Chỉ thông báo trạng thái Online cho những đối tác đã từng có cuộc trò chuyện với userId này
+                    var partnerIds = await _messageService.GetConversationPartnerIdsAsync(userId);
+                    if (partnerIds.Count > 0)
+                    {
+                        var targetUsers = partnerIds.Select(id => id.ToString()).ToList();
+                        await Clients.Users(targetUsers).SendAsync("UserStatusChanged", new { userId, isOnline = true });
+                    }
+                }
+
                 _logger.LogInformation("SignalR: User {UserId} connected (ConnectionId: {ConnId})", userId, Context.ConnectionId);
             }
 
@@ -64,7 +80,13 @@ namespace JobSeekingAPI.Hubs
 
                     if (wentOffline)
                     {
-                        await Clients.Others.SendAsync("UserStatusChanged", new { userId, isOnline = false });
+                        // Chỉ thông báo Offline cho những đối tác đang có hội thoại với userId này
+                        var partnerIds = await _messageService.GetConversationPartnerIdsAsync(userId);
+                        if (partnerIds.Count > 0)
+                        {
+                            var targetUsers = partnerIds.Select(id => id.ToString()).ToList();
+                            await Clients.Users(targetUsers).SendAsync("UserStatusChanged", new { userId, isOnline = false });
+                        }
                     }
                 }
             }
@@ -84,15 +106,7 @@ namespace JobSeekingAPI.Hubs
             {
                 responsePayload = await _messageService.SendMessageAsync(senderId, dto);
             }
-            catch (ArgumentException ex)
-            {
-                throw new HubException(ex.Message);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                throw new HubException(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
+            catch (Exception ex) when (ex is ArgumentException or KeyNotFoundException or UnauthorizedAccessException or ForbiddenAccessException)
             {
                 throw new HubException(ex.Message);
             }
@@ -103,16 +117,22 @@ namespace JobSeekingAPI.Hubs
         }
 
         /// <summary>
-        /// Chỉ báo đối phương đang gõ phím - Typing Indicator
+        /// Chỉ báo đối phương đang gõ phím - Typing Indicator (Chỉ cho phép gửi tới đối tác đã có hội thoại)
         /// </summary>
         public async Task SendTypingIndicator(int receiverId, bool isTyping)
         {
             int senderId = Context.User!.GetUserIdFromToken();
-            await Clients.User(receiverId.ToString()).SendAsync("UserTyping", new
+            var partnerIds = await _messageService.GetConversationPartnerIdsAsync(senderId);
+
+            // Chặn spam sự kiện Typing tới người lạ chưa từng có hội thoại
+            if (partnerIds.Contains(receiverId))
             {
-                senderId,
-                isTyping
-            });
+                await Clients.User(receiverId.ToString()).SendAsync("UserTyping", new
+                {
+                    senderId,
+                    isTyping
+                });
+            }
         }
 
         /// <summary>
@@ -126,7 +146,6 @@ namespace JobSeekingAPI.Hubs
 
             if (hasUpdated)
             {
-                // Báo cho đối phương biết tin nhắn của họ đã được đọc (Hiển thị "Đã xem" tức thì)
                 await Clients.User(partnerId.ToString()).SendAsync("MessagesRead", new
                 {
                     readerId = currentUserId,

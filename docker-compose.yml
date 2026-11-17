@@ -74,7 +74,7 @@ services:
       # Trỏ thẳng sang tên service của Backend C# ở cổng nội bộ 8080!
       - CSHARP_API_URL=http://backend-api:8080
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       backend-api:
         condition: service_started
