@@ -12,17 +12,6 @@ namespace JobSeekingAPI.Repositories
         }
 
         //CRUD ĐẶC THÙ
-        public async Task<IEnumerable<Candidate>> GetAllCandidatesWithDetailsAsync()
-        {
-            return await _context.Candidates
-                .AsNoTracking()
-                .Include(c => c.User)
-                .Include(c => c.Experiences)
-                .Include(c => c.CandidateTags)
-                    .ThenInclude(ct => ct.Tag)
-                .ToListAsync();
-        }
-
         public async Task<Candidate?> GetCandidateDetailByIdAsync(int id)
         {
             return await _context.Candidates

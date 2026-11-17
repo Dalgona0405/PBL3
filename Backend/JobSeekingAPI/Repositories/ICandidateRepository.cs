@@ -6,7 +6,6 @@ namespace JobSeekingAPI.Repositories
     public interface ICandidateRepository : IBaseRepository<Candidate>
     {
         // CRUD ĐẶC THÙ
-        //Task<IEnumerable<Candidate>> GetAllCandidatesWithDetailsAsync();
         Task<Candidate?> GetCandidateDetailByIdAsync(int id);
         Task<Candidate?> GetCandidateEntityByIdAsync(int id);
 

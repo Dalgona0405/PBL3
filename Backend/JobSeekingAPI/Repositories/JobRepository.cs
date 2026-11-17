@@ -71,25 +71,6 @@ namespace JobSeekingAPI.Repositories
         }
 
         // CRUD ĐẶC THÙ
-        public async Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync()
-        {
-            var query = _context.Jobs
-                .AsNoTracking()
-                .AsQueryable();
-
-            if (!ShowScrapedJobs)
-            {
-                query = query.Where(j => j.OriginalId == null);
-            }
-
-            return await query
-                .Include(j => j.Company)
-                .Include(j => j.Location)
-                .Include(j => j.JobTags).ThenInclude(jt => jt.Tag)
-                .OrderByDescending(j => j.PostedDate) // Sắp xếp tin mới nhất lên đầu
-                .ToListAsync();
-        }
-
         public async Task<JobDetailDTO?> GetJobDetailByIdAsync(int id)
         {
             return await _context.Jobs
@@ -393,12 +374,9 @@ namespace JobSeekingAPI.Repositories
 
         public async Task IncrementViewCountAsync(int jobId)
         {
-            var job = await _context.Jobs.FindAsync(jobId);
-            if (job != null)
-            {
-                job.ViewCount = (job.ViewCount ?? 0) + 1;
-                await _context.SaveChangesAsync();
-            }
+            await _context.Jobs
+                .Where(j => j.JobId == jobId)
+                .ExecuteUpdateAsync(s => s.SetProperty(j => j.ViewCount, j => (j.ViewCount ?? 0) + 1));
         }
     }
 }

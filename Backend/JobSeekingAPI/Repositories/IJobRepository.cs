@@ -6,7 +6,6 @@ namespace JobSeekingAPI.Repositories
     public interface IJobRepository : IBaseRepository<Job>
     {
         // CRUD ĐẶC THÙ
-        //Task<IEnumerable<Job>> GetAllJobsWithDetailsAsync();
         Task<JobDetailDTO?> GetJobDetailByIdAsync(int id);
         Task<Job?> GetJobEntityByIdAsync(int id);
         Task<Job> CreateJobWithDefaultsAsync(Job job);
@@ -15,13 +14,13 @@ namespace JobSeekingAPI.Repositories
 
         // ===== TÌM KIẾM NÂNG CAO =====
         Task<PagedResultDTO<Job>> SearchJobsAsync(JobSearchDTO searchParams);
-        
+
         // ===== LỌC THEO QUAN HỆ =====
         Task<IEnumerable<Job>> GetJobsByCompanyAsync(int companyId);
         Task<IEnumerable<Job>> GetJobsByRecruiterAsync(int recruiterUserId);
         Task<IEnumerable<Job>> GetJobsByLocationAsync(int locationId);
         Task<IEnumerable<Job>> GetJobsByTagAsync(int tagId);
-        
+
         // ===== THỐNG KÊ =====
         Task<int> GetTotalJobsCountAsync();
         Task<Dictionary<string, int>> GetJobsByLevelAsync();
