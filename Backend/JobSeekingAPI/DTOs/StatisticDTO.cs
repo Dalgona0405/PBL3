@@ -3,7 +3,7 @@ namespace JobSeekingAPI.DTOs
     // ==========================================
     // CÁC CLASS CƠ BẢN DÙNG CHUNG
     // ==========================================
-    
+
     // 1. Dùng cho biểu đồ Tròn (Pie) hoặc Cột (Bar)
     public class SimpleStatDTO
     {
@@ -14,7 +14,7 @@ namespace JobSeekingAPI.DTOs
     // 2. Dùng cho biểu đồ Đường (Line)
     public class TrendStatDTO
     {
-        public string Period { get; set; } = string.Empty; 
+        public string Period { get; set; } = string.Empty;
         public int Actual { get; set; }
         public int Forecast { get; set; }
     }
@@ -60,8 +60,8 @@ namespace JobSeekingAPI.DTOs
         public int TotalRecruiters { get; set; }
 
         // Tống số thống kê dạng đang tuyển dụng
-        public int TotalActiveHiringCompanies { get; set; } 
-        public int TotalActiveIndustries { get; set; } 
+        public int TotalActiveHiringCompanies { get; set; }
+        public int TotalActiveIndustries { get; set; }
         public double ApplicationRate { get; set; }
     }
 
@@ -71,7 +71,7 @@ namespace JobSeekingAPI.DTOs
         public List<SimpleStatDTO> SalaryRanges { get; set; } = new();
         public List<SimpleStatDTO> JobByDept { get; set; } = new();
         public List<TrendStatDTO> HiringTrends { get; set; } = new();
-        
+
         // Các danh sách phục vụ vẽ BIỂU ĐỒ bổ sung (Dự báo, xu hướng, kỹ năng)
         public List<SimpleStatDTO> SkillDistribution { get; set; } = new();
         public List<TrendStatDTO> GrowthTrends { get; set; } = new();
@@ -82,7 +82,7 @@ namespace JobSeekingAPI.DTOs
     // 3. Nhóm Forms & Trạng thái (Status, Applications...)
     public class DashboardFormsAndStatusDTO
     {
-        public ApplicationStatsDTO Applications { get; set; } = new(); 
+        public ApplicationStatsDTO Applications { get; set; } = new();
         public JobStatusStatsDTO JobsByStatus { get; set; } = new();
     }
 
@@ -94,6 +94,6 @@ namespace JobSeekingAPI.DTOs
         public DashboardOverviewStatsDTO Overview { get; set; } = new();
         public DashboardChartsDTO Charts { get; set; } = new();
         public DashboardFormsAndStatusDTO FormsAndStatus { get; set; } = new();
-        public DateTime LastUpdated { get; set; } = DateTime.Now;
+        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
     }
 }

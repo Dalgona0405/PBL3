@@ -71,14 +71,9 @@ namespace JobSeekingAPI.DTOs
     public class CreateJobDTO
     {
         public int? CompanyId { get; set; }
-        [Required(ErrorMessage = "Please choose Location")]
         public int LocationId { get; set; }
-        [Required(ErrorMessage = "Please enter Title")]
-        [MaxLength(200, ErrorMessage = "Title too long")]
         public string Title { get; set; } = string.Empty;
-        [Range(0, 999, ErrorMessage = "SalaryMin isn't valid")]
         public decimal? SalaryMin { get; set; }
-        [Range(0, 999, ErrorMessage = "SalaryMax isn't valid")]
         public decimal? SalaryMax { get; set; }
         public string? ExpYear { get; set; }
         public string? Level { get; set; }

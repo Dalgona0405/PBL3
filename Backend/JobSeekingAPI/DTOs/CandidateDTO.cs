@@ -16,14 +16,11 @@ namespace JobSeekingAPI.DTOs
     // Sửa thông tin trang Profile
     public class UpdateCandidateDTO
     {
-        [MaxLength(100, ErrorMessage = "FullName too long")]
         public string? FullName { get; set; } // Map -> Users
         public string? Avatar { get; set; }   // Map -> Users
         public string? Gender { get; set; }   // Map -> Candidates
         public DateTime? Birthday { get; set; }
-        [RegularExpression(@"^(0[3|5|7|8|9])+([0-9]{8})\b", ErrorMessage = "Phone number is invalid")]
         public string? Phone { get; set; }
-        [MaxLength(500, ErrorMessage = "Address too long")]
         public string? Address { get; set; }
         public string? CVUrl { get; set; }
         public List<CandidateTagDTO>? Tags { get; set; }
