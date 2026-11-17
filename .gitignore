@@ -22,3 +22,4 @@ dist/
 .env
 **/scraped_jobs_setting.json
 **/wwwroot/uploads/*
+appsettings.Development.json
