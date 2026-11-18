@@ -1,6 +1,7 @@
 ﻿using JobSeekingAPI.DTOs;
 using JobSeekingAPI.Models;
 using JobSeekingAPI.Repositories;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 
 namespace JobSeekingAPI.Services
@@ -14,17 +15,20 @@ namespace JobSeekingAPI.Services
         private readonly JwtService _jwtService;
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _config;
+        private readonly IMemoryCache _cache;
 
         public AuthService(
             IUserRepository userRepo,
             JwtService jwtService,
             HttpClient httpClient,
-            IConfiguration config)
+            IConfiguration config,
+            IMemoryCache cache)
         {
             _userRepo = userRepo;
             _jwtService = jwtService;
             _httpClient = httpClient;
             _config = config;
+            _cache = cache;
         }
 
         /// <summary>
@@ -78,11 +82,20 @@ namespace JobSeekingAPI.Services
 
         public async Task<(object Response, string RefreshToken)> LoginWithRefreshAsync(LoginDTO loginDto)
         {
+            string normalizedEmail = loginDto.Email.Trim().ToLowerInvariant();
+            string lockoutCacheKey = $"LoginLockout_{normalizedEmail}";
+
+            if (_cache.TryGetValue(lockoutCacheKey, out int failedAttempts) && failedAttempts >= 5)
+                throw new UnauthorizedAccessException("Tài khoản tạm bị khóa 5 phút do nhập sai mật khẩu quá 5 lần liên tiếp");
+
             var user = await _userRepo.GetByEmailAsync(loginDto.Email);
             if (user == null || user.DeletedAt != null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
             {
+                _cache.Set(lockoutCacheKey, failedAttempts + 1, TimeSpan.FromMinutes(5));
                 throw new UnauthorizedAccessException("Email hoặc mật khẩu không chính xác.");
             }
+
+            _cache.Remove(lockoutCacheKey);
 
             user.LastLogin = DateTime.UtcNow;
             await _userRepo.UpdateAsync(user);
@@ -101,7 +114,12 @@ namespace JobSeekingAPI.Services
 
         public async Task<(object Response, string RefreshToken)> GoogleLoginWithRefreshAsync(GoogleLoginDTO googleDto, CancellationToken cancellationToken = default)
         {
-            // Kiểm tra chữ ký và thời hạn Google ID Token
+            var configuredClientId = _config["Google:ClientId"];
+            if (string.IsNullOrWhiteSpace(configuredClientId))
+            {
+                throw new InvalidOperationException("Hệ thống chưa cấu hình Google:ClientId để xác thực OAuth 2.0.");
+            }
+
             var verifyUrl = $"https://oauth2.googleapis.com/tokeninfo?id_token={Uri.EscapeDataString(googleDto.IdToken)}";
             var response = await _httpClient.GetAsync(verifyUrl, cancellationToken);
 
@@ -113,15 +131,18 @@ namespace JobSeekingAPI.Services
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
             var root = doc.RootElement;
 
-            // Đối chiếu Audience ('aud') nếu có cấu hình Google ClientId để ngăn giả mạo token từ ứng dụng khác
-            var configuredClientId = _config["Google:ClientId"];
-            if (!string.IsNullOrWhiteSpace(configuredClientId))
+            // Bắt buộc kiểm tra khớp Audience ('aud') với Google:ClientId của hệ thống
+            var tokenAud = root.TryGetProperty("aud", out var audProp) ? audProp.GetString() : null;
+            if (!string.Equals(tokenAud, configuredClientId, StringComparison.Ordinal))
             {
-                var tokenAud = root.TryGetProperty("aud", out var audProp) ? audProp.GetString() : null;
-                if (!string.Equals(tokenAud, configuredClientId, StringComparison.Ordinal))
-                {
-                    throw new UnauthorizedAccessException("Google Token không thuộc về ứng dụng này (Audience mismatch).");
-                }
+                throw new UnauthorizedAccessException("Google Token không thuộc về ứng dụng này (Audience mismatch).");
+            }
+
+            // Bắt buộc kiểm tra email_verified == true trước khi cho phép tự động liên kết tài khoản
+            var emailVerified = root.TryGetProperty("email_verified", out var evProp) ? evProp.ToString() : "false";
+            if (!string.Equals(emailVerified, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException("Email trên tài khoản Google của bạn chưa được xác minh.");
             }
 
             var email = root.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null;
@@ -134,7 +155,6 @@ namespace JobSeekingAPI.Services
                 throw new UnauthorizedAccessException("Không thể trích xuất thông tin định danh từ Google Token.");
             }
 
-            // Liên kết tài khoản hiện có hoặc tạo mới trong Transaction
             var user = await _userRepo.FindOrCreateGoogleUserAsync(
                 email,
                 fullName ?? "Google User",

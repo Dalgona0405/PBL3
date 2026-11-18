@@ -52,7 +52,7 @@ namespace JobSeekingAPI.Middlewares
                     message = e.Message;
                     break;
                 case InvalidOperationException e:
-                    statusCode = (int)HttpStatusCode.BadRequest; // 400 - Trạng thái hoặc thao tác không hợp lệ
+                    statusCode = (int)HttpStatusCode.BadGateway; // 502 - Lỗi giao tiếp với dịch vụ bên ngoài (Cloud Storage / AI Server)
                     message = e.Message;
                     break;
                 case UnauthorizedAccessException e:

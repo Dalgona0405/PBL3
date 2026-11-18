@@ -277,8 +277,13 @@ namespace JobSeekingAPI.Repositories
                     .AsNoTracking()
                     .AnyAsync(a =>
                         (a.CVUrl == cvPath || (a.Candidate != null && a.Candidate.CVUrl == cvPath)) &&
-                        ((effectiveCompanyId != null && a.Job != null && a.Job.CompanyId == effectiveCompanyId) ||
-                         (a.Job != null && a.Job.PostedByUserId == currentUserId)),
+                        a.Job != null &&
+                        (
+                            // Nếu Job thuộc công ty -> Bắt buộc HR phải đang thuộc công ty đó
+                            (a.Job.CompanyId != null && effectiveCompanyId != null && a.Job.CompanyId == effectiveCompanyId) ||
+                            // Nếu Job là tin Freelance (CompanyId == null) -> Kiểm tra theo PostedByUserId
+                            (a.Job.CompanyId == null && a.Job.PostedByUserId == currentUserId)
+                        ),
                         cancellationToken);
             }
 

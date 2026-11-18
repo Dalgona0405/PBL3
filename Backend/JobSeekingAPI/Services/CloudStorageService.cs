@@ -88,10 +88,16 @@ namespace JobSeekingAPI.Services
             var serviceRoleKey = _config["Supabase:ServiceRoleKey"];
             var bucketName = _config["Supabase:CvBucket"] ?? "resumes";
 
-            // Nếu chưa cấu hình Supabase -> Fallback về lưu local
+            // Nếu chưa cấu hình Supabase
             if (string.IsNullOrWhiteSpace(supabaseUrl) || string.IsNullOrWhiteSpace(serviceRoleKey))
             {
-                _logger.LogWarning("Supabase credentials missing. Falling back to local storage for CV PDF.");
+                // Ở môi trường Production, tuyệt đối không lưu CV ứng viên ra thư mục tĩnh công khai
+                if (!_env.IsDevelopment())
+                {
+                    throw new InvalidOperationException("Dịch vụ lưu trữ bảo mật Supabase chưa được cấu hình trên môi trường Production.");
+                }
+
+                _logger.LogWarning("Supabase credentials missing in Development. Falling back to local storage for CV PDF.");
                 return await SaveToLocalFallbackAsync(file, "cvs", cancellationToken);
             }
 

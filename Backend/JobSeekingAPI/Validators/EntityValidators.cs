@@ -35,6 +35,16 @@ namespace JobSeekingAPI.Validators
         }
     }
 
+    public class UpdateCompanyRequestStatusDTOValidator : AbstractValidator<UpdateCompanyRequestStatusDTO>
+    {
+        public UpdateCompanyRequestStatusDTOValidator()
+        {
+            RuleFor(x => x.Status)
+                .Must(s => s == 1 || s == 2)
+                .WithMessage("Trạng thái phê duyệt không hợp lệ (Chỉ chấp nhận 1: Phê duyệt hoặc 2: Từ chối).");
+        }
+    }
+
     public class CreateApplicationDTOValidator : AbstractValidator<CreateApplicationDTO>
     {
         public CreateApplicationDTOValidator()

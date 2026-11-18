@@ -66,7 +66,7 @@ namespace JobSeekingAPI.Repositories
                 {
                     var newCompany = new Company
                     {
-                        CompanyName = userDto.FullName + "Company",
+                        CompanyName = userDto.FullName + " " + "Company",
                         Size = "1-50",
                         IsVerified = false,
                         MasterUserId = user.UserId

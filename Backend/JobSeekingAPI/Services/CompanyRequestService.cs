@@ -27,9 +27,14 @@ namespace JobSeekingAPI.Services
         /// </summary>
         public async Task CreateRequestAsync(int userId, CreateCompanyRequestDTO dto)
         {
-            var company = await _companyRepo.GetByIdAsync(dto.CompanyId);
-            if (company == null)
-                throw new KeyNotFoundException("Không tìm thấy doanh nghiệp.");
+            var recruiter = await _recruiterRepo.GetRecruiterEntityByIdAsync(userId)
+                ?? throw new KeyNotFoundException("Không tìm thấy hồ sơ nhà tuyển dụng.");
+
+            if (recruiter.CompanyId.HasValue)
+                throw new ArgumentException("Bạn đang trực thuộc một doanh nghiệp. Vui lòng rời doanh nghiệp hiện tại trước khi gửi yêu cầu mới.");
+
+            var company = await _companyRepo.GetByIdAsync(dto.CompanyId)
+                ?? throw new KeyNotFoundException("Không tìm thấy doanh nghiệp");
 
             bool isPending = await _requestRepo.HasPendingRequestAsync(userId);
             if (isPending)
