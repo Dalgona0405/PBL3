@@ -402,7 +402,6 @@ async def parse_resume_pdf(file: UploadFile = File(...)):
         if len(pdf_bytes) > max_bytes:
             return JSONResponse(status_code=400, content={"error": "The PDF file size has exceeded the 5MB."})
 
-        pdf_bytes = await file.read()
         reader = PdfReader(io.BytesIO(pdf_bytes))
 
         raw_text = ""

@@ -29,6 +29,9 @@ namespace JobSeekingAPI.Services
             string calendarEventUid)
         {
             var subject = $"[Thư mời Phỏng vấn] Vị trí {jobTitle} - {companyName}";
+            var vnTimeZoneOffset = TimeSpan.FromHours(7);
+            var startTimeVn = startTimeUtc.ToUniversalTime().Add(vnTimeZoneOffset);
+            var endTimeVn = endTimeUtc.ToUniversalTime().Add(vnTimeZoneOffset);
 
             var htmlBody = $@"
                 <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px;'>
@@ -37,8 +40,8 @@ namespace JobSeekingAPI.Services
                     <p>Phòng Nhân sự của <strong>{WebUtility.HtmlEncode(companyName)}</strong> rất ấn tượng với hồ sơ ứng tuyển của bạn cho vị trí <strong>{WebUtility.HtmlEncode(jobTitle)}</strong>.</p>
                     <p>Chúng tôi trân trọng mời bạn tham dự buổi phỏng vấn với thông tin chi tiết như sau:</p>
                     <div style='background-color: #f8fafc; padding: 16px; border-left: 4px solid #2563eb; border-radius: 6px; margin: 16px 0;'>
-                        <p style='margin: 4px 0;'>📅 <strong>Thời gian bắt đầu:</strong> {startTimeUtc.ToLocalTime():dd/MM/yyyy HH:mm}</p>
-                        <p style='margin: 4px 0;'>⏰ <strong>Thời gian kết thúc:</strong> {endTimeUtc.ToLocalTime():dd/MM/yyyy HH:mm}</p>
+                        <p style='margin: 4px 0;'>📅 <strong>Thời gian bắt đầu:</strong> {startTimeVn:dd/MM/yyyy HH:mm}</p>
+                        <p style='margin: 4px 0;'>⏰ <strong>Thời gian kết thúc:</strong> {endTimeVn:dd/MM/yyyy HH:mm}</p>
                         <p style='margin: 4px 0;'>🌐 <strong>Hình thức:</strong> {WebUtility.HtmlEncode(interviewType)}</p>
                         <p style='margin: 4px 0;'>📍 <strong>Địa điểm / Link họp:</strong> <a href='{WebUtility.HtmlEncode(locationOrLink)}'>{WebUtility.HtmlEncode(locationOrLink)}</a></p>
                         {(string.IsNullOrWhiteSpace(notes) ? "" : $"<p style='margin: 4px 0;'>📝 <strong>Ghi chú từ HR:</strong> {WebUtility.HtmlEncode(notes)}</p>")}

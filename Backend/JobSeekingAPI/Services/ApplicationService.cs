@@ -79,8 +79,15 @@ namespace JobSeekingAPI.Services
             var candidate = await _candidateRepo.GetByIdAsync(dto.UserId)
                 ?? throw new ArgumentException("Không tìm thấy thông tin ứng viên.");
 
-            var job = await _jobRepo.GetByIdAsync(dto.JobId)
-                ?? throw new KeyNotFoundException("Không tìm thấy tin tuyển dụng.");
+            var job = await _jobRepo.GetByIdAsync(dto.JobId);
+            if (job == null || job.DeletedAt.HasValue)
+                throw new KeyNotFoundException("Không tìm thấy tin tuyển dụng.");
+
+            if (!string.IsNullOrWhiteSpace(job.OriginalId))
+                throw new ArgumentException("Đây là tin tuyển dụng tổng hợp thị trường, không hỗ trợ nộp hồ sơ trực tiếp trên hệ thống.");
+
+            if (job.Status != (int)JobStatus.Active)
+                throw new ArgumentException("Tin tuyển dụng này đang đóng nhận hồ sơ.");
 
             if (job.Deadline.HasValue && job.Deadline.Value < DateTime.UtcNow)
                 throw new ArgumentException("Tin tuyển dụng này đã hết hạn nộp hồ sơ.");
@@ -89,7 +96,14 @@ namespace JobSeekingAPI.Services
             if (hasApplied)
                 throw new ArgumentException("Bạn đã ứng tuyển vào công việc này rồi.");
 
-            string finalCvUrl = dto.CVUrl ?? candidate.CVUrl ?? "";
+            if (!string.IsNullOrWhiteSpace(dto.CVUrl))
+            {
+                FileSignatureValidator.EnsureCvBelongsToCandidate(dto.CVUrl, dto.UserId);
+            }
+
+            string finalCvUrl = !string.IsNullOrWhiteSpace(dto.CVUrl)
+                ? dto.CVUrl.Trim()
+                : (candidate.CVUrl ?? "");
             if (string.IsNullOrWhiteSpace(finalCvUrl))
                 throw new ArgumentException("Vui lòng cung cấp CV để ứng tuyển.");
 
@@ -137,7 +151,12 @@ namespace JobSeekingAPI.Services
             if (existApplication.UserId != userId)
                 throw new ForbiddenAccessException("Bạn không có quyền thao tác trên hồ sơ ứng tuyển này.");
 
-            existApplication.CVUrl = dto.CVUrl ?? existApplication.CVUrl;
+            if (!string.IsNullOrWhiteSpace(dto.CVUrl))
+            {
+                FileSignatureValidator.EnsureCvBelongsToCandidate(dto.CVUrl, userId);
+                existApplication.CVUrl = dto.CVUrl.Trim();
+            }
+
             existApplication.UpdatedAt = DateTime.UtcNow;
             await _appRepo.UpdateAsync(existApplication);
         }
@@ -155,12 +174,24 @@ namespace JobSeekingAPI.Services
 
             await CheckRecruiterOwnershipAsync(existApplication.JobId, userId, role);
 
-            // Kiểm tra hợp lệ khi chuyển trạng thái (State Transition Gate)
+            // Nếu trạng thái mới trùng hệt trạng thái hiện tại -> Chỉ cập nhật ghi chú (nếu có), không gửi lại Email/Notification!
+            if (existApplication.Status == dto.Status)
+            {
+                if (!string.IsNullOrWhiteSpace(dto.Message))
+                {
+                    existApplication.Message = dto.Message;
+                    existApplication.UpdatedAt = DateTime.UtcNow;
+                    await _appRepo.UpdateAsync(existApplication);
+                }
+                return;
+            }
+
+            // Kiểm tra hợp lệ theo bảng chuyển trạng thái (State Machine Transition Table)
             ValidateStateTransition(existApplication.Status, dto.Status);
 
             string? calendarUid = null;
-            DateTime startUtc = DateTime.UtcNow.AddDays(1);
-            DateTime endUtc = startUtc.AddHours(1);
+            DateTime startUtc = DateTime.UtcNow;
+            DateTime endUtc = DateTime.UtcNow;
             string locationOrLink = dto.MeetingLink ?? dto.InterviewLocation ?? "Google Meet";
             Notification? createdNotification = null;
 
@@ -171,10 +202,14 @@ namespace JobSeekingAPI.Services
             Interview? interviewRecord = null;
             if (dto.Status == (int)ApplicationStatus.InterviewScheduled)
             {
-                if (dto.InterviewTime.HasValue && dto.InterviewTime.Value < DateTime.UtcNow.AddMinutes(-5))
+                // Bắt buộc phải có thời gian phỏng vấn khi chuyển sang cột InterviewScheduled
+                if (!dto.InterviewTime.HasValue)
+                    throw new ArgumentException("Vui lòng chọn thời gian bắt đầu phỏng vấn.");
+
+                if (dto.InterviewTime.Value < DateTime.UtcNow.AddMinutes(-5))
                     throw new ArgumentException("Thời gian phỏng vấn phải ở trong tương lai.");
 
-                startUtc = dto.InterviewTime ?? DateTime.UtcNow.AddDays(1);
+                startUtc = dto.InterviewTime.Value;
                 endUtc = dto.InterviewEndTime ?? startUtc.AddHours(1);
                 calendarUid = $"interview-{existApplication.AppId}-{Guid.NewGuid():N}@jobseeking.vn";
 
@@ -339,15 +374,37 @@ namespace JobSeekingAPI.Services
             }
         }
 
+        // Bảng định nghĩa các luồng chuyển trạng thái hợp lệ trên Kanban ATS (Finite State Machine)
+        private static readonly Dictionary<int, HashSet<int>> AllowedStageTransitions = new()
+        {
+            // Từ Applied (1) -> Được sang Screening (2), InterviewScheduled (3), hoặc Rejected (6)
+            [(int)ApplicationStatus.Applied] = new() { (int)ApplicationStatus.Screening, (int)ApplicationStatus.InterviewScheduled, (int)ApplicationStatus.Rejected },
+
+            // Từ Screening (2) -> Được sang InterviewScheduled (3), Offered (4), hoặc Rejected (6)
+            [(int)ApplicationStatus.Screening] = new() { (int)ApplicationStatus.InterviewScheduled, (int)ApplicationStatus.Offered, (int)ApplicationStatus.Rejected },
+
+            // Từ InterviewScheduled (3) -> Được sang Screening (2), Offered (4), Hired (5), hoặc Rejected (6)
+            [(int)ApplicationStatus.InterviewScheduled] = new() { (int)ApplicationStatus.Screening, (int)ApplicationStatus.Offered, (int)ApplicationStatus.Hired, (int)ApplicationStatus.Rejected },
+
+            // Từ Offered (4) -> Được sang Hired (5) hoặc Rejected (6)
+            [(int)ApplicationStatus.Offered] = new() { (int)ApplicationStatus.Hired, (int)ApplicationStatus.Rejected },
+
+            // Hired (5) và Rejected (6) là trạng thái kết thúc (Terminal States), chỉ cho phép Rejected mở lại sang Screening nếu xem xét lại
+            [(int)ApplicationStatus.Hired] = new(),
+            [(int)ApplicationStatus.Rejected] = new() { (int)ApplicationStatus.Screening }
+        };
+
         private static void ValidateStateTransition(int currentStatus, int newStatus)
         {
             if (newStatus < 1 || newStatus > 6)
                 throw new ArgumentException("Trạng thái Pipeline không hợp lệ (Chỉ chấp nhận từ 1 đến 6).");
 
-            // Quy tắc Gatekeeping: Không cho phép nhảy cóc trực tiếp từ Applied (1) thẳng sang Hired (5) mà chưa qua Phỏng vấn/Offer
-            if (currentStatus == (int)ApplicationStatus.Applied && newStatus == (int)ApplicationStatus.Hired)
+            if (!AllowedStageTransitions.TryGetValue(currentStatus, out var allowedNextStages) ||
+                !allowedNextStages.Contains(newStatus))
             {
-                throw new ArgumentException("Không thể chuyển trực tiếp hồ sơ mới nộp (Applied) sang Đã tuyển (Hired) mà chưa qua bước Phỏng vấn hoặc Offer.");
+                string fromStage = MappingExtensions.ToPipelineStageName(currentStatus);
+                string toStage = MappingExtensions.ToPipelineStageName(newStatus);
+                throw new ArgumentException($"Chuyển trạng thái không hợp lệ: Không thể chuyển trực tiếp từ bước '{fromStage}' sang '{toStage}'.");
             }
         }
 
@@ -358,11 +415,18 @@ namespace JobSeekingAPI.Services
 
             if (role == UserRoles.Recruiter || role == UserRoles.Company)
             {
-                if (jobExists.PostedByUserId.HasValue && jobExists.PostedByUserId.Value == userId)
+                if (jobExists.CompanyId.HasValue)
+                {
+                    var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
+                    if (recruiterCompanyId == null || recruiterCompanyId.Value != jobExists.CompanyId.Value)
+                    {
+                        throw new ForbiddenAccessException("Bạn không có quyền truy cập hồ sơ ứng tuyển của doanh nghiệp khác.");
+                    }
                     return;
+                }
 
-                var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
-                if (recruiterCompanyId == null || jobExists.CompanyId == null || recruiterCompanyId != jobExists.CompanyId)
+
+                if (!jobExists.PostedByUserId.HasValue || jobExists.PostedByUserId.Value != userId)
                 {
                     throw new ForbiddenAccessException("Bạn không có quyền thao tác trên hồ sơ ứng tuyển này.");
                 }

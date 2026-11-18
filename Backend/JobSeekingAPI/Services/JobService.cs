@@ -219,17 +219,18 @@ namespace JobSeekingAPI.Services
         // Hàm dùng chung để kiểm tra xem Recruiter có quyền sửa/xóa Job không (cho phép cả Freelance Recruiter sở hữu tin mình đăng)
         private async Task CheckRecruiterOwnershipAsync(int? jobCompanyId, int? jobPostedByUserId, int userId, bool isRecruiter)
         {
-            if (isRecruiter)
+            if (!isRecruiter) return;
+            if (jobCompanyId.HasValue)
             {
-                if (jobPostedByUserId.HasValue && jobPostedByUserId.Value == userId)
-                    return;
-
                 var recruiterCompanyId = await _companyRepo.GetCompanyIdByRecruiterIdAsync(userId);
-                if (recruiterCompanyId == null || jobCompanyId == null || recruiterCompanyId != jobCompanyId)
+                if (recruiterCompanyId == null || recruiterCompanyId.Value != jobCompanyId.Value)
                 {
-                    throw new ForbiddenAccessException("Bạn không có quyền chỉnh sửa tin tuyển dụng của nhà tuyển dụng hoặc doanh nghiệp khác.");
+                    throw new ForbiddenAccessException("Bạn không còn trực thuộc doanh nghiệp sở hữu tin tuyển dụng này.");
                 }
+                return;
             }
+            if (!jobPostedByUserId.HasValue || jobPostedByUserId.Value != userId)
+                throw new ForbiddenAccessException("Bạn không có quyền chỉnh sửa tin tuyển dụng của nhà tuyển dụng khác");
         }
     }
 }

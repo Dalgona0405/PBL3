@@ -136,6 +136,12 @@ namespace JobSeekingAPI.Services
                 jobTitle = await _messageRepo.GetJobTitleByIdAsync(dto.JobId.Value, cancellationToken);
             }
 
+            if (string.IsNullOrWhiteSpace(dto.Content))
+                throw new ArgumentException("Nội dung tin nhắn không được để trống.");
+
+            if (dto.Content.Trim().Length > 4000)
+                throw new ArgumentException("Nội dung tin nhắn không được vượt quá 4000 ký tự.");
+
             var message = new Message
             {
                 SenderId = senderId,

@@ -287,9 +287,16 @@ namespace JobSeekingAPI.Repositories
                 .FirstOrDefaultAsync();
 
             var query = _context.Jobs
-                .AsNoTracking()
-                .Where(j => j.PostedByUserId == recruiterUserId ||
-                            (recruiterCompanyId != null && j.CompanyId == recruiterCompanyId));
+                .AsNoTracking();
+
+            if (recruiterCompanyId.HasValue)
+            {
+                query = query.Where(j => j.CompanyId == recruiterCompanyId.Value);
+            }
+            else
+            {
+                query = query.Where(j => j.CompanyId == null && j.PostedByUserId == recruiterUserId);
+            }
 
             return await query
                 .Include(j => j.Company)

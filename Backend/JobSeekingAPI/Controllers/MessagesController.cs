@@ -47,6 +47,18 @@ namespace JobSeekingAPI.Controllers
             CancellationToken cancellationToken = default)
         {
             int currentUserId = User.GetUserIdFromToken();
+
+            // Nếu có tin nhắn chưa đọc vừa được đánh dấu là Đã xem -> Bắn sự kiện Real-time cho đối phương
+            bool markedRead = await _messageService.MarkConversationAsReadAsync(currentUserId, partnerId, cancellationToken);
+            if (markedRead)
+            {
+                await _hubContext.Clients.User(partnerId.ToString()).SendAsync("MessagesRead", new
+                {
+                    readerId = currentUserId,
+                    readAt = DateTime.UtcNow
+                }, cancellationToken);
+            }
+
             var result = await _messageService.GetChatHistoryAsync(currentUserId, partnerId, page, pageSize, cancellationToken);
             return Ok(result);
         }
