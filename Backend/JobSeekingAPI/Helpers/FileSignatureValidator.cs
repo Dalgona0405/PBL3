@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace JobSeekingAPI.Helpers
 {
     /// <summary>
@@ -20,6 +22,45 @@ namespace JobSeekingAPI.Helpers
                 ".webp" => headerBytes[0] == 0x52 && headerBytes[1] == 0x49 && headerBytes[2] == 0x46 && headerBytes[3] == 0x46,
                 _ => false
             };
+        }
+
+        /// <summary>
+        /// Đảm bảo đường dẫn CV (CVUrl) do ứng viên cung cấp thuộc chính chủ hoặc là đường dẫn fallback hợp lệ.
+        /// Ngăn chặn tấn công gán chéo CVUrl của ứng viên khác để vượt qua bước kiểm tra quyền xem CV.
+        /// </summary>
+        public static void EnsureCvBelongsToCandidate(string? cvUrl, int userId)
+        {
+            if (string.IsNullOrWhiteSpace(cvUrl))
+                throw new ArgumentException("Đường dẫn CV không được để trống.");
+
+            var trimmed = cvUrl.Trim();
+            if (trimmed.Contains("..", StringComparison.Ordinal) ||
+                trimmed.Contains('\\') ||
+                trimmed.Contains("%2e", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Đường dẫn CV không hợp lệ.");
+            }
+
+            if (trimmed.StartsWith("supabase://", StringComparison.OrdinalIgnoreCase))
+            {
+                bool isOwnerSupabasePath = Regex.IsMatch(
+                    trimmed,
+                    $@"^supabase://[a-zA-Z0-9_\-]+/candidate_{userId}/[a-zA-Z0-9_\-]+\.pdf$",
+                    RegexOptions.IgnoreCase);
+
+                if (!isOwnerSupabasePath)
+                    throw new ForbiddenAccessException("Bạn không có quyền sử dụng hồ sơ CV của ứng viên khác.");
+
+                return;
+            }
+
+            bool isValidLocalFallbackPath = Regex.IsMatch(
+                trimmed,
+                @"^(https?://[^/]+)?/uploads/cvs/[a-zA-Z0-9_\-]+\.pdf$",
+                RegexOptions.IgnoreCase);
+
+            if (!isValidLocalFallbackPath)
+                throw new ArgumentException("Đường dẫn CV không hợp lệ (chỉ chấp nhận tệp CV PDF đã tải lên hệ thống).");
         }
     }
 }

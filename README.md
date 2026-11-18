@@ -44,34 +44,56 @@ The system is divided into four distinct components to ensure scalability and ma
 ```
 ## ⚙️ Getting Started
 Follow these steps to set up the project on your local machine.
-### 1. Database & Crawl Data Setup
-- Open **pgAdmin 4** or `psql` (PostgreSQL 18).
-- Execute the `JobSeeking_DB.sql` script located in the `Crawl/` folder (or run `docker compose up -d postgres-db` using the init scripts in `db_init/`) to generate the schema and seed initial data.
-- *Alternatively:* Run EF Core migrations in the `Backend/JobSeekingAPI` folder: `dotnet ef database update`.
-### 2. Backend (.NET API) Setup
-- Navigate to the `Backend/JobSeekingAPI` folder and open the solution in **Visual Studio 2022** or VS Code.
-- Update your PostgreSQL 18 connection string in the `appsettings.json` file.
-- Run the application (`dotnet run`). The API will typically run on `http://localhost:5000` or `https://localhost:5001`.
-### 3. AI Service (Python) Setup
-- Navigate to the `AI_Service` directory.
-- Install required dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-- Run the AI server:
-    ```bash
-    python main.py
-    ```
-### 4. Frontend (React) Setup
-- Navigate to the `Frontend` directory.
-- Install NPM packages:
-    ```bash
-    npm install
-    ```
-- Start the development server:
-    ```bash
-    npm run dev
-    ```
+
+### Option A: Quick Start with Docker Compose (Recommended for Backend + AI + DB)
+1. Copy the environment template at the repository root and configure your secrets:
+   ```bash
+   cp .env.example .env
+   ```
+   - Set a strong random `JWT_SECRET` (at least 32 characters — do **not** reuse any old key from git history).
+   - Optionally fill in `GOOGLE_CLIENT_ID`, `CLOUDINARY_*`, `SUPABASE_*`, and `SMTP_*` (in `Development`, missing Cloudinary/Supabase/SMTP falls back to local file storage and mock email logging; in `Production`, `SUPABASE_*` is required for CV storage).
+2. Start PostgreSQL 18, ASP.NET Core 8 Web API, and the Python AI Service:
+   ```bash
+   docker compose up -d --build
+   ```
+   - Database seed scripts in `db_init/` run automatically on first container initialization.
+   - Backend API & Swagger: `http://localhost:5000/swagger`
+   - AI Service (bound to localhost only): `http://127.0.0.1:8000/api/health`
+3. Start the Frontend (see Step 4 below).
+
+### Option B: Manual Local Setup
+#### 1. Database & Seed Data Setup
+- Run `docker compose up -d postgres-db` to start PostgreSQL 18 with the `db_init/` seed scripts, **or** create `JobSeeking_DB` on your local PostgreSQL 18 instance and run EF Core migrations from `Backend/JobSeekingAPI`:
+  ```bash
+  dotnet ef database update
+  ```
+#### 2. Backend (.NET 8 Web API) Setup
+- `appsettings.json` intentionally leaves secrets (`Jwt:SecretKey`, `ConnectionStrings:DefaultConnection`, etc.) blank. Configure them in **`Backend/JobSeekingAPI/appsettings.Development.json`** (gitignored) or via **`dotnet user-secrets`**:
+  ```bash
+  cd Backend/JobSeekingAPI
+  dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=JobSeeking_DB;Username=postgres;Password=admin"
+  dotnet user-secrets set "Jwt:SecretKey" "<your-random-secret-at-least-32-chars>"
+  ```
+- Run the API (`dotnet run`), or execute the test suite from `Backend`:
+  ```bash
+  dotnet test JobSeekingAPI.Tests/JobSeekingAPI.Tests.csproj
+  ```
+- Swagger UI will be available at `http://localhost:5000/swagger` (or the port defined in `launchSettings.json`).
+#### 3. AI Service (Python) Setup
+- Navigate to the `AI_Service` directory and install required dependencies:
+  ```bash
+  pip install -r requirements.txt
+  ```
+- Run the AI server via Uvicorn (set `CSHARP_API_URL` if your Backend runs on a port other than `http://localhost:5000`):
+  ```bash
+  uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+  ```
+#### 4. Frontend (React) Setup
+- Navigate to the `Frontend` directory, install packages, and start the dev server:
+  ```bash
+  npm install
+  npm run dev
+  ```
 ## 📸 UI & Screenshots
 
 *(Add your actual product images to the `images/` folder and update the links below to showcase your application)*

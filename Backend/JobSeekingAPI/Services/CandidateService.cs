@@ -66,11 +66,16 @@ namespace JobSeekingAPI.Services
                 existingCandidate.User.Avatar = dto.Avatar ?? existingCandidate.User.Avatar;
             }
 
+            if (!string.IsNullOrWhiteSpace(dto.CVUrl))
+            {
+                FileSignatureValidator.EnsureCvBelongsToCandidate(dto.CVUrl, userId);
+                existingCandidate.CVUrl = dto.CVUrl.Trim();
+            }
+
             existingCandidate.Gender = dto.Gender ?? existingCandidate.Gender;
             existingCandidate.Birthday = dto.Birthday ?? existingCandidate.Birthday;
             existingCandidate.Phone = dto.Phone ?? existingCandidate.Phone;
             existingCandidate.Address = dto.Address ?? existingCandidate.Address;
-            existingCandidate.CVUrl = dto.CVUrl ?? existingCandidate.CVUrl;
 
             await _candidateRepo.UpdateAsync(existingCandidate);
 
@@ -178,10 +183,12 @@ namespace JobSeekingAPI.Services
         /// </summary>
         public async Task<string> UpdateDefaultCVAsync(int userId, string cvUrl)
         {
+            FileSignatureValidator.EnsureCvBelongsToCandidate(cvUrl, userId);
+
             var candidate = await _candidateRepo.GetCandidateEntityByIdAsync(userId)
                 ?? throw new KeyNotFoundException("Không tìm thấy hồ sơ ứng viên.");
 
-            candidate.CVUrl = cvUrl;
+            candidate.CVUrl = cvUrl.Trim();
             await _candidateRepo.UpdateAsync(candidate);
             return candidate.CVUrl;
         }

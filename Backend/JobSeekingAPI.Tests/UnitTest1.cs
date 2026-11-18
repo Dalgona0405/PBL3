@@ -135,6 +135,72 @@ namespace JobSeekingAPI.Tests
                 service.VerifyCvAccessAsync(targetCvPath, attackerRecruiterId, UserRoles.Recruiter));
         }
 
+        [Fact(DisplayName = "SEC_02: Chặn ứng viên tự khai báo CVUrl của ứng viên khác khi nộp đơn")]
+        public async Task ApplyForJob_WhenCandidateUsesAnotherCandidatesCvUrl_ThrowsForbiddenAccessException()
+        {
+            // 1. ARRANGE
+            var mockAppRepo = new Mock<IApplicationRepository>();
+            var mockJobRepo = new Mock<IJobRepository>();
+            var mockCandidateRepo = new Mock<ICandidateRepository>();
+
+            int attackerUserId = 1;
+            int jobId = 100;
+
+            mockCandidateRepo.Setup(r => r.GetByIdAsync(attackerUserId))
+                .ReturnsAsync(new Candidate { UserId = attackerUserId });
+
+            mockJobRepo.Setup(r => r.GetByIdAsync(jobId))
+                .ReturnsAsync(new Job
+                {
+                    JobId = jobId,
+                    Title = ".NET Backend Developer",
+                    Status = (int)JobStatus.Active,
+                    Deadline = DateTime.UtcNow.AddDays(7)
+                });
+
+            mockAppRepo.Setup(r => r.IsAppliedAsync(attackerUserId, jobId))
+                .ReturnsAsync(false);
+
+            var service = new ApplicationService(
+                mockAppRepo.Object,
+                mockJobRepo.Object,
+                mockCandidateRepo.Object,
+                Mock.Of<ICompanyRepository>(),
+                Mock.Of<INotificationRepository>(),
+                Mock.Of<IMatchingService>(),
+                Mock.Of<IEmailService>(),
+                Mock.Of<IHubContext<ChatHub>>(),
+                Mock.Of<ILogger<ApplicationService>>());
+
+            var dto = new CreateApplicationDTO
+            {
+                UserId = attackerUserId,
+                JobId = jobId,
+                CVUrl = "supabase://resumes/candidate_2/20261118_120000_abcdef.pdf"
+            };
+
+            // 2. ACT & 3. ASSERT
+            await Assert.ThrowsAsync<ForbiddenAccessException>(() => service.ApplyForJobAsync(dto));
+        }
+
+        [Fact(DisplayName = "SEC_03: Kiểm tra EnsureCvBelongsToCandidate chấp nhận CV chính chủ và chặn path traversal / URL ngoài")]
+        public void EnsureCvBelongsToCandidate_ValidatesOwnershipAndRejectsInvalidPaths()
+        {
+            // Chính chủ Supabase & Local fallback hợp lệ -> Không ném lỗi
+            FileSignatureValidator.EnsureCvBelongsToCandidate("supabase://resumes/candidate_12/20261118_120000_abc123.pdf", 12);
+            FileSignatureValidator.EnsureCvBelongsToCandidate("http://localhost:5000/uploads/cvs/63899000000000_abc123.pdf", 12);
+
+            // Dùng CV của người khác -> ForbiddenAccessException (403)
+            Assert.Throws<ForbiddenAccessException>(() =>
+                FileSignatureValidator.EnsureCvBelongsToCandidate("supabase://resumes/candidate_99/20261118_120000_abc123.pdf", 12));
+
+            // Path traversal hoặc URL bên ngoài -> ArgumentException (400)
+            Assert.Throws<ArgumentException>(() =>
+                FileSignatureValidator.EnsureCvBelongsToCandidate("supabase://resumes/candidate_12/../candidate_99/secret.pdf", 12));
+            Assert.Throws<ArgumentException>(() =>
+                FileSignatureValidator.EnsureCvBelongsToCandidate("https://evil.example.com/cv.pdf", 12));
+        }
+
         // =====================================================================
         // NHÓM 2: KIỂM THỬ QUYỀN SỞ HỮU TIN ĐĂNG CỦA FREELANCE RECRUITER
         // =====================================================================
